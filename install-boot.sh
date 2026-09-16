@@ -18,6 +18,11 @@ set +o allexport
 read -rp "Root password: " RPW
 read -rp "Password for $USERNAME: " UPW
 
+if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
+    sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
+    grep -q '^\[multilib\]' /etc/pacman.conf || { echo "Failed to enable multilib"; exit 1; }
+fi
+
 # 0. Check variables
 if [ ! -b "$DISK" ]; then
     echo "$DISK does not exist. Select one from lsblk"
@@ -29,7 +34,7 @@ if [ ! -d /sys/firmware/efi/efivars ]; then
     exit 1
 fi
 
-if ! ping -c 1 -W 3 archlinux.org >/dev/null 2>&1; then
+if ! ping -c 1 -W 3 google.com >/dev/null 2>&1; then
     echo "No internet. Plugin ethernet or use iwctl to connect to a network"
     exit 1
 fi
@@ -80,11 +85,6 @@ mount -o fmask=0077,dmask=0077 "$ESP" /mnt/boot
 mount "$HOMED" /mnt/home
 
 # 3. Pkg install
-if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
-    sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
-    grep -q '^\[multilib\]' /etc/pacman.conf || { echo "Failed to enable multilib"; exit 1; }
-fi
-
 pacstrap -K -P /mnt $PKGS_CORE
 
 genfstab -U /mnt >> /mnt/etc/fstab
