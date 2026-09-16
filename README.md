@@ -8,8 +8,10 @@ Feel free to use it if you want, no license attatched ʕ•̫͡•ʕ*̫͡*ʕ•�
 
 # Installing
 This is the shell command that I will run on a arch bootable ISO connected to my machine. It's purpose is to get the most basic install to get my system up and running.
-1. Fill up variables in `.env`
-2. Run `./install-boot.sh`
+1. Install git in the bootable media.
+2. Clone this repo in a none root directory.
+3. Fill up variables in `.env`
+4. Run `./install-boot.sh`
 
 `_installfiles/` contains some of the static files that will be added to the system. Most notably systemd's boot files, in case you want to change kernel parameters or hooks or something.
 
