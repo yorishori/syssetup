@@ -2,22 +2,23 @@
 set -euo pipefail
 
 ENV="${BASH_SOURCE[0]%/*}/.env"
-FD="${BASH_SOURCE[0]%/*}/_files"
+PKGFILE="${BASH_SOURCE[0]%/*}/.pkgs"
+FD="${BASH_SOURCE[0]%/*}/_installfiles"
 
 if [ ! -f "$ENV" ]; then
-    echo "$ENV not found. Copy .env.example next to the script and fill it in"
+    echo "$ENV not found."
     exit 1
 fi
 
 set -o allexport
 source "$ENV"
-source "$FD/.pkgs"
+source "$PKGFILE"
 set +o allexport
 
 read -rp "Root password: " RPW
 read -rp "Password for $USERNAME: " UPW
 
-
+# 0. Check variables
 if [ ! -b "$DISK" ]; then
     echo "$DISK does not exist. Select one from lsblk"
     exit 1
@@ -52,7 +53,10 @@ fi
 #   / -> ext4 [$ROOT_SIZE]
 #   /boot -> fat32 [$BOOT_SIZE]\
 #   /home -> ext4
-
+umount -R /mnt 2>/dev/null || true
+lsblk "$DISK"
+read -rp "ALL DATA on $DISK will be destroyed. Type YES: " ok
+[[ $ok == YES ]] || exit 1
 wipefs -a "$DISK"
 sgdisk --zap-all "$DISK"
 
@@ -72,63 +76,67 @@ mkfs.ext4 "$HOMED"
 mkdir -p /mnt
 mount "$ROOT" /mnt
 mkdir -p /mnt/boot /mnt/home
-mount "$ESP" /mnt/boot
+mount -o fmask=0077,dmask=0077 "$ESP" /mnt/boot
 mount "$HOMED" /mnt/home
 
-# Pkg install
-pacstrap -K /mnt $PKGS_CORE
+# 3. Pkg install
+if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
+    sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
+    grep -q '^\[multilib\]' /etc/pacman.conf || { echo "Failed to enable multilib"; exit 1; }
+fi
+
+pacstrap -K -P /mnt $PKGS_CORE
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
-
-# Basic setup
+# 4. Basic setup
 sed -i "s/^#$LOCALE/$LOCALE/" /mnt/etc/locale.gen
 echo "LANG=$LOCALE" > /mnt/etc/locale.conf
 echo "KEYMAP=$KEYMAP" > /mnt/etc/vconsole.conf
 
-echo "$HOSTNAME" > /mnt/etc/hostname
-cat "$FD/hosts" | sed "s/\$HOSTNAME/$HOSTNAME/" >> /mnt/etc/hosts
+echo "$HOST_NAME" > /mnt/etc/hostname
+cat "$FD/hosts" | sed "s/\$HOST_NAME/$HOST_NAME/g" >> /mnt/etc/hosts
 
 mkdir -p /mnt/etc/systemd/network
 cp "$FD/20-wired.network" /mnt/etc/systemd/network/20-wired.network
+install -Dm644 "$FD/main.conf" /mnt/etc/iwd/main.conf
 
-sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /mnt/etc/sudoers
+echo '%wheel ALL=(ALL:ALL) ALL' > /mnt/etc/sudoers.d/10-wheel && chmod 440 /mnt/etc/sudoers.d/10-wheel
 
-arch-chroot /mnt <<CHR1_EOF
+arch-chroot /mnt /bin/bash -euo pipefail <<CHR1_EOF
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 hwclock --systohc
 locale-gen
-echo "root:$RPW" | chpasswd
 useradd -m -G wheel "$USERNAME"
-echo "$USERNAME:$UPW" | chpasswd
 visudo -c
 systemctl enable systemd-networkd
 systemctl enable systemd-resolved
 systemctl enable iwd
 CHR1_EOF
 
-git clone "$REPO_URL" "/mnt/home/$USERNAME/repo"
+printf 'root:%s\n' "$RPW" | arch-chroot /mnt chpasswd
+printf '%s:%s\n' "$USERNAME" "$UPW" | arch-chroot /mnt chpasswd
 
-arch-chroot /mnt <<CHR2_EOF
-chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/repo"
-CHR2_EOF
-
-cp "$FD/.pkgs" "/mnt/home/$USERNAME/.pkgs"
-
-
-# Boot setup
+# 5. Install bootloader
 UUID=$(blkid -s PARTUUID -o value "$ROOT")
 sed -i 's/^MODULES=.*/MODULES=(nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /mnt/etc/mkinitcpio.conf
+sed -i 's/ kms / /' /mnt/etc/mkinitcpio.conf
 
-arch-chroot /mnt <<CHR3_EOF
+arch-chroot /mnt /bin/bash -euo pipefail <<CHR2_EOF
 mkinitcpio -P
 bootctl install
-CHR3_EOF
+CHR2_EOF
 
 cp "$FD/loader.conf" /mnt/boot/loader/loader.conf
 sed "s/\$UUID/$UUID/" "$FD/arch.conf" > /mnt/boot/loader/entries/arch.conf
 
+# Extra. Repo and dns link
+ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
+
+git clone "$REPO_URL" "/mnt/home/$USERNAME/repo"
+arch-chroot /mnt chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/repo"
+
 # Finishing up
 umount -R /mnt
-reboot
+
+echo "You can now reboot :)"

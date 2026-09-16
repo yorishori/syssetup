@@ -1,0 +1,11 @@
+[preview]
+wrap = "yes"
+
+[plugin]
+prepend_spotters = [
+    { mime = "folder/*", run = "info" },
+    { mime = "text/*", run = "info" },
+]
+append_spotters = [
+    { mime = "*", run = "info" },
+]

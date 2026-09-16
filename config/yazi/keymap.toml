@@ -1,0 +1,9 @@
+[mgr]
+prepend_keymap = [
+    { on = ["\\", "c"], run = "plugin ouch tar.gz", desc = "Compress/extract archive (tar.gz default)" },
+    { on = ["\\", "z"], run = "shell 'cd \"$(dirname \"%h\")\" && zip -r -y \"$(basename \"%h\").zip\" \"$(basename \"%h\")\"'", desc = "Zip (7z-compatible)" },
+    { on = ["\\", "p"], run = "plugin chmod",       desc = "Change permissions/owner" },
+    { on = ["\\", "s"], run = "shell 'sudo yazi \"%h\"' --block", desc = "Browse as root (sudo)" },
+    { on = ["\\", "e"], run = "shell 'sudo -E ${EDITOR:-vi} \"%h\"' --block", desc = "Open as root" },
+    { on = ["\\", "m"], run = "plugin mount", desc = "Mount panel (USB/SATA/NVMe/HDD)" },
+]
