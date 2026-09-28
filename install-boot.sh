@@ -130,8 +130,10 @@ CHR2_EOF
 cp "$FD/loader.conf" /mnt/boot/loader/loader.conf
 sed "s/\$UUID/$UUID/" "$FD/arch.conf" > /mnt/boot/loader/entries/arch.conf
 
-# Extra. Repo and dns link
+# Extra: DNS Link, Enable SysRq, Clone Repo 
 ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
+
+echo "kernel.sysrq = 1" >> /mnt/etc/sysctl.d/99-sysctl.conf
 
 git clone "$REPO_URL" "/mnt/home/$USERNAME/repo"
 arch-chroot /mnt chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/repo"

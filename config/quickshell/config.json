@@ -1,0 +1,135 @@
+{
+  "screen": "DP-3",
+  "font": {
+    "family": "JetBrainsMono Nerd Font",
+    "size": 14
+  },
+  "colors": {
+    "bg": "#11111b",
+    "bgAlt": "#181825",
+    "shadow": "#11111b",
+    "surface": "#313244",
+    "border": "#45475a",
+    "fg": "#cdd6f4",
+    "dim": "#a6adc8",
+    "muted": "#6c7086",
+    "off": "#99eba0ac",
+    "accent": "#89b4fa",
+    "ok": "#a6e3a1",
+    "warn": "#fab387",
+    "error": "#f38ba8"
+  },
+  "wallpaper": {
+    "path": "",
+    "fit": "center",
+    "color": "#2c2633"
+  },
+  "shape": {
+    "cut": 6,
+    "border": 1
+  },
+  "effects": {
+    "glow": 0.6,
+    "scanlines": 0.25,
+    "backdrop": 0.45
+  },
+  "bar": {
+    "height": 40,
+    "padding": 12,
+    "spacing": 16,
+    "workspaces": 6
+  },
+  "launcher": {
+    "terminal": [
+      "kitty",
+      "-e"
+    ],
+    "search": "https://duckduckgo.com/?q=%s",
+    "entries": [
+      {
+        "name": "qs",
+        "description": "edit the shell in nvim",
+        "icon": "nvim",
+        "command": "cd ~/qs && nvim .",
+        "terminal": true,
+        "keywords": [
+          "quickshell",
+          "shell",
+          "config"
+        ]
+      }
+    ]
+  },
+  "calendar": {
+    "weekStart": 1,
+    "url": "http://192.168.1.10:9001/dav/",
+    "colors": [
+      "#94e2d5",
+      "#cba6f7",
+      "#89b4fa",
+      "#a6e3a1",
+      "#f5c2e7",
+      "#fab387"
+    ]
+  },
+  "idle": {
+    "lock": 25,
+    "screenOff": 30
+  },
+  "lock": {
+    "passcode": 4
+  },
+  "server": {
+    "name": "koi-server",
+    "host": "192.168.1.10",
+    "ssh": "ssh yori@192.168.1.10",
+    "services": [
+      {
+        "name": "davis",
+        "url": "http://192.168.1.10:9001"
+      },
+      {
+        "url": "http://192.168.1.10:9001",
+        "name": "immich"
+      },
+      {
+        "name": "navidrome",
+        "url": "http://192.168.1.10:9003"
+      },
+      {
+        "name": "lunentuos",
+        "url": "http://192.168.1.10:9004/"
+      }
+    ]
+  },
+  "controlCenter": {
+    "tools": [
+      {
+        "label": "btop",
+        "command": "btop"
+      },
+      {
+        "label": "nyst",
+        "command": "nyst"
+      },
+      {
+        "label": "sensors",
+        "command": "watch -n1 sensors"
+      }
+    ]
+  },
+  "capture": {
+    "screenshots": "~/Pictures/Screenshots",
+    "recordings": "~/Videos/Recordings",
+    "voice": "~/Music/Voice"
+  },
+  "clipboard": {
+    "terminals": [
+      "kitty"
+    ]
+  },
+  "notifications": {
+    "timeout": 5,
+    "mutedApps": []
+  }
+}
