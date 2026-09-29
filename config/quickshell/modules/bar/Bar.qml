@@ -34,7 +34,8 @@ PanelWindow {
         { name: "audio" },
         { name: "notifications" },
         { name: "control", edge: "right", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } },
-        { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } }
+        { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } },
+        { name: "keys", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } }
     ]
 
     // The bar key each drop hangs under.
@@ -50,6 +51,7 @@ PanelWindow {
         case "notifications": return notifButton;
         case "control": return controlButton;
         case "settings": return workspaces;
+        case "keys": return workspaces;
         }
         return null;
     }

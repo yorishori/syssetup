@@ -24,6 +24,7 @@ import qs.modules.audio
 import qs.modules.control
 import qs.modules.session
 import qs.modules.settings
+import qs.modules.keys
 
 // Entry point. Only lists modules; each one is loaded in isolation.
 ShellRoot {

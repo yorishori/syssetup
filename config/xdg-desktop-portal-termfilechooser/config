@@ -1,0 +1,7 @@
+[filechooser]
+cmd=yazi-wrapper.sh
+default_dir=$HOME/Downloads
+create_help_file=0
+open_mode=suggested
+save_mode=default
+

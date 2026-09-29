@@ -1,3 +1,6 @@
+# Sway config, built around the qs shell (~/qs). The shell is the bar,
+# wallpaper, launcher, notifications, idle, lock and polkit agent, so there's
+# no swaybar, swaybg, swayidle or swaylock here.
 # ── 1. Setup ────────────────────────────────────────────────────────────────
 
 # Arch's 50-systemd-user.conf exports WAYLAND_DISPLAY, SWAYSOCK and
@@ -6,10 +9,10 @@ include /etc/sway/config.d/*
 
 set $mod Mod4
 set $term kitty
-# A shell command: $qs <target> <function> 
+# A shell command: $qs <target> <function>
 set $qs exec qs ipc call
 
-# Catppuccin Mocha (only what's used)
+# Catppuccin Mocha
 set $lavender #b4befe
 set $mantle   #181825
 set $base     #1e1e2e
@@ -29,8 +32,8 @@ input type:keyboard {
     xkb_layout us
     # Caps does nothing by itself; it's bound to the shell's compose panel
     xkb_options caps:none
-    repeat_delay 256
-    repeat_rate 32
+    repeat_delay 300
+    repeat_rate 25
 }
 
 input type:pointer {
@@ -80,8 +83,6 @@ popup_during_fullscreen smart
 # Window rules
 # Don't focus empty-class/title XWayland popups
 no_focus [shell="xwayland" class="^$" title="^$"]
-# nya-* helper apps float in the middle
-for_window [app_id="^nya-"] floating enable, move position center
 # Fullscreen windows (videos, games) hold off the shell's idle lock and
 # screen-off
 for_window [all] inhibit_idle fullscreen
@@ -91,13 +92,16 @@ for_window [all] inhibit_idle fullscreen
 
 exec dbus-update-activation-environment --systemd --all
 exec dbus-update-activation-environment --systemd GTK_USE_PORTAL=1
+exec plymouth quit --retain-splash
 
 # Clipboard history for the shell's clipboard panel
 exec wl-paste --type text --watch cliphist store
 exec wl-paste --type image --watch cliphist store
 
 # The shell, then lock once it answers (up to 10 s)
-exec_always qs --no-duplicate
+# exec_always + -n: a reload restarts the shell if it's gone, and does
+# nothing while it runs
+exec_always qs -n
 exec sh -c 'for i in $(seq 40); do qs ipc call session lock 2>/dev/null && exit; sleep 0.25; done'
 
 
@@ -106,11 +110,10 @@ exec sh -c 'for i in $(seq 40); do qs ipc call session lock 2>/dev/null && exit;
 # Shell panels
 bindsym $mod+space  $qs launcher toggle
 bindsym $mod+v      $qs clipboard toggle
-bindsym $mod+period $qs clipboard symbols emoji
-bindsym $mod+n      $qs notifications toggle
 bindsym $mod+c      $qs control toggle
 bindsym $mod+Escape $qs session toggle
 bindsym $mod+l      $qs session lock
+bindsym $mod+F1     $qs keys toggle
 # Caps Lock (keycode 66)
 bindcode 66         $qs compose toggle
 
@@ -131,8 +134,8 @@ bindsym --locked XF86AudioPrev        $qs media previous
 # Apps
 bindsym $mod+Return       exec $term
 bindsym $mod+b            exec zen-browser
-bindsym $mod+y            exec kitty -e yazi ~/Downloads/
-bindsym $mod+Shift+Escape exec kitty -e btop
+bindsym $mod+y            exec $term -e yazi ~/Downloads/
+bindsym $mod+Shift+Escape exec $term -e btop
 
 # Windows
 bindsym $mod+q kill
@@ -149,7 +152,7 @@ bindsym $mod+Down  focus down
 bindsym $mod+Left  focus left
 bindsym $mod+Right focus right
 
-# Move the focused window (or group, after Super+A)
+# Move the focused window 
 bindsym $mod+Shift+Up    move up
 bindsym $mod+Shift+Down  move down
 bindsym $mod+Shift+Left  move left
@@ -188,5 +191,4 @@ bindsym $mod+Tab workspace back_and_forth
 
 # Sway itself
 bindsym $mod+Shift+c reload
-bindsym $mod+Shift+r 
 bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'

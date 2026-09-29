@@ -14,7 +14,7 @@ Singleton {
     id: root
 
     // Panels shown as drops from the bar.
-    readonly property var barPanels: ["launcher", "calendar", "tray", "network", "bluetooth", "audio", "notifications", "control", "session", "settings"]
+    readonly property var barPanels: ["launcher", "calendar", "tray", "network", "bluetooth", "audio", "notifications", "control", "session", "settings", "keys"]
 
     property string current: ""
 
