@@ -34,6 +34,16 @@ Singleton {
         return current === name;
     }
 
+    // A panel doesn't follow a workspace switch (keys, Super+Tab, the bar),
+    // so it closes.
+    Connections {
+        target: Wm
+
+        function onActiveWorkspaceChanged(): void {
+            root.close();
+        }
+    }
+
     // Panels without a service of their own.
     IpcHandler {
         target: "calendar"

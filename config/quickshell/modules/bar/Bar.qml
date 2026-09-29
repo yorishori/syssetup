@@ -97,6 +97,23 @@ PanelWindow {
     exclusiveZone: Config.bar.height
     color: "transparent"
     WlrLayershell.namespace: "qs-bar"
+    // Fullscreen windows cover the top layer, so an open drop moves up to the
+    // overlay: otherwise it would sit hidden behind them, holding the keyboard.
+    // A covered surface isn't sent frame callbacks, so Qt stops drawing it and
+    // the layer change, applied on the next commit, never lands: remap the
+    // bar instead, which comes back on the overlay straight away.
+    WlrLayershell.layer: openDrop ? WlrLayer.Overlay : WlrLayer.Top
+    visible: !remapping
+
+    property bool remapping: false
+
+    onOpenDropChanged: {
+        if (openDrop && Wm.fullscreen && !remapping) {
+            remapping = true;
+            Qt.callLater(() => remapping = false);
+        }
+    }
+
     // An open drop takes the keyboard, so the launcher can be typed into
     // straight away. On Hyprland the focus grab below hands it over, and
     // Exclusive focus would make Hyprland drop the grab, closing the drop.

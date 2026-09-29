@@ -51,6 +51,9 @@ Singleton {
     // there's still somewhere to paste into; cleared on an empty workspace.
     property var activeWindow: null
 
+    // Whether that window is fullscreen, covering the bar.
+    readonly property bool fullscreen: activeWindow?.toplevel?.fullscreen ?? false
+
     function forgetOnEmptyWorkspace(): void {
         if (!ToplevelManager.activeToplevel && !isOccupied(activeWorkspace))
             activeWindow = null;
