@@ -43,7 +43,7 @@ input type:pointer {
 }
 
 seat seat0 {
-    xcursor_theme default 24
+    xcursor_theme Adwaita 24
     hide_cursor when-typing enable
 }
 
@@ -98,11 +98,9 @@ exec plymouth quit --retain-splash
 exec wl-paste --type text --watch cliphist store
 exec wl-paste --type image --watch cliphist store
 
-# The shell, then lock once it answers (up to 10 s)
-# exec_always + -n: a reload restarts the shell if it's gone, and does
-# nothing while it runs
+# Run the shell (`-n` to load duplicates when resetting sway) 
 exec_always qs -n
-exec sh -c 'for i in $(seq 40); do qs ipc call session lock 2>/dev/null && exit; sleep 0.25; done'
+
 
 
 # ── 6. Keys ─────────────────────────────────────────────────────────────────
