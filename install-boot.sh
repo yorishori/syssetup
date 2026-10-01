@@ -112,6 +112,8 @@ visudo -c
 systemctl enable systemd-networkd
 systemctl enable systemd-resolved
 systemctl enable iwd
+systemctl enable bluetooth
+systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service
 CHR1_EOF
 
 printf 'root:%s\n' "$RPW" | arch-chroot /mnt chpasswd

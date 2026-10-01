@@ -1,6 +1,9 @@
-PKGS_CORE="base base-devel linux linux-firmware amd-ucode nvidia-open nvidia-utils lib32-nvidia-utils libva-nvidia-driver vulkan-icd-loader lib32-vulkan-icd-loader iwd sudo noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono ttf-nerd-fonts-symbols-common git neovim"
+PKGS_CORE="base base-devel linux linux-firmware amd-ucode nvidia-open nvidia-utils lib32-nvidia-utils libva-nvidia-driver egl-wayland vulkan-icd-loader lib32-vulkan-icd-loader iwd sudo file curl less man-db man-pages polkit pipewire pipewire-pulse pipewire-alsa wireplumber rtkit bluez bluez-utils udisks2 usbutils lm_sensors noto-fonts noto-fonts-cjk noto-fonts-emoji noto-fonts-extra ttf-jetbrains-mono-nerd ttf-nerd-fonts-symbols ttf-nerd-fonts-symbols-mono ttf-nerd-fonts-symbols-common git neovim"
 
+PKGS_DE="sway xorg-xwayland xdg-utils xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk slurp glib2 dconf gnome-themes-extra adwaita-icon-theme adwaita-cursors"
 
-PKGS_SYSTEM="polkit pipewire pipewire-pulse pipewire-alsa wireplumber bluez bluez-utils wl-clipboard wtype cliphist xdg-utils xorg-xwayland xdg-desktop-portal xdg-desktop-portal-wlr xdg-desktop-portal-gtk gnome-themes-extra dconf egl-wayland fzf fd ripgrep jq lm_sensors"
+PKGS_SHELL="quickshell libqalculate libnotify wf-recorder wtype cliphist pacman-contrib"
 
-PKGS_SHELL="sway quickshell libqalculate usbutils udisks2 wf-recorder ncdu btop kitty p7zip"
+PKGS_UTILS="kitty yazi wl-clipboard btop ncdu 7zip ouch zip unzip fzf fd ripgrep zoxide jq ffmpeg poppler imagemagick resvg tree-sitter-cli nodejs npm"
+
+PKGS_AUR="zen-browser-bin xdg-desktop-portal-termfilechooser"
