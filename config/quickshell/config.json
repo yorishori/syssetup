@@ -47,14 +47,26 @@
     "search": "https://duckduckgo.com/?q=%s",
     "entries": [
       {
-        "name": "qs",
-        "description": "edit the shell in nvim",
+        "name": "QS",
+        "description": "Edit Quickshell",
         "icon": "nvim",
-        "command": "cd ~/qs && nvim .",
+        "command": "cd $HOME/.config/quickshell && nvim .",
         "terminal": true,
         "keywords": [
           "quickshell",
           "shell",
+          "config"
+        ]
+      },
+
+      {
+        "name": "sway",
+        "description": "Edit Quickshell",
+        "icon": "nvim",
+        "command": "cd $HOME/.config/sway && nvim .",
+        "terminal": true,
+        "keywords": [
+          "sway",
           "config"
         ]
       }
@@ -86,15 +98,15 @@
     "services": [
       {
         "name": "davis",
-        "url": "http://192.168.1.10:9001"
+        "url": "http://192.168.1.10:9001/"
       },
       {
-        "url": "http://192.168.1.10:9001",
+        "url": "http://192.168.1.10:9001/",
         "name": "immich"
       },
       {
         "name": "navidrome",
-        "url": "http://192.168.1.10:9003"
+        "url": "http://192.168.1.10:9003/"
       },
       {
         "name": "lunentuos",
