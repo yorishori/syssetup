@@ -15,6 +15,16 @@
  alias grep="grep --color=auto"
  [[ $TERM == xterm-kitty ]] && alias ssh='kitten ssh'
 
+ # yazi, but the shell follows to the directory it quit in
+ y() {
+    local tmp cwd
+    tmp="$(mktemp -t yazi-cwd.XXXXXX)"
+    yazi "$@" --cwd-file="$tmp"
+    cwd="$(<"$tmp")"
+    [[ -n $cwd && $cwd != "$PWD" ]] && builtin cd -- "$cwd"
+    rm -f -- "$tmp"
+ }
+
  # bash prompt
  _clr_mauve='\[\e[38;2;203;166;247m\]'   # #cba6f7 - mauve (user)
  _clr_lavender='\[\e[38;2;180;190;254m\]' # #b4befe - lavender (kaomoji)
