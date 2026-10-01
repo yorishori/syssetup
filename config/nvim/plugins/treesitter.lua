@@ -1,3 +1,4 @@
+-- Language recognizer, among other things
 return {
     "nvim-treesitter/nvim-treesitter",
     branch = "main",

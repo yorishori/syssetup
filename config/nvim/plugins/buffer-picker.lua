@@ -1,3 +1,4 @@
+-- Lists open buffers
 return {
     "nvim-telescope/telescope.nvim",
     keys = {

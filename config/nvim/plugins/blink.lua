@@ -1,3 +1,4 @@
+-- Context aware autocomplete from LSP server (with options dropdown).
 return {
     "saghen/blink.cmp",
     version = "*",

@@ -1,3 +1,4 @@
+-- LSP server actions
 return {
     "neovim/nvim-lspconfig",
     dependencies = { "saghen/blink.cmp" },
