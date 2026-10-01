@@ -1,15 +1,9 @@
-# Sway config, built around the qs shell (~/qs). The shell is the bar,
-# wallpaper, launcher, notifications, idle, lock and polkit agent, so there's
-# no swaybar, swaybg, swayidle or swaylock here.
 # ── 1. Setup ────────────────────────────────────────────────────────────────
 
-# Arch's 50-systemd-user.conf exports WAYLAND_DISPLAY, SWAYSOCK and
-# XDG_CURRENT_DESKTOP to systemd and D-Bus.
 include /etc/sway/config.d/*
 
 set $mod Mod4
 set $term kitty
-# A shell command: $qs <target> <function>
 set $qs exec qs ipc call
 
 # Catppuccin Mocha
@@ -92,7 +86,6 @@ for_window [all] inhibit_idle fullscreen
 
 exec dbus-update-activation-environment --systemd --all
 exec dbus-update-activation-environment --systemd GTK_USE_PORTAL=1
-exec plymouth quit --retain-splash
 
 # Clipboard history for the shell's clipboard panel
 exec wl-paste --type text --watch cliphist store
