@@ -74,8 +74,8 @@ ROOT="${DISK}${DF}2"
 HOMED="${DISK}${DF}3"
 
 mkfs.fat -F32 "$ESP"
-mkfs.ext4 "$ROOT"
-mkfs.ext4 "$HOMED"
+mkfs.ext4 -F "$ROOT"
+mkfs.ext4 -F "$HOMED"
 
 # 2. Mount Disks
 mkdir -p /mnt
