@@ -1,6 +1,4 @@
  # BASH PROFILE
- [[ -f ~/.bashrc ]] && ~/.bashrc 
-
  export EDITOR=nvim
  export VISUAL=nvim
  export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
@@ -11,6 +9,8 @@
  export XDG_DATA_HOME="$HOME/.local/share"
  export XDG_STATE_HOME="$HOME/.local/state"
  export XDG_CACHE_HOME="$HOME/.cache"
+
+ [[ -f ~/.bashrc ]] && . ~/.bashrc 
 
  export XCURSOR_SIZE=24
  export MOZ_ENABLE_WAYLAND=1
@@ -35,6 +35,8 @@
  export WLR_NO_HARDWARE_CURSORS=1
  # ls -l /dev/dri/by-path/
  export WLR_DRM_DEVICES=/dev/dri/card1
+ # Uncomment if things don't look right
+ # export WLR_RENDERER=vulkan
 
  if [[ -z $WAYLAND_DISPLAY && -z $DISPLAY && $XDG_VTNR -eq 1 ]]; then
     exec sway --unsupported-gpu

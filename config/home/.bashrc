@@ -4,10 +4,10 @@
  HISTSIZE=10000
  HISTFILESIZE=20000
  HISTTIMEFORMAT='%F %T  '
- HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/bash/history"
+ HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/.bash_history"
  PROMPT_COMMAND='history -a'
 
- shopt -s histappend chechwinsize globstar autocd cdspell
+ shopt -s histappend checkwinsize globstar autocd cdspell
 
  stty -ixon
  
