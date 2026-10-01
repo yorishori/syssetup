@@ -25,10 +25,8 @@ return {
 
                 map("n", "gd", vim.lsp.buf.definition, "Go to definition")
                 map("n", "gD", vim.lsp.buf.declaration, "Go to declaration")
-                map("n", "gr", vim.lsp.buf.references, "Go to references")
-                map("n", "gi", vim.lsp.buf.implementation, "Go to implementation")
-                map("n", "K", vim.lsp.buf.hover, "Hover documentation")
-                map("i", "<C-k>", vim.lsp.buf.signature_help, "Signature help")
+                -- The rest are Neovim defaults: K hover, grr references, gri implementation,
+                -- grn rename, gra code action, <C-s> (insert) signature help
             end,
         })
     end,
