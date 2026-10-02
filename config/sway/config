@@ -94,7 +94,8 @@ exec wl-paste --type image --watch cliphist store
 # Run the shell (`-n` to load duplicates when resetting sway) 
 exec_always qs -n
 
-
+# Dwindle behaviour
+exec_always swaymsg -m -t subscribe '["window"]' | jq --unbuffered -r 'select(.change=="focus" or .change=="new") | .container | select(.type=="con" and .fullscreen_mode==0) | if .rect.width > .rect.height then "splith" else "splitv" end' | while read -r d; do swaymsg "$d" >/dev/null; done
 
 # ── 6. Keys ─────────────────────────────────────────────────────────────────
 
