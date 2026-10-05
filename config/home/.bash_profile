@@ -33,8 +33,8 @@
  export __GLX_VENDOR_LIBRARY_NAME=nvidia
  export LIBVA_DRIVER_NAME=nvidia
  export WLR_NO_HARDWARE_CURSORS=1
- # ls -l /dev/dri/by-path/
- export WLR_DRM_DEVICES=/dev/dri/card1
+ # ls -l /dev/dri/by-path/; resolved to cardN since wlroots splits on ':'
+ export WLR_DRM_DEVICES=$(readlink -f /dev/dri/by-path/pci-0000:01:00.0-card)
  # Uncomment if things don't look right
  # export WLR_RENDERER=vulkan
 
