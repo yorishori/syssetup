@@ -55,6 +55,9 @@ done
 # Yazi plugins (package.toml)
 ya pkg install
 
+# Home folders (Documents, Downloads, ...)
+xdg-user-dirs-update
+
 # Enable/start units
 sudo systemctl enable --now systemd-timesyncd paccache.timer fstrim.timer
 
