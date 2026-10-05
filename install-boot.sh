@@ -1,9 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-ENV="${BASH_SOURCE[0]%/*}/.env"
-PKGFILE="${BASH_SOURCE[0]%/*}/.pkgs"
-FD="${BASH_SOURCE[0]%/*}/_installfiles"
+DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+ENV="$DIR/.env"
+PKGFILE="$DIR/.pkgs"
+FD="$DIR/_installfiles"
 
 if [ ! -f "$ENV" ]; then
     echo "$ENV not found."
@@ -36,11 +37,6 @@ fi
 
 if ! ping -c 1 -W 3 google.com >/dev/null 2>&1; then
     echo "No internet. Plugin ethernet or use iwctl to connect to a network"
-    exit 1
-fi
-
-if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
-    echo "multilib not enabled. Add it to /etc/pacman.conf"
     exit 1
 fi
 
@@ -137,7 +133,7 @@ ln -sf ../run/systemd/resolve/stub-resolv.conf /mnt/etc/resolv.conf
 
 echo "kernel.sysrq = 1" >> /mnt/etc/sysctl.d/99-sysctl.conf
 
-git clone "$REPO_URL" "/mnt/home/$USERNAME/repo"
+git clone "$REPO_URL" "/mnt/home/$USERNAME/repo/dotfiles"
 arch-chroot /mnt chown -R "$USERNAME:$USERNAME" "/home/$USERNAME/repo"
 
 # Finishing up
