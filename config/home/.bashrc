@@ -31,5 +31,5 @@
  _clr_sky='\[\e[38;2;137;220;235m\]'      # #89dceb - sky (path)
  _clr_green='\[\e[38;2;166;227;161m\]'    # #a6e3a1 - green (prompt char)
  _clr_reset='\[\e[0m\]'
- PS1="${_clr_mauve}\u${_clr_lavender}(~^^)~ ${_clr_sky}\w${_clr_reset}\n${_clr_green}> \$${_clr_reset} "
+ PS1="${_clr_mauve}\u${_clr_lavender}(~^^)~ : ${_clr_sky}\w${_clr_reset}\n${_clr_green}> \$${_clr_reset} "
  unset _clr_mauve _clr_lavender _clr_sky _clr_green _clr_reset
