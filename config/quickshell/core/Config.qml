@@ -34,7 +34,7 @@ Singleton {
             muted: "#6c7086",    // overlay0: empty, secondary
             off: "#99eba0ac",    // maroon at 60%: switched off by you (mute, DND, radio off)
             accent: "#94e2d5",   // teal: lit / active / in use
-            ok: "#a6e3a1",       // green: up / healthy (server lamps)
+            ok: "#a6e3a1",       // green: up / healthy (lamps)
             warn: "#fab387",     // peach: needs attention
             error: "#f38ba8"     // red: broken
         },
@@ -73,22 +73,16 @@ Singleton {
             colors: ["#94e2d5", "#cba6f7", "#89b4fa", "#a6e3a1", "#f5c2e7", "#fab387"]
         },
         // Minutes without input before each step; 0 = never. Apps that inhibit
-        // idle (video players, games) hold both off.
+        // idle (fullscreen, games) and playing media hold both off.
         idle: {
             lock: 10,
-            screenOff: 15
+            screenOff: 15,
+            indicator: 10   // seconds before the bar's sleep glyph shows; 0 = never
         },
         lock: {
             // Passcode mode: check automatically once this many characters are
             // typed (must equal your password's length). 0 = off, press Enter.
             passcode: 0
-        },
-        // Home server for the control center's SERVER section (empty host = hidden).
-        server: {
-            name: "",
-            host: "",       // for the ping
-            ssh: "",        // optional terminal command for the SSH key, e.g. "ssh koi-server"
-            services: []    // { name, url }: a lamp each, checked over HTTP
         },
         controlCenter: {
             // Tool keys; each command opens in the terminal (launcher.terminal).
@@ -127,7 +121,6 @@ Singleton {
     readonly property var launcher: values.launcher
     readonly property var calendar: values.calendar
     readonly property var lock: values.lock
-    readonly property var server: values.server
     readonly property var controlCenter: values.controlCenter
     readonly property var capture: values.capture
     readonly property var clipboard: values.clipboard

@@ -248,6 +248,15 @@ PanelWindow {
             }
             spacing: 8
 
+            CaffeineButton {
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            // Idling: no input, nothing holding it off.
+            BarLabel {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "\u{F04B2}"
+                visible: Idle.idle
+            }
             PrivacyIndicator {}
             RecordingKey {}
         }
@@ -273,7 +282,6 @@ PanelWindow {
                 id: audioButton
                 onToggleDrop: Panels.toggle("audio")
             }
-            CaffeineButton {}
             NotifIndicator {
                 id: notifButton
 

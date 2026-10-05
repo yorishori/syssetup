@@ -74,19 +74,10 @@ Item {
               hint: "idle time before locking; 0 = never" },
             { label: "Screen off", path: "idle.screenOff", type: "int", min: 0, max: 120, suffix: "min",
               hint: "idle time before the display sleeps; 0 = never" },
+            { label: "Idle icon", path: "idle.indicator", type: "int", min: 0, max: 300, suffix: "s",
+              hint: "idle time before the bar's sleep glyph shows; 0 = never" },
             { label: "Passcode", path: "lock.passcode", type: "int", min: 0, max: 12, suffix: "ch",
               hint: "checks by itself after this many characters; must equal your password's length; 0 = press Enter" }
-        ] },
-        { title: "SERVER", items: [
-            { label: "Name", path: "server.name", type: "text" },
-            { label: "Host", path: "server.host", type: "text", hint: "pinged for the main lamp; empty hides the section" },
-            { label: "SSH key", path: "server.ssh", type: "text", hint: "terminal command, e.g. ssh koi-server" },
-            { label: "Services", path: "server.services", type: "objects", hint: "a lamp each, checked over HTTP",
-              fields: [
-                  { key: "name", label: "name", type: "text" },
-                  { key: "url", label: "url", type: "text", hint: "http://host:port" }
-              ],
-              title: s => s.name ?? "", subtitle: s => s.url ?? "" }
         ] },
         { title: "CONTROL", items: [
             { label: "Tools", path: "controlCenter.tools", type: "objects", hint: "terminal keys",

@@ -32,7 +32,6 @@ Item {
         if (open) {
             Session.refresh();
             Updates.check(false);
-            Server.check();
         }
     }
 
@@ -443,131 +442,6 @@ Item {
                         color: Config.colors.warn
                         font.pixelSize: Config.font.size - 3
                         visible: share.modelData.state === "failed"
-                    }
-                }
-            }
-
-            // ── Server ───────────────────────────────────────────────────────
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 6
-                spacing: 4
-                visible: Server.configured
-
-                SectionTitle {
-                    text: "SERVER"
-                    code: (Config.server.name || Config.server.host).toUpperCase()
-                }
-                TextButton {
-                    text: "\u{F018D}  ssh"
-                    visible: Config.server.ssh !== ""
-                    onClicked: root.run(Config.server.ssh)
-                }
-                IconButton {
-                    size: 24
-                    icon: "\u{F0450}"
-                    enabled: !Server.checking
-                    iconColor: Server.checking ? Config.colors.accent : Config.colors.fg
-                    onClicked: Server.check()
-
-                    NumberAnimation on iconRotation {
-                        running: Server.checking
-                        loops: Animation.Infinite
-                        from: 0
-                        to: 360
-                        duration: 900
-                        alwaysRunToEnd: true
-                    }
-                }
-            }
-            // General lamp: the machine itself.
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 10
-                visible: Server.configured
-
-                Item {
-                    Layout.preferredWidth: 52
-                    implicitHeight: 12
-
-                    Lamp {
-                        anchors.verticalCenter: parent.verticalCenter
-                        implicitWidth: 10
-                        implicitHeight: 10
-                        on: Server.host !== ""
-                        litColor: Server.host === "up" ? (Server.allUp ? Config.colors.ok : Config.colors.warn) : Config.colors.warn
-                    }
-                }
-                StyledText {
-                    text: Config.server.name || Config.server.host
-                    font.bold: true
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    text: Config.server.host
-                    color: Config.colors.muted
-                    font.pixelSize: Config.font.size - 2
-                    elide: Text.ElideRight
-                }
-                Tag {
-                    text: Server.checking || Server.host === "" ? "CHECKING" : Server.host === "up" ? "ONLINE" : "OFFLINE"
-                    fill: Server.host === "down" ? Config.colors.warn : Server.host === "up" ? Config.colors.ok : Config.colors.surface
-                    textColor: Server.host === "" ? Config.colors.dim : Config.colors.shadow
-                }
-            }
-            // A lamp per service; click to open it.
-            Flow {
-                Layout.fillWidth: true
-                Layout.leftMargin: 62
-                spacing: 6
-                visible: Server.configured && Config.server.services.length > 0
-
-                Repeater {
-                    model: Config.server.services
-
-                    Item {
-                        id: svc
-
-                        required property var modelData
-                        readonly property string state: Server.services[modelData.name] ?? ""
-
-                        implicitWidth: svcRow.implicitWidth + 20
-                        implicitHeight: 26
-
-                        Chamfer {
-                            anchors.fill: parent
-                            cut: 5
-                            fill: svcArea.containsMouse ? Config.colors.surface : Config.colors.bgAlt
-                            stroke: Config.colors.border
-                        }
-                        Row {
-                            id: svcRow
-
-                            anchors.centerIn: parent
-                            spacing: 8
-
-                            Lamp {
-                                anchors.verticalCenter: parent.verticalCenter
-                                on: svc.state !== ""
-                                litColor: svc.state === "up" ? Config.colors.ok : Config.colors.warn
-                            }
-                            StyledText {
-                                text: svc.modelData.name
-                                color: svc.state === "down" ? Config.colors.warn : Config.colors.dim
-                                font.pixelSize: Config.font.size - 1
-                            }
-                        }
-                        MouseArea {
-                            id: svcArea
-
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                Server.open(svc.modelData.url);
-                                root.done();
-                            }
-                        }
                     }
                 }
             }
