@@ -55,15 +55,29 @@ fi
 #   /boot -> fat32 [$BOOT_SIZE]\
 #   /home -> ext4
 umount -R /mnt 2>/dev/null || true
+swapoff -a 2>/dev/null || true
 lsblk "$DISK"
 read -rp "ALL DATA on $DISK will be destroyed. Type YES: " ok
 [[ $ok == YES ]] || exit 1
-wipefs -a "$DISK"
+
+# Release and wipe lvm/luks data
+vgchange -an 2>/dev/null || true
+for dm in $(lsblk -rno NAME,TYPE "$DISK" | awk '$2=="lvm" || $2=="crypt" {print $1}'); do
+    dmsetup remove "$dm" 2>/dev/null || true
+done
+for part in $(lsblk -rnpo NAME,TYPE "$DISK" | awk '$2=="part" {print $1}'); do
+    wipefs -af "$part"
+done
+
+wipefs -af "$DISK"
 sgdisk --zap-all "$DISK"
 
 sgdisk -n 1:0:+$BOOT_SIZE -t 1:ef00 -c 1:"EFI" "$DISK"
 sgdisk -n 2:0:+$ROOT_SIZE -t 2:8300 -c 2:"root" "$DISK"
 sgdisk -n 3:0:0 -t 3:8300 -c 3:"home" "$DISK"
+
+partprobe "$DISK"
+udevadm settle
 
 ESP="${DISK}${DF}1"
 ROOT="${DISK}${DF}2"
