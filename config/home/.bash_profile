@@ -13,6 +13,7 @@
  [[ -f ~/.bashrc ]] && . ~/.bashrc 
 
  export XCURSOR_SIZE=24
+ export SDL_VIDEODRIVER=wayland
  export MOZ_ENABLE_WAYLAND=1
  export GDK_BACKEND=wayland,x11
  export XDG_SESSION_DESKTOP=sway
