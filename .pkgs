@@ -6,4 +6,4 @@ PKGS_SHELL="quickshell libqalculate libnotify wf-recorder wtype cliphist pacman-
 
 PKGS_UTILS="kitty yazi wl-clipboard btop ncdu 7zip ouch zip unzip fzf fd ripgrep zoxide jq ffmpeg poppler imagemagick resvg tree-sitter-cli nodejs npm rsync openssh bash-completion xdg-user-dirs"
 
-PKGS_AUR="zen-browser-bin xdg-desktop-portal-termfilechooser localsend-cli-bin"
+PKGS_AUR="zen-browser-bin xdg-desktop-portal-termfilechooser"
