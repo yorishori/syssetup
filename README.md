@@ -19,3 +19,20 @@ This is the shell command that I will run on a arch bootable ISO connected to my
 `_installfiles/` contains some of the static files that will be added to the system. Most notably systemd's boot files, in case you want to change kernel parameters or hooks or something.
 
 `config/` contains all the files that will be added to the system after everything is installed.
+
+
+
+# Once Installed
+As is inevitable, changes might be made and you wont want to reinstall the OS.
+```bash
+# From the root of the project and with your user
+# Dry run
+rsync -aivn --exclude='home/' config/ ~/.config/
+rsync -aivn ./config/home/ ~/
+
+# Real run
+rsync -aiv --exclude='home/' config/ ~/.config/
+rsync -aiv ./config/home/ ~/
+```
+
+You're welcome future me (or whoever's brave enough to do _this_ to their system).
