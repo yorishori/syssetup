@@ -35,14 +35,38 @@ Singleton {
         stopScan.restart();
     }
 
+    // Pair and connect go through busctl rather than the device's own pair() /
+    // connect(), which drop BlueZ's reply: this way a failure comes back as text.
+    // One at a time. `pending` is the address being worked on; `error` is the
+    // last failure and `errorFor` the address it belongs to (shown under its row).
+    readonly property bool busy: action.running
+    property string pending: ""
+    property string error: ""
+    property string errorFor: ""
+
     function connect(device: BluetoothDevice): void {
         device.trusted = true;  // so it reconnects on its own later
-        device.connect();
+        run(device, ["Connect"]);
     }
 
+    // Pairing alone leaves the device bonded but disconnected, so follow through.
     function pair(device: BluetoothDevice): void {
         device.trusted = true;
-        device.pair();
+        run(device, ["Pair", "Connect"]);
+    }
+
+    // Calls each Device1 method in order, stopping at the first that fails.
+    function run(device: BluetoothDevice, methods: var): void {
+        if (action.running)
+            return;
+        const path = device.dbusPath || `/org/bluez/${adapter?.adapterId || "hci0"}/dev_${device.address.replace(/:/g, "_")}`;
+        pending = device.address;
+        error = "";
+        errorFor = "";
+        action.command = ["sh", "-c", '"$@" 2>&1; echo "exit:$?"', "sh",
+            "sh", "-c", 'p=$1; shift; for m; do busctl --system --timeout=60 call org.bluez "$p" org.bluez.Device1 "$m" || exit; done', "sh",
+            path, ...methods];
+        action.running = true;
     }
 
     // Glyph for a device, from the type BlueZ reports.
@@ -56,6 +80,23 @@ Singleton {
             : icon.includes("phone") ? "\u{F011C}"
             : icon.includes("computer") ? "\u{F07C0}"
             : "\u{F00AF}";
+    }
+
+    Process {
+        id: action
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const out = text.trim().split("\n");
+                const code = out.pop();
+                if (code !== "exit:0") {
+                    root.error = out.join(" ").replace(/^Call failed:\s*/, "").trim() || "action failed";
+                    root.errorFor = root.pending;
+                    console.warn(`bluetooth: ${root.pending}: ${root.error}`);
+                }
+                root.pending = "";
+            }
+        }
     }
 
     Timer {

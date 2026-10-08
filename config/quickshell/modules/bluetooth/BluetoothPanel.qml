@@ -42,9 +42,11 @@ ColumnLayout {
 
         required property BluetoothDevice modelData
         readonly property bool open: root.expanded === modelData.address
-        readonly property bool busy: modelData.pairing
+        readonly property bool busy: Bluez.pending === modelData.address
+            || modelData.pairing
             || modelData.state === BluetoothDeviceState.Connecting
             || modelData.state === BluetoothDeviceState.Disconnecting
+        readonly property bool failed: !busy && Bluez.errorFor === modelData.address
 
         Layout.fillWidth: true
         spacing: 6
@@ -76,15 +78,28 @@ ColumnLayout {
             }
             StyledText {
                 text: item.busy ? (item.modelData.pairing ? "PAIRING…" : "LINKING…")
+                    : item.failed ? "FAILED"
                     : item.modelData.connected
                         ? (item.modelData.batteryAvailable ? String(Math.round(item.modelData.battery * 100)).padStart(3, "0") : "LINK")
                     : item.modelData.paired ? "SAVED"
                     : "NEW"
-                color: Config.colors.muted
+                color: item.failed ? Config.colors.error : Config.colors.muted
                 font.pixelSize: Config.font.size - 3
                 font.bold: true
                 font.letterSpacing: 1
             }
+        }
+
+        // Why the last pair/connect on this device failed, as BlueZ put it.
+        StyledText {
+            Layout.fillWidth: true
+            Layout.leftMargin: 8
+            Layout.rightMargin: 8
+            text: "ERR " + Bluez.error
+            color: Config.colors.error
+            font.pixelSize: Config.font.size - 2
+            wrapMode: Text.Wrap
+            visible: item.failed
         }
 
         RowLayout {
@@ -100,7 +115,7 @@ ColumnLayout {
             TextButton {
                 text: "Connect"
                 visible: item.modelData.paired && !item.modelData.connected
-                enabled: !item.busy
+                enabled: !Bluez.busy
                 onClicked: Bluez.connect(item.modelData)
             }
             TextButton {
@@ -112,7 +127,7 @@ ColumnLayout {
             TextButton {
                 text: "Pair"
                 visible: !item.modelData.paired
-                enabled: !item.busy
+                enabled: !Bluez.busy
                 onClicked: Bluez.pair(item.modelData)
             }
             TextButton {
