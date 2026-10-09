@@ -60,12 +60,13 @@ ColumnLayout {
         }
     }
 
-    // Selectable device: the default one has a lit lamp.
+    // Selectable device (or profile): the current one has a lit lamp.
     component DeviceItem: ListRow {
         id: device
 
-        required property PwNode modelData
+        required property var modelData
         required property bool selected
+        property string label: Audio.nodeName(modelData)
 
         signal picked
 
@@ -79,7 +80,7 @@ ColumnLayout {
         }
         StyledText {
             Layout.fillWidth: true
-            text: Audio.nodeName(device.modelData)
+            text: device.label
             color: device.selected ? Config.colors.accent : Config.colors.dim
             glow: device.selected
             elide: Text.ElideRight
@@ -259,6 +260,23 @@ ColumnLayout {
             DeviceItem {
                 selected: modelData === Audio.output
                 onPicked: Audio.setDefaultOutput(modelData)
+            }
+        }
+
+        // Bluetooth output: codec/profile. Higher bitrate codecs (LDAC, aptX HD)
+        // drop out sooner; SBC/AAC hold a link better. HSP/HFP adds the mic.
+        SectionTitle {
+            Layout.topMargin: 4
+            text: "PROFILE"
+            code: Audio.switching ? "SWITCHING" : "BT"
+            visible: Audio.profiles.length > 0
+        }
+        Repeater {
+            model: Audio.profiles
+            DeviceItem {
+                label: modelData.label
+                selected: modelData.current
+                onPicked: Audio.setProfile(modelData.index)
             }
         }
     }

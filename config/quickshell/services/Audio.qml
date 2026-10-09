@@ -51,6 +51,41 @@ Singleton {
     function setDefaultOutput(node: PwNode): void { Pipewire.preferredDefaultAudioSink = node; }
     function setDefaultInput(node: PwNode): void { Pipewire.preferredDefaultAudioSource = node; }
 
+    // Bluetooth profile (codec) of the default output. Quickshell doesn't expose
+    // PipeWire devices, so profiles are read with pw-dump and set with wpctl,
+    // which also has WirePlumber remember the choice for that device.
+    // profiles: [{ index, label, current }], best first.
+    readonly property string profileDevice: output?.properties["device.api"] === "bluez5" ? output?.properties["device.id"] ?? "" : ""
+    property var profiles: []
+    readonly property bool switching: profileWriter.running
+
+    // A profile switch recreates the sink, so this also catches switches made
+    // elsewhere. Debounced: the sink's properties can land after the sink.
+    onOutputChanged: profileDebounce.restart()
+    onProfileDeviceChanged: profileDebounce.restart()
+
+    function loadProfiles(): void {
+        if (profileDevice === "") {
+            profiles = [];
+            return;
+        }
+        profileReader.command = ["pw-dump", profileDevice];
+        profileReader.running = true;
+    }
+
+    function setProfile(index: int): void {
+        if (profileDevice === "" || profileWriter.running)
+            return;
+        profileWriter.command = ["wpctl", "set-profile", profileDevice, String(index)];
+        profileWriter.running = true;
+    }
+
+    // "High Fidelity Playback (A2DP Sink, codec LDAC)" -> "A2DP LDAC".
+    function profileLabel(description: string): string {
+        const m = description.match(/\(([^,)]+?)(?: (?:Sink|Source))?(?:, codec ([^)]+))?\)/);
+        return m ? `${m[1]}${m[2] ? ` ${m[2]}` : ""}` : description;
+    }
+
     function nodeName(node: PwNode): string {
         return node?.properties["application.name"] || node?.description || node?.nickname || node?.name || "";
     }
@@ -60,6 +95,39 @@ Singleton {
         const name = node?.properties["application.icon-name"] || nodeName(node);
         const entry = name ? DesktopEntries.heuristicLookup(name) : null;
         return Icons.url(entry?.icon || name.toLowerCase());
+    }
+
+    Process {
+        id: profileReader
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let params = {};
+                try {
+                    params = JSON.parse(text)[0]?.info?.params ?? {};
+                } catch (e) {
+                    return;
+                }
+                const current = params.Profile?.[0]?.index;
+                root.profiles = (params.EnumProfile ?? [])
+                    .filter(p => p.name !== "off" && p.available !== "no")
+                    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+                    .map(p => ({ index: p.index, label: root.profileLabel(p.description ?? p.name), current: p.index === current }));
+            }
+        }
+    }
+
+    // In case the sink isn't replaced (or the switch failed).
+    Process {
+        id: profileWriter
+
+        onExited: profileDebounce.restart()
+    }
+
+    Timer {
+        id: profileDebounce
+        interval: 300
+        onTriggered: root.loadProfiles()
     }
 
     // Pipewire only keeps node properties up to date while they are tracked.
