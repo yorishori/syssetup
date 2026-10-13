@@ -87,6 +87,58 @@ ColumnLayout {
         }
     }
 
+    // Profile of the selected device (Bluetooth codec, card mode), folded into
+    // one line until clicked. On Bluetooth, high bitrate codecs (LDAC, aptX HD)
+    // drop out sooner than SBC/AAC; HSP/HFP brings the mic at low quality.
+    component ProfilePicker: ColumnLayout {
+        id: picker
+
+        required property var profiles
+        property bool open: false
+
+        Layout.fillWidth: true
+        spacing: 6
+        visible: profiles.list.length > 1
+
+        ListRow {
+            implicitHeight: 26
+            leftPadding: 8
+            marker: false
+            onClicked: picker.open = !picker.open
+
+            StyledText {
+                text: "PROFILE"
+                color: Config.colors.muted
+                font.pixelSize: Config.font.size - 2
+                font.bold: true
+                font.letterSpacing: 1.5
+            }
+            StyledText {
+                Layout.fillWidth: true
+                horizontalAlignment: Text.AlignRight
+                text: picker.profiles.switching ? "switching..." : picker.profiles.current?.label ?? "--"
+                color: Config.colors.dim
+                elide: Text.ElideRight
+            }
+            StyledText {
+                text: picker.open ? "\u{F0143}" : "\u{F0140}"
+                color: Config.colors.muted
+            }
+        }
+        Repeater {
+            model: picker.open ? picker.profiles.list : []
+            DeviceItem {
+                leftPadding: 16
+                label: modelData.label
+                selected: modelData.current
+                onPicked: {
+                    picker.profiles.set(modelData.index);
+                    picker.open = false;
+                }
+            }
+        }
+    }
+
     // ── Now playing ──────────────────────────────────────────────────────────
     RowLayout {
         Layout.fillWidth: true
@@ -263,22 +315,7 @@ ColumnLayout {
             }
         }
 
-        // Bluetooth output: codec/profile. Higher bitrate codecs (LDAC, aptX HD)
-        // drop out sooner; SBC/AAC hold a link better. HSP/HFP adds the mic.
-        SectionTitle {
-            Layout.topMargin: 4
-            text: "PROFILE"
-            code: Audio.switching ? "SWITCHING" : "BT"
-            visible: Audio.profiles.length > 0
-        }
-        Repeater {
-            model: Audio.profiles
-            DeviceItem {
-                label: modelData.label
-                selected: modelData.current
-                onPicked: Audio.setProfile(modelData.index)
-            }
-        }
+        ProfilePicker { profiles: Audio.outputProfiles }
     }
 
     // Input
@@ -299,6 +336,7 @@ ColumnLayout {
                 onPicked: Audio.setDefaultInput(modelData)
             }
         }
+        ProfilePicker { profiles: Audio.inputProfiles }
     }
 
     // Mixer: one line per app: icon, name, level.
