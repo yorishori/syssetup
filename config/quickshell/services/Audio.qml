@@ -51,6 +51,17 @@ Singleton {
     function setDefaultOutput(node: PwNode): void { Pipewire.preferredDefaultAudioSink = node; }
     function setDefaultInput(node: PwNode): void { Pipewire.preferredDefaultAudioSource = node; }
 
+    // Profiles of the devices behind the default output and input:
+    // { list: [{ index, label, current }] (best first), current, switching, set(index) }.
+    readonly property DeviceProfiles outputProfiles: DeviceProfiles { node: root.output }
+    readonly property DeviceProfiles inputProfiles: DeviceProfiles { node: root.input }
+
+    // "High Fidelity Playback (A2DP Sink, codec LDAC)" -> "A2DP LDAC"; others as is.
+    function profileLabel(description: string): string {
+        const m = description.match(/\(([^,)]+?)(?: (?:Sink|Source))?, codec ([^)]+)\)/);
+        return m ? `${m[1]} ${m[2]}` : description;
+    }
+
     function nodeName(node: PwNode): string {
         return node?.properties["application.name"] || node?.description || node?.nickname || node?.name || "";
     }
@@ -60,6 +71,74 @@ Singleton {
         const name = node?.properties["application.icon-name"] || nodeName(node);
         const entry = name ? DesktopEntries.heuristicLookup(name) : null;
         return Icons.url(entry?.icon || name.toLowerCase());
+    }
+
+    // Quickshell doesn't expose PipeWire devices, so profiles are read with
+    // pw-dump and set with wpctl, which also has WirePlumber remember the
+    // choice for that device.
+    component DeviceProfiles: Scope {
+        id: profiles
+
+        required property PwNode node
+        readonly property string device: node?.properties["device.id"] ?? ""
+        property var list: []
+        readonly property var current: list.find(p => p.current) ?? null
+        readonly property bool switching: writer.running
+
+        // A profile switch recreates the node, so this also catches switches
+        // made elsewhere. Debounced: the node's properties can land after it.
+        onNodeChanged: debounce.restart()
+        onDeviceChanged: debounce.restart()
+
+        function load(): void {
+            if (device === "") {
+                list = [];
+                return;
+            }
+            reader.command = ["pw-dump", device];
+            reader.running = true;
+        }
+
+        function set(index: int): void {
+            if (device === "" || writer.running)
+                return;
+            writer.command = ["wpctl", "set-profile", device, String(index)];
+            writer.running = true;
+        }
+
+        Process {
+            id: reader
+
+            stdout: StdioCollector {
+                onStreamFinished: {
+                    let params = {};
+                    try {
+                        params = JSON.parse(text)[0]?.info?.params ?? {};
+                    } catch (e) {
+                        return;
+                    }
+                    const current = params.Profile?.[0]?.index;
+                    // "off" would take the device out of the lists, with no way back here.
+                    profiles.list = (params.EnumProfile ?? [])
+                        .filter(p => p.name !== "off" && p.available !== "no")
+                        .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+                        .map(p => ({ index: p.index, label: root.profileLabel(p.description ?? p.name), current: p.index === current }));
+                }
+            }
+        }
+
+        // In case the node isn't replaced (or the switch failed).
+        Process {
+            id: writer
+
+            onExited: debounce.restart()
+        }
+
+        Timer {
+            id: debounce
+            interval: 300
+            onTriggered: profiles.load()
+        }
     }
 
     // Pipewire only keeps node properties up to date while they are tracked.
