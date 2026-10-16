@@ -93,6 +93,11 @@ Item {
             { label: "Symbols", type: "action", button: "\u{F0450}  refresh",
               hint: "download the latest emoji, Nerd glyphs and symbols; kaomoji from assets/kaomoji.json",
               run: () => Symbols.refresh(), busy: () => Symbols.refreshing, status: () => Symbols.refreshStatus }
+        ] },
+        { title: "SHELL", items: [
+            { label: "Restart", type: "action", button: "\u{F0453}  restart",
+              hint: "start Quickshell over as a new process; also: qs ipc call session restart",
+              run: () => Session.restartShell(), busy: () => false, status: () => "" }
         ] }
     ]
 

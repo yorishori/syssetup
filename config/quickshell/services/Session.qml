@@ -31,6 +31,16 @@ Singleton {
     function poweroff(): void { Quickshell.execDetached(["systemctl", "poweroff"]); }
     function reboot(): void { Quickshell.execDetached(["systemctl", "reboot"]); }
 
+    // A fresh process, not a config reload, so it also clears state that's
+    // stuck in Quickshell itself (Pipewire, polkit). Detached, so it outlives
+    // us. Never while locked: the lock would go down with the shell.
+    function restartShell(): void {
+        if (locked)
+            return;
+        Quickshell.execDetached(["sh", "-c", 'qs kill -p "$1"; sleep 1; exec qs -p "$1" -n -d',
+            "sh", Quickshell.shellPath("shell.qml")]);
+    }
+
     // Lock first, so the machine wakes up locked.
     function suspend(): void {
         lock();
@@ -198,11 +208,12 @@ Singleton {
         }
     }
 
-    // qs ipc call session <lock|toggle|open|close>
+    // qs ipc call session <lock|toggle|open|close|restart>
     IpcHandler {
         target: "session"
 
         function lock(): void { root.lock(); }
+        function restart(): void { root.restartShell(); }
         function toggle(): void { Panels.toggle("session"); }
         function open(): void { Panels.open("session"); }
         function close(): void {
