@@ -102,13 +102,6 @@ ColumnLayout {
     Keys.onBacktabPressed: switchTab(-1)
     Keys.onEscapePressed: back()
 
-    // A quick action: a bare glyph key, to keep the top row to one line.
-    component ActionKey: IconButton {
-        size: 26
-        iconColor: Config.colors.dim
-        opacity: enabled ? 1 : 0.4
-    }
-
     // ── Tabs, then the quick-action keys ─────────────────────────────────────
     RowLayout {
         Layout.fillWidth: true
@@ -121,30 +114,27 @@ ColumnLayout {
             onCurrentChanged: root.setMode(root.modes[current])
         }
 
-        ActionKey {
-            icon: "\u{F0E51}"  // screenshot
-            onClicked: Capture.screenshot()
-        }
-        ActionKey {
-            icon: "\u{F044A}"  // record the screen
-            enabled: !Capture.busy
-            onClicked: Capture.recordScreen()
-        }
-        ActionKey {
-            icon: "\u{F036C}"  // record a voice note
-            enabled: !Capture.busy
-            onClicked: {
-                Panels.close();
-                Capture.recordVoice();
+        // Quick actions as bare glyph keys, to keep the top row to one line.
+        Repeater {
+            model: [
+                { icon: "\u{F0E51}", run: () => Capture.screenshot() },
+                { icon: "\u{F044A}", busy: true, run: () => Capture.recordScreen() },
+                { icon: "\u{F036C}", busy: true, run: () => { Panels.close(); Capture.recordVoice(); } },
+                { icon: "\u{F0147}", run: () => Clipboard.show() },
+                { icon: "\u{F0493}", run: () => Panels.open("settings") }
+            ]
+
+            IconButton {
+                required property var modelData
+
+                size: 26
+                icon: modelData.icon
+                iconColor: Config.colors.dim
+                // Screen and voice recording wait while a capture is running.
+                enabled: !(modelData.busy && Capture.busy)
+                opacity: enabled ? 1 : 0.4
+                onClicked: modelData.run()
             }
-        }
-        ActionKey {
-            icon: "\u{F0147}"  // clipboard history
-            onClicked: Clipboard.show()
-        }
-        ActionKey {
-            icon: "\u{F0493}"  // settings
-            onClicked: Panels.open("settings")
         }
     }
 
