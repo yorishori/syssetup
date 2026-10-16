@@ -5,8 +5,9 @@ import Quickshell
 import Quickshell.Io
 import qs.core
 
-// Launcher logic (no UI): "go somewhere or run something". Two modes:
+// Launcher logic (no UI): "go somewhere or run something". Three modes:
 //   search  - the default, described below
+//   windows - every open window, filtered by the query
 //   apps    - every app, alphabetical, filtered by the query
 // In search mode it turns `query` into `results`:
 //   calc    - the query looks like math: qalc's answer (Enter copies it)
@@ -38,6 +39,7 @@ Singleton {
         .filter(a => !a.noDisplay)
         .sort((a, b) => a.name.localeCompare(b.name))
     readonly property var results: mode === "apps" ? buildApps(query.trim().toLowerCase(), apps, Wm.windows)
+        : mode === "windows" ? buildWindows(query.trim().toLowerCase(), Wm.windows)
         : build(query.trim(), calcResult, apps, customEntries, Wm.windows)
 
     // ── Matching ─────────────────────────────────────────────────────────────
@@ -135,6 +137,23 @@ Singleton {
             .map(a => appResult(a));
     }
 
+    // Open windows, named after their app, with the window title as detail.
+    function buildWindows(q: string, windows: var): var {
+        return windows.map(w => {
+            const app = w.appClass ? DesktopEntries.heuristicLookup(w.appClass) : null;
+            return { w, app, name: app?.name || w.appClass || "window" };
+        })
+            .filter(({ w, name }) => !q || [name, w.appClass, w.title].some(t => t && t.toLowerCase().includes(q)))
+            .map(({ w, app, name }) => ({
+                kind: "window",
+                name,
+                detail: w.toplevel?.title ?? w.title ?? "",  // live, so renames show
+                icon: Icons.url(app?.icon || (w.appClass ?? "").toLowerCase()),
+                glyph: "\u{F05AF}",
+                run: () => Wm.focusWindow(w)
+            }));
+    }
+
     function appResult(app: DesktopEntry): var {
         const win = windowFor(app);
         const launch = () => app.runInTerminal
@@ -216,7 +235,7 @@ Singleton {
         }
     }
 
-    // qs ipc call launcher <toggle|open|close|search QUERY|apps|list QUERY>
+    // qs ipc call launcher <toggle|open|close|search QUERY|windows|apps|list QUERY>
     IpcHandler {
         target: "launcher"
 
@@ -230,6 +249,10 @@ Singleton {
         function search(q: string): void {
             Panels.open("launcher");
             root.query = q;
+        }
+        function windows(): void {
+            Panels.open("launcher");
+            root.mode = "windows";
         }
         function apps(): void {
             Panels.open("launcher");

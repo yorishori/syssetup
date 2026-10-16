@@ -5,16 +5,17 @@ import qs.components
 import qs.core
 import qs.services
 
-// The launcher: "go somewhere or run something". Quick-action keys on top,
-// then the prompt, then results.
+// The launcher: "go somewhere or run something". Tabs and quick-action keys
+// on top, then the prompt, then results.
 //
-//   search  apps, open windows, your entries (config.json → launcher.entries),
-//           math, web
-//   APPS    every app in a scrollable list
+//   SEARCH   apps, open windows, your entries (config.json → launcher.entries),
+//            math, web
+//   WINDOWS  every open window; Enter focuses it
+//   APPS     every app in a scrollable list
 //
 // Enter runs the selection (focuses an app that's already open), Shift+Enter
-// opens a new instance. Arrows move, Escape goes back to search, then closes.
-// (Symbols and emoji live in the clipboard panel, SUPER+V.)
+// opens a new instance. Arrows move, Tab switches tabs, Escape goes back to
+// search, then closes. (Symbols and emoji live in the clipboard panel, SUPER+V.)
 ColumnLayout {
     id: root
 
@@ -25,16 +26,23 @@ ColumnLayout {
     property int selected: 0
     readonly property var results: Launcher.results
     readonly property string mode: Launcher.mode
+    readonly property var modes: ["search", "windows", "apps"]
+    readonly property bool listed: mode !== "search"  // a scrollable list of everything
 
-    // At least 560, wider if the quick-action keys need it.
-    width: Math.max(560, actions.implicitWidth)
+    width: 560
     spacing: 10
 
     function setMode(m: string): void {
-        Launcher.mode = Launcher.mode === m ? "search" : m;
+        if (Launcher.mode === m)
+            return;
+        Launcher.mode = m;
         field.text = "";
         selected = 0;
         field.focusInput();
+    }
+
+    function switchTab(step: int): void {
+        setMode(modes[(modes.indexOf(mode) + step + modes.length) % modes.length]);
     }
 
     function run(index: int, modifiers: int): void {
@@ -70,11 +78,12 @@ ColumnLayout {
     }
     onResultsChanged: selected = Math.min(selected, Math.max(0, results.length - 1))
     onSelectedChanged: {
-        if (mode === "apps")
-            appList.positionViewAtIndex(selected, ListView.Contain);
+        if (listed)
+            list.positionViewAtIndex(selected, ListView.Contain);
     }
 
-    // The query can also be set from outside (IPC); keep the field in sync.
+    // The query and mode can also be set from outside (IPC); keep the field
+    // and tabs in sync.
     Connections {
         target: Launcher
 
@@ -82,53 +91,60 @@ ColumnLayout {
             if (field.text !== Launcher.query)
                 field.text = Launcher.query;
         }
+        function onModeChanged(): void {
+            tabs.current = root.modes.indexOf(Launcher.mode);
+        }
     }
 
     Keys.onUpPressed: move(-1)
     Keys.onDownPressed: move(1)
-    Keys.onTabPressed: move(1)
-    Keys.onBacktabPressed: move(-1)
+    Keys.onTabPressed: switchTab(1)
+    Keys.onBacktabPressed: switchTab(-1)
     Keys.onEscapePressed: back()
 
-    // ── Quick actions ────────────────────────────────────────────────────────
+    // A quick action: a bare glyph key, to keep the top row to one line.
+    component ActionKey: IconButton {
+        size: 26
+        iconColor: Config.colors.dim
+        opacity: enabled ? 1 : 0.4
+    }
+
+    // ── Tabs, then the quick-action keys ─────────────────────────────────────
     RowLayout {
-        id: actions
-
         Layout.fillWidth: true
-        spacing: 8
+        spacing: 10
 
-        TextButton {
-            text: "\u{F003B}  apps"
-            lit: root.mode === "apps"
-            onClicked: root.setMode("apps")
+        Tabs {
+            id: tabs
+
+            tabs: ["SEARCH", `WINDOWS ${Wm.windows.length}`, "APPS"]
+            onCurrentChanged: root.setMode(root.modes[current])
         }
-        TextButton {
-            text: "\u{F0E51}  shot"
+
+        ActionKey {
+            icon: "\u{F0E51}"  // screenshot
             onClicked: Capture.screenshot()
         }
-        TextButton {
-            text: "\u{F044A}  rec"
+        ActionKey {
+            icon: "\u{F044A}"  // record the screen
             enabled: !Capture.busy
             onClicked: Capture.recordScreen()
         }
-        TextButton {
-            text: "\u{F036C}  voice"
+        ActionKey {
+            icon: "\u{F036C}"  // record a voice note
             enabled: !Capture.busy
             onClicked: {
                 Panels.close();
                 Capture.recordVoice();
             }
         }
-        TextButton {
-            text: "\u{F0147}  cliphist"
+        ActionKey {
+            icon: "\u{F0147}"  // clipboard history
             onClicked: Clipboard.show()
         }
-        TextButton {
-            text: "\u{F0493}  settings"
+        ActionKey {
+            icon: "\u{F0493}"  // settings
             onClicked: Panels.open("settings")
-        }
-        Item {
-            Layout.fillWidth: true
         }
     }
 
@@ -137,8 +153,8 @@ ColumnLayout {
         id: field
 
         Layout.fillWidth: true
-        prompt: root.mode === "apps" ? "apps>" : ">"
-        placeholder: root.mode === "apps" ? "filter apps" : "apps · windows · 2+2 · web"
+        prompt: root.mode === "search" ? ">" : `${root.mode}>`
+        placeholder: ({ search: "apps · windows · 2+2 · web", windows: "filter windows", apps: "filter apps" })[root.mode]
 
         onTextChanged: {
             if (Launcher.query !== text)
@@ -220,29 +236,29 @@ ColumnLayout {
         }
     }
 
-    // ── Apps: every app, scrollable ──────────────────────────────────────────
+    // ── Windows / apps: everything, scrollable ───────────────────────────────
     Item {
         Layout.fillWidth: true
-        Layout.preferredHeight: appList.height
-        visible: root.mode === "apps"
+        Layout.preferredHeight: list.height
+        visible: root.listed
 
         ListView {
-            id: appList
+            id: list
 
             width: parent.width
             height: Math.min(count, 10) * 32
             clip: true
             boundsBehavior: Flickable.StopAtBounds
-            model: root.mode === "apps" ? root.results : []
+            model: root.listed ? root.results : []
             delegate: ResultRow {}
         }
         ScrollLamp {
-            view: appList
+            view: list
         }
     }
     Placeholder {
-        text: "-- no apps --"
-        visible: root.mode === "apps" && root.results.length === 0
+        text: Launcher.query.trim() !== "" ? "-- no matches --" : `-- no ${root.mode} --`
+        visible: root.listed && root.results.length === 0
     }
 
     // ── Key hints ────────────────────────────────────────────────────────────
@@ -257,7 +273,12 @@ ColumnLayout {
             color: Config.colors.border
         }
         KeyHints {
-            hints: [["↵", "run"], ["⇧↵", "new"], ["↑↓", "move"], ["esc", root.mode === "search" ? "close" : "back"]]
+            hints: [
+                ["↵", root.mode === "windows" ? "focus" : "run"],
+                ...(root.mode === "windows" ? [] : [["⇧↵", "new"]]),
+                ["↑↓", "move"], ["⇥", "tab"],
+                ["esc", root.mode === "search" ? "close" : "back"]
+            ]
         }
     }
 }
