@@ -13,8 +13,12 @@ import qs.core
 Singleton {
     id: root
 
-    readonly property var micStreams: Pipewire.nodes.values.filter(n =>
-        n.type === PwNodeType.AudioInStream && n.properties["stream.capture.sink"] !== "true")
+    // All capture streams are tracked, and only then filtered on their
+    // properties (which exist only while tracked). Tracking just the filtered
+    // list made a sink-capturing stream (e.g. Steam's game recording) flip in
+    // and out of it, binding and unbinding the node until Quickshell crashed.
+    readonly property var captureStreams: Pipewire.nodes.values.filter(n => n.type === PwNodeType.AudioInStream)
+    readonly property var micStreams: captureStreams.filter(n => n.properties["stream.capture.sink"] !== "true")
     readonly property bool micActive: micStreams.length > 0
     readonly property var micApps: [...new Set(micStreams.map(n => Audio.nodeName(n)))]
 
@@ -28,7 +32,7 @@ Singleton {
     property bool fuserMissing: false
 
     PwObjectTracker {
-        objects: root.micStreams
+        objects: root.captureStreams
     }
 
     Process {
