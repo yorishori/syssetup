@@ -8,7 +8,7 @@ Rectangle {
     id: root
 
     required property B.BarStrip control
-    readonly property real seam: Theme.values.shape.border
+    readonly property real seam: Theme.values.shape?.border ?? 0
 
     color: Theme.palette.bg
 

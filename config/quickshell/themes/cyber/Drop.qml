@@ -33,7 +33,7 @@ Item {
         // Shrink the shoulders and cuts with the height so the outline stays
         // valid while the drawer is still sliding out. Flush sides have none.
         readonly property real s: Math.min(root.shoulder, root.height)
-        readonly property real c: Math.min(Theme.values.shape.cut * 2, root.height / 2)
+        readonly property real c: Math.min((Theme.values.shape?.cut ?? 0) * 2, root.height / 2)
         readonly property real sL: root.control.flushLeft ? 0 : s
         readonly property real sR: root.control.flushRight ? 0 : s
         readonly property real cL: root.control.flushLeft ? 0 : c
@@ -65,7 +65,7 @@ Item {
         ShapePath {
             fillColor: "transparent"
             strokeColor: Theme.palette.border
-            strokeWidth: Theme.values.shape.border
+            strokeWidth: Theme.values.shape?.border ?? 0
             joinStyle: ShapePath.MiterJoin
             capStyle: ShapePath.FlatCap
 

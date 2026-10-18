@@ -30,7 +30,7 @@ Item {
         id: housing
 
         readonly property real s: Math.min(root.shoulder, root.height)
-        readonly property real c: Math.min(Theme.values.shape.cut * 2, root.height / 2)
+        readonly property real c: Math.min((Theme.values.shape?.cut ?? 0) * 2, root.height / 2)
         readonly property real h: root.height
 
         preferredRendererType: Shape.CurveRenderer
@@ -55,7 +55,7 @@ Item {
         ShapePath {
             fillColor: "transparent"
             strokeColor: Theme.palette.border
-            strokeWidth: Theme.values.shape.border
+            strokeWidth: Theme.values.shape?.border ?? 0
             joinStyle: ShapePath.MiterJoin
             capStyle: ShapePath.FlatCap
 

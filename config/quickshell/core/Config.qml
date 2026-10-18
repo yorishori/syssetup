@@ -100,7 +100,7 @@ Singleton {
     readonly property var clipboard: values.clipboard
     readonly property var notifications: values.notifications
 
-    // The setting at a dotted path, e.g. get("effects.glow").
+    // The setting at a dotted path, e.g. get("bar.height").
     function get(path: string): var {
         return path.split(".").reduce((o, k) => o?.[k], values);
     }

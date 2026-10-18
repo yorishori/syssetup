@@ -18,8 +18,8 @@ Item {
     Scanlines {
         anchors {
             fill: parent
-            topMargin: Theme.values.shape.cut
-            bottomMargin: Theme.values.shape.cut
+            topMargin: Theme.values.shape?.cut ?? 0
+            bottomMargin: Theme.values.shape?.cut ?? 0
         }
     }
 }

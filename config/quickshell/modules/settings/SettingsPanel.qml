@@ -285,7 +285,7 @@ Item {
 
                                 RowLayout {
                                     Stepper {
-                                        value: setting.value
+                                        value: setting.value ?? 0
                                         from: setting.modelData.min
                                         to: setting.modelData.max
                                         suffix: setting.modelData.suffix ?? ""
@@ -305,7 +305,7 @@ Item {
                                     Meter {
                                         Layout.fillWidth: true
                                         implicitHeight: 10
-                                        value: setting.value
+                                        value: setting.value ?? 0
                                         onMoved: v => setting.save(Math.round(v * 100) / 100)
                                     }
                                     StyledText {
