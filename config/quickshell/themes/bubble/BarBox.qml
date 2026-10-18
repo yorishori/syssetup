@@ -2,7 +2,7 @@ import QtQuick
 import qs.core
 import qs.modules.bar.widgets as W
 
-// Rounded well, outlined in its tone.
+// A pill inside the island, tinted in its tone.
 Item {
     id: root
 
@@ -10,7 +10,7 @@ Item {
 
     Box {
         anchors.fill: parent
-        fill: Theme.palette.bgAlt
-        stroke: root.control.tone.a > 0 ? root.control.tone : Theme.palette.border
+        roundness: height / 2
+        fill: root.control.tone.a > 0 ? Qt.alpha(root.control.tone, 0.16) : Theme.palette.surface
     }
 }

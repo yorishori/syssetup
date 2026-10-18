@@ -1,7 +1,9 @@
 import QtQuick
 
-// Bubble: a first sketch, to be designed. For now cyber's layout with
-// rounded corners, sentence-case labels, no glow or scanlines.
+// Bubble: soft and floating. The bar splits into islands, panels are cards
+// hovering below it with a soft shadow; everything is rounded, keys are
+// pills, labels in sentence case. Dark pastel (Catppuccin Mocha) in a
+// rounded mono font, with a gentle bloom on lit things and springy pops.
 QtObject {
     readonly property string label: "Bubble"
 
@@ -23,17 +25,18 @@ QtObject {
             error: "#f38ba8"     // red
         },
         font: {
-            family: "JetBrainsMono Nerd Font",
+            family: "Maple Mono NF",
             size: 13,
             caps: false,
             tracking: 0
         },
+        // What `glow` on text means: a soft bloom in the text's own color.
         glow: {
-            opacity: 0,
-            blur: 0.5,
-            blurMax: 8,
-            offset: 1,
-            tint: "#11111b"
+            opacity: 0.45,
+            blur: 1,
+            blurMax: 20,
+            offset: 0,
+            tint: ""
         },
         motion: {
             spring: Easing.OutBack,
@@ -51,11 +54,12 @@ QtObject {
         },
         // Bubble's own.
         shape: {
-            radius: 10,          // corner rounding, px
-            border: 1            // outline width, px
+            radius: 16,          // corner rounding of cards and panels, px
+            border: 2            // outline width (focus, selection), px
         },
         effects: {
-            backdrop: 0.45       // darkening behind big panels, 0 = off
+            shadow: 0.5,         // shadow under floating things, 0 = off
+            backdrop: 0.35       // darkening behind big panels, 0 = off
         }
     })
 
@@ -64,7 +68,8 @@ QtObject {
         { label: "Accent", path: "palette.accent", type: "color", hint: "lit, active, in use" },
         { label: "Warning", path: "palette.warn", type: "color", hint: "needs attention" },
         { label: "Font size", path: "font.size", type: "int", min: 10, max: 18, suffix: "px" },
-        { label: "Roundness", path: "shape.radius", type: "int", min: 0, max: 20, suffix: "px" },
+        { label: "Roundness", path: "shape.radius", type: "int", min: 4, max: 24, suffix: "px", hint: "cards and panels; keys stay pills" },
+        { label: "Shadow", path: "effects.shadow", type: "level", hint: "under floating things" },
         { label: "Backdrop", path: "effects.backdrop", type: "level", hint: "darkening behind big panels" }
     ]
 }

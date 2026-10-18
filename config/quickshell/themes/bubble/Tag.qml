@@ -8,11 +8,12 @@ Item {
 
     required property C.Tag control
 
-    implicitWidth: label.implicitWidth + 14
+    implicitWidth: label.implicitWidth + 16
     implicitHeight: label.implicitHeight + 4
 
     Box {
         anchors.fill: parent
+        roundness: height / 2
         fill: root.control.fill
     }
     C.StyledText {
@@ -24,6 +25,5 @@ Item {
         color: root.control.textColor
         font.pixelSize: root.control.size
         font.bold: true
-        tracking: 1.5
     }
 }

@@ -2,35 +2,39 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Rounded key with a lamp; off is dim red and struck through.
+// A pill with a dot: tinted in the accent when on, dim red and struck
+// through when off.
 Item {
     id: root
 
     required property C.Chip control
 
-    implicitWidth: row.implicitWidth + 20
+    implicitWidth: row.implicitWidth + 22
     implicitHeight: 26
 
     Box {
         anchors.fill: parent
-        fill: root.control.hovered ? Theme.palette.surface : Theme.palette.bgAlt
-        stroke: Theme.palette.border
+        roundness: height / 2
+        fill: root.control.hovered ? Theme.palette.surface
+            : root.control.on ? Qt.alpha(Theme.palette.accent, 0.14)
+            : Theme.palette.bgAlt
     }
     Row {
         id: row
 
         anchors.centerIn: parent
-        spacing: 8
+        spacing: 7
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: 6
-            height: 6
+            width: 7
+            height: 7
+            radius: 3.5
             color: root.control.on ? Theme.palette.accent : Theme.palette.off
         }
         C.StyledText {
             text: root.control.text.toLowerCase()
-            color: root.control.on ? Theme.palette.dim : Theme.palette.off
+            color: root.control.on ? Theme.palette.fg : Theme.palette.off
             font.pixelSize: Theme.font.size - 1
             font.strikeout: !root.control.on
         }

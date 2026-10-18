@@ -2,44 +2,35 @@ import QtQuick
 import qs.core
 import qs.modules.bar as B
 
-// Grows out of the bar in the same color, rounded at the bottom (square on
-// a flush side). Unrolls with a spring.
+// A card floating just below the bar, on a soft shadow; it pops open with a
+// spring. Flush drops keep a little off the screen edge.
 Item {
     id: root
 
     required property B.Drop control
 
     readonly property real overhang: 0
+    readonly property real inset: 4
     property real shownHeight: control.open ? control.openHeight : 0
     property real contentOpacity: control.open ? 1 : 0
+    property real popScale: control.open ? 1 : 0.94
 
     Behavior on shownHeight {
         NumberAnimation {
-            duration: root.control.open ? 300 : 150
-            easing.type: root.control.open ? Theme.motion.spring : Easing.InQuad
-            easing.overshoot: 0.9
+            duration: root.control.open ? 260 : 140
+            easing.type: root.control.open ? Easing.OutCubic : Easing.InCubic
         }
     }
     Behavior on contentOpacity {
-        NumberAnimation { duration: root.control.open ? 180 : 60 }
+        NumberAnimation { duration: root.control.open ? 200 : 80 }
+    }
+    Behavior on popScale {
+        NumberAnimation { duration: 320; easing.type: Theme.motion.spring }
     }
 
     Box {
-        id: body
-
         anchors.fill: parent
-    }
-    // Square off the top, where it meets the bar, and any flush side.
-    Rectangle {
-        width: parent.width
-        height: Math.min(body.radius, parent.height)
-        color: Theme.palette.bg
-    }
-    Rectangle {
-        x: root.control.flushLeft ? 0 : parent.width - width
-        width: body.radius
-        height: parent.height
-        color: Theme.palette.bg
-        visible: root.control.flushLeft || root.control.flushRight
+        fill: Theme.palette.bg
+        raised: true
     }
 }

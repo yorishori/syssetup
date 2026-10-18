@@ -2,35 +2,43 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Rounded key; lights up (accent fill) on hover, sinks a pixel when
-// pressed.
+// A pill. Hover tints it with the accent, lit fills it; it squashes a little
+// when pressed.
 Item {
     id: root
 
     required property C.TextButton control
-    readonly property bool on: control.lit || control.hovered
 
-    implicitWidth: label.implicitWidth + 22
-    implicitHeight: label.implicitHeight + 10
+    implicitWidth: label.implicitWidth + 26
+    implicitHeight: label.implicitHeight + 12
     opacity: control.enabled ? 1 : 0.4
+    scale: control.pressed ? 0.94 : 1
+
+    Behavior on scale {
+        NumberAnimation { duration: 200; easing.type: Theme.motion.spring }
+    }
 
     Box {
         anchors.fill: parent
-        transform: Translate { y: root.control.pressed ? 1 : 0 }
-        fill: root.on ? Theme.palette.accent : Theme.palette.bgAlt
-        stroke: root.on ? Theme.palette.accent : Theme.palette.border
+        roundness: height / 2
+        fill: root.control.lit ? Theme.palette.accent
+            : root.control.hovered ? Qt.alpha(Theme.palette.accent, 0.2)
+            : Theme.palette.surface
+
+        Behavior on fill {
+            ColorAnimation { duration: 120 }
+        }
     }
 
     C.StyledText {
         id: label
 
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: root.control.pressed ? 1 : 0
         text: root.control.text
         caps: true
         tracking: 1.5
-        font.pixelSize: Theme.font.size - 2
+        font.pixelSize: Theme.font.size - 1
         font.bold: true
-        color: root.on ? Theme.palette.shadow : Theme.palette.fg
+        color: root.control.lit ? Theme.palette.shadow : root.control.hovered ? Theme.palette.accent : Theme.palette.fg
     }
 }

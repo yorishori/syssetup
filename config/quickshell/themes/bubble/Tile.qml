@@ -2,7 +2,7 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Rounded cell, lit outline on the current one.
+// A rounded cell; the current one glows faintly in the accent.
 Item {
     id: root
 
@@ -11,9 +11,11 @@ Item {
     Box {
         anchors {
             fill: parent
-            margins: 2
+            margins: 3
         }
-        fill: root.control.current ? Theme.palette.surface : root.control.hovered ? Theme.palette.bgAlt : "transparent"
-        stroke: root.control.current ? Theme.palette.accent : "transparent"
+        roundness: 12
+        fill: root.control.current ? Qt.alpha(Theme.palette.accent, 0.18)
+            : root.control.hovered ? Theme.palette.surface
+            : "transparent"
     }
 }

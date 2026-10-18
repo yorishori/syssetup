@@ -2,8 +2,8 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Rounded well with the prompt, a blinking block cursor; the outline goes
-// accent while typing and green with "saved" on flash().
+// A recessed pill with the prompt in front and a thin breathing cursor; the
+// outline lights up while typing, green with "saved" on flash().
 Item {
     id: root
 
@@ -12,13 +12,14 @@ Item {
 
     // Where the input sits, and how it looks.
     readonly property real inputLeft: promptLabel.x + promptLabel.width + 8
-    readonly property real inputRight: savedLabel.visible ? width - savedLabel.x + 10 : 10
+    readonly property real inputRight: savedLabel.visible ? width - savedLabel.x + 10 : 16
     readonly property color textColor: Theme.palette.fg
-    readonly property color selectionColor: Theme.palette.accent
-    readonly property color selectedTextColor: Theme.palette.shadow
+    readonly property color selectionColor: Qt.alpha(Theme.palette.accent, 0.45)
+    readonly property color selectedTextColor: Theme.palette.fg
     readonly property Component cursor: Component {
         Rectangle {
-            width: 8
+            width: 2
+            radius: 1
             color: Theme.palette.accent
             visible: root.focused
 
@@ -26,21 +27,26 @@ Item {
                 running: root.focused
                 loops: Animation.Infinite
 
-                PropertyAction { value: 1 }
-                PauseAnimation { duration: 530 }
-                PropertyAction { value: 0 }
-                PauseAnimation { duration: 530 }
+                NumberAnimation { to: 1; duration: 80 }
+                PauseAnimation { duration: 450 }
+                NumberAnimation { to: 0; duration: 300; easing.type: Easing.InOutSine }
+                PauseAnimation { duration: 150 }
             }
         }
     }
 
     implicitWidth: 200
-    implicitHeight: control.inputHeight + 12
+    implicitHeight: control.inputHeight + 16
 
     Box {
         anchors.fill: parent
+        roundness: height / 2
         fill: Theme.palette.bgAlt
-        stroke: root.control.flashing ? Theme.palette.ok : root.focused ? Theme.palette.accent : Theme.palette.border
+        stroke: root.control.flashing ? Theme.palette.ok : root.focused ? Theme.palette.accent : "transparent"
+
+        Behavior on stroke {
+            ColorAnimation { duration: 150 }
+        }
     }
 
     C.StyledText {
@@ -48,21 +54,21 @@ Item {
 
         anchors {
             left: parent.left
-            leftMargin: 10
+            leftMargin: 16
             verticalCenter: parent.verticalCenter
         }
         text: root.control.prompt
         color: root.focused ? Theme.palette.accent : Theme.palette.muted
-        glow: root.focused
         font.bold: true
     }
 
     C.StyledText {
         anchors.verticalCenter: parent.verticalCenter
-        x: root.inputLeft + (root.focused ? 12 : 0)  // clear of the block cursor
+        x: root.inputLeft + (root.focused ? 4 : 0)
         width: root.width - root.inputLeft - root.inputRight
         text: root.control.placeholder
         color: Theme.palette.muted
+        elide: Text.ElideRight
         visible: root.control.text === ""
     }
 
@@ -71,15 +77,13 @@ Item {
 
         anchors {
             right: parent.right
-            rightMargin: 10
+            rightMargin: 16
             verticalCenter: parent.verticalCenter
         }
-        text: "saved"
-        caps: true
+        text: "\u{F012C} saved"
         color: Theme.palette.ok
-        font.pixelSize: Theme.font.size - 3
+        font.pixelSize: Theme.font.size - 2
         font.bold: true
-        tracking: 1.5
         visible: root.control.flashing
     }
 }

@@ -2,7 +2,7 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Rounded chip of the color, outlined when selected.
+// A dot of the color (a pill when wider); the selected one gets a ring.
 Item {
     id: root
 
@@ -11,11 +11,25 @@ Item {
     implicitWidth: 20
     implicitHeight: 20
 
-    Box {
+    Rectangle {
+        anchors.centerIn: parent
+        width: parent.width - (root.control.selected ? 6 : 0)
+        height: parent.height - (root.control.selected ? 6 : 0)
+        radius: height / 2
+        color: root.control.color
+        scale: root.control.hovered && !root.control.selected ? 1.1 : 1
+
+        Behavior on scale {
+            NumberAnimation { duration: 160; easing.type: Theme.motion.spring }
+        }
+    }
+    Rectangle {
         anchors.fill: parent
-        fill: root.control.color
-        stroke: root.control.selected ? Theme.palette.fg : "transparent"
-        strokeWidth: 2
+        radius: height / 2
+        color: "transparent"
+        border.color: Theme.palette.fg
+        border.width: 2
+        visible: root.control.selected
     }
     C.StyledText {
         anchors.centerIn: parent

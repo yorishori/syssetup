@@ -4,7 +4,7 @@ import Quickshell.Widgets
 import qs.components as C
 import qs.core
 
-// The picture in a rounded frame; the icon on its own.
+// The picture with rounded corners; the icon in a soft round tile.
 Item {
     id: root
 
@@ -25,6 +25,7 @@ Item {
         id: artMask
 
         anchors.fill: parent
+        roundness: 14
         fill: "white"
         visible: false
         layer.enabled: true
@@ -38,13 +39,13 @@ Item {
     }
     Box {
         anchors.fill: parent
-        fill: "transparent"
-        stroke: Theme.palette.border
-        visible: art.status === Image.Ready
+        roundness: 14
+        fill: Theme.palette.surface
+        visible: art.status !== Image.Ready && root.control.icon !== ""
     }
     IconImage {
         anchors.centerIn: parent
-        implicitSize: Math.round(root.width * 0.6)
+        implicitSize: Math.round(root.width * 0.55)
         source: root.control.icon
         visible: art.status !== Image.Ready && root.control.icon !== ""
     }

@@ -180,9 +180,13 @@ PanelWindow {
             right: parent.right
         }
         height: Config.bar.height
+        // The groups of keys, for themes that draw them apart.
+        islands: [[leftGroup], [launcherButton, workspaces, centerRow], [rightGroup]]
 
         // Left: power, time, tray
         RowLayout {
+            id: leftGroup
+
             anchors {
                 left: parent.left
                 verticalCenter: parent.verticalCenter
@@ -208,6 +212,8 @@ PanelWindow {
 
         // Center: launcher key, workspaces, recording indicator
         LauncherButton {
+            id: launcherButton
+
             anchors {
                 right: workspaces.left
                 rightMargin: Config.bar.spacing
@@ -222,6 +228,8 @@ PanelWindow {
             anchors.centerIn: parent
         }
         Row {
+            id: centerRow
+
             anchors {
                 left: workspaces.right
                 leftMargin: Config.bar.spacing
@@ -244,6 +252,8 @@ PanelWindow {
 
         // Right: controls
         RowLayout {
+            id: rightGroup
+
             anchors {
                 right: parent.right
                 verticalCenter: parent.verticalCenter

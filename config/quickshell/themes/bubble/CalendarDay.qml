@@ -3,20 +3,26 @@ import qs.components as C
 import qs.core
 import qs.modules.calendar as M
 
-// Today is a filled bubble, the selected day outlined; days of other
-// months faded. Event lamps are short bars along the bottom.
+// Days are round: today a filled accent bubble, the selected day ringed,
+// days of other months faded. Events are little dots underneath.
 Item {
     id: root
 
     required property M.CalendarDay control
+    readonly property real size: Math.min(width, height) - 2
 
-    Box {
-        anchors.fill: parent
-        fill: root.control.isToday ? Theme.palette.accent : root.control.hovered ? Theme.palette.surface : "transparent"
-        stroke: root.control.selected ? Theme.palette.accent : "transparent"
+    Rectangle {
+        anchors.centerIn: parent
+        width: root.size
+        height: root.size
+        radius: root.size / 2
+        color: root.control.isToday ? Theme.palette.accent : root.control.hovered ? Theme.palette.surface : "transparent"
+        border.color: Theme.palette.accent
+        border.width: root.control.selected ? 2 : 0
     }
     C.StyledText {
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: root.control.lamps.length > 0 ? -2 : 0
         text: root.control.day.getDate()
         color: root.control.isToday ? Theme.palette.shadow
             : !root.control.inMonth ? Theme.palette.surface
@@ -27,7 +33,7 @@ Item {
     Row {
         anchors {
             bottom: parent.bottom
-            bottomMargin: 3
+            bottomMargin: 5
             horizontalCenter: parent.horizontalCenter
         }
         spacing: 2
@@ -38,8 +44,9 @@ Item {
             Rectangle {
                 required property string modelData
 
-                width: 5
-                height: 2
+                width: 4
+                height: 4
+                radius: 2
                 color: root.control.isToday ? Theme.palette.shadow : modelData
                 opacity: root.control.inMonth ? 1 : 0.4
             }

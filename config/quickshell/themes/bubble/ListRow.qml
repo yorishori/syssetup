@@ -2,8 +2,8 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Rounded fill on hover and selection, an accent tick on the left for the
-// keyboard selection.
+// Rounded highlight on hover and selection; the keyboard selection gets a
+// little accent pill on the left.
 Item {
     id: root
 
@@ -11,13 +11,17 @@ Item {
 
     Box {
         anchors.fill: parent
-        fill: root.control.current || root.control.highlighted || (root.control.hovered && root.control.enabled) ? Theme.palette.surface : "transparent"
+        roundness: 10
+        fill: root.control.current || root.control.highlighted ? Theme.palette.surface
+            : root.control.hovered && root.control.enabled ? Qt.alpha(Theme.palette.surface, 0.55)
+            : "transparent"
     }
     Rectangle {
+        x: 3
         anchors.verticalCenter: parent.verticalCenter
-        width: 2
+        width: 3
         height: 14
-        radius: 1
+        radius: 1.5
         color: Theme.palette.accent
         visible: root.control.marker && root.control.current
     }

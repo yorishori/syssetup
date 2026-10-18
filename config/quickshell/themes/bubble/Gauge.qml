@@ -2,24 +2,25 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// A row of thin bars, lit up to the value.
-Row {
+// A tiny pill, filled up to the value.
+Item {
     id: root
 
     required property C.Gauge control
 
-    spacing: 1
+    implicitWidth: 18
+    implicitHeight: 8
 
-    Repeater {
-        model: root.control.segments
-
-        Rectangle {
-            required property int index
-
-            anchors.verticalCenter: parent.verticalCenter
-            width: 3
-            height: 8
-            color: index < Math.round(root.control.value * root.control.segments) ? root.control.color : Theme.palette.surface
-        }
+    Rectangle {
+        anchors.fill: parent
+        radius: height / 2
+        color: Theme.palette.surface
+    }
+    Rectangle {
+        width: Math.max(height, parent.width * Math.max(0, Math.min(1, root.control.value)))
+        height: parent.height
+        radius: height / 2
+        color: root.control.color
+        visible: root.control.value > 0
     }
 }

@@ -4,8 +4,9 @@ import qs.components as C
 import qs.core
 import qs.modules.session as M
 
-// A big rounded key: glyph, label, index in the corner. Current is
-// outlined in accent, armed in peach with the fuse along the bottom.
+// A big soft key: the glyph in a round bubble, the label, the number in a
+// pill. Current is tinted and outlined in the accent, armed in peach with
+// the fuse shrinking along the bottom.
 Item {
     id: root
 
@@ -16,47 +17,64 @@ Item {
     scale: control.pressed ? 0.97 : 1
 
     Behavior on scale {
-        NumberAnimation { duration: 180; easing.type: Easing.OutBack }
+        NumberAnimation { duration: 200; easing.type: Theme.motion.spring }
     }
 
     Box {
         anchors.fill: parent
-        fill: root.control.armed ? Qt.alpha(Theme.palette.warn, 0.12) : root.control.current ? Theme.palette.surface : Theme.palette.bgAlt
-        stroke: root.on ? root.tone : Theme.palette.border
-        strokeWidth: root.on ? 2 : 1
+        roundness: 22
+        fill: root.on ? Qt.alpha(root.tone, 0.12) : Theme.palette.bgAlt
+        stroke: root.on ? root.tone : "transparent"
+
+        Behavior on fill {
+            ColorAnimation { duration: 150 }
+        }
     }
 
     RowLayout {
         anchors {
             fill: parent
-            leftMargin: 20
-            rightMargin: 18
+            leftMargin: 14
+            rightMargin: 16
         }
-        spacing: 18
+        spacing: 16
 
-        C.StyledText {
-            text: root.control.glyph
-            color: root.on ? root.tone : Theme.palette.dim
-            glow: root.on
-            font.pixelSize: 38
+        Rectangle {
+            implicitWidth: 50
+            implicitHeight: 50
+            radius: 25
+            color: root.on ? root.tone : Theme.palette.surface
+
+            C.StyledText {
+                anchors.centerIn: parent
+                text: root.control.glyph
+                color: root.on ? Theme.palette.shadow : Theme.palette.dim
+                font.pixelSize: 26
+            }
         }
         C.StyledText {
             Layout.fillWidth: true
             text: root.control.label
             caps: true
             color: root.on ? Theme.palette.fg : Theme.palette.dim
-            font.pixelSize: Theme.font.size + 5
+            font.pixelSize: Theme.font.size + 4
             font.bold: true
-            tracking: 3
         }
-        // Index code, like a label on a hardware key.
-        C.StyledText {
-            Layout.alignment: Qt.AlignTop
-            Layout.topMargin: 10
-            text: String(root.control.number).padStart(2, "0")
-            color: root.control.current ? root.tone : Theme.palette.muted
-            font.pixelSize: Theme.font.size - 2
-            font.bold: true
+        Rectangle {
+            implicitWidth: number.implicitWidth + 12
+            implicitHeight: number.implicitHeight + 4
+            radius: height / 2
+            color: root.on ? Qt.alpha(root.tone, 0.2) : Theme.palette.surface
+
+            C.StyledText {
+                id: number
+
+                anchors.centerIn: parent
+                text: root.control.number
+                color: root.on ? root.tone : Theme.palette.muted
+                font.pixelSize: Theme.font.size - 2
+                font.bold: true
+            }
         }
     }
 
@@ -65,12 +83,12 @@ Item {
         anchors {
             left: parent.left
             bottom: parent.bottom
-            leftMargin: 14
-            bottomMargin: 10
+            leftMargin: 22
+            bottomMargin: 8
         }
-        height: 3
-        radius: 1.5
-        width: (root.width - 28) * root.control.fuse
+        height: 4
+        radius: 2
+        width: (root.width - 44) * root.control.fuse
         color: Theme.palette.warn
         visible: root.control.armed
     }
