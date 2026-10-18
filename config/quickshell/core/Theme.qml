@@ -19,7 +19,7 @@ Singleton {
     id: root
 
     // Known themes, in the order Settings offers them.
-    readonly property var names: ["cyber", "bubble"]
+    readonly property var names: ["cyber", "bubble", "hifi"]
     readonly property string name: names.includes(Config.theme.name) ? Config.theme.name : names[0]
 
     readonly property var specs: {

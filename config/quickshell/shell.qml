@@ -29,6 +29,7 @@ import qs.modules.keys
 // their folders known, the names are never used.
 import qs.themes.cyber as CyberTheme
 import qs.themes.bubble as BubbleTheme
+import qs.themes.hifi as HifiTheme
 
 // Entry point. Only lists modules; each one is loaded in isolation.
 ShellRoot {

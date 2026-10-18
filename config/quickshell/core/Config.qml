@@ -23,7 +23,8 @@ Singleton {
         theme: {
             name: "cyber",
             cyber: {},
-            bubble: {}
+            bubble: {},
+            hifi: {}
         },
         wallpaper: {
             path: "",            // image file ("~/…" ok); empty = plain color
