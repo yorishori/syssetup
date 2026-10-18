@@ -66,7 +66,7 @@ PanelWindow {
     }
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
-    visible: Clipboard.open || backdrop.opacity > 0 || drawer.height > 0
+    visible: Clipboard.open || backdrop.covering || drawer.height > 0
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "qs-clipboard"
     WlrLayershell.keyboardFocus: Clipboard.open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None

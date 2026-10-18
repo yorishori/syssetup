@@ -81,6 +81,7 @@ PanelWindow {
 
         anchors {
             bottom: parent.bottom
+            bottomMargin: drawer.lift
             horizontalCenter: parent.horizontalCenter
         }
         width: 680
