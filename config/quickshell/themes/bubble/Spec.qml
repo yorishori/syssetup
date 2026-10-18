@@ -2,8 +2,8 @@ import QtQuick
 
 // Bubble: soft and floating. The bar splits into islands, panels are cards
 // hovering below it with a soft shadow; everything is rounded, keys are
-// pills, labels in sentence case. Dark pastel (Catppuccin Mocha) in a
-// rounded mono font, with a gentle bloom on lit things and springy pops.
+// pills, labels in sentence case. Dark pastel (Catppuccin Mocha), with a
+// gentle bloom on lit things and springy pops.
 QtObject {
     readonly property string label: "Bubble"
 
@@ -25,7 +25,7 @@ QtObject {
             error: "#f38ba8"     // red
         },
         font: {
-            family: "Maple Mono NF",
+            family: "JetBrainsMono Nerd Font",
             size: 13,
             caps: false,
             tracking: 0
