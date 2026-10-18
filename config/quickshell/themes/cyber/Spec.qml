@@ -39,7 +39,8 @@ QtObject {
         },
         motion: {
             spring: Easing.OutBack,  // things settling into place
-            springIn: Easing.InBack  // things leaving
+            springIn: Easing.InBack, // things leaving
+            bounce: 1.70158          // how far springs overshoot (Qt's default)
         },
         // What the color pickers offer, so nothing off-theme can be picked:
         // Mocha's accents, and backgrounds (crust, mantle and base, then the

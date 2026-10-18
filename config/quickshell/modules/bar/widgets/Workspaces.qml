@@ -62,7 +62,7 @@ Item {
         visible: shown
 
         Behavior on x {
-            NumberAnimation { duration: 260; easing.type: Theme.motion.spring }
+            NumberAnimation { duration: 260; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
         }
     }
 }

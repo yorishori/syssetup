@@ -14,10 +14,10 @@ Item {
     readonly property bool on: control.current || control.armed
     readonly property color tone: control.armed ? Theme.palette.warn : Theme.palette.accent
 
-    scale: control.pressed ? 0.97 : 1
+    scale: control.pressed ? 0.94 : 1
 
     Behavior on scale {
-        NumberAnimation { duration: 200; easing.type: Theme.motion.spring }
+        NumberAnimation { duration: 320; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
     }
 
     Box {

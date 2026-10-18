@@ -43,7 +43,7 @@
   },
   "bar": {
     "height": 40,
-    "padding": 12,
+    "padding": 18,
     "spacing": 16,
     "workspaces": 6
   },

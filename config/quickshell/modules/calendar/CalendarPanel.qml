@@ -212,6 +212,7 @@ ColumnLayout {
                 to: 0
                 duration: 220
                 easing.type: Theme.motion.spring
+                easing.overshoot: Theme.motion.bounce
             }
 
             // Header: week column, then weekday names.

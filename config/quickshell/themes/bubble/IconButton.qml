@@ -9,10 +9,10 @@ Item {
 
     required property C.IconButton control
 
-    scale: control.pressed ? 0.88 : 1
+    scale: control.pressed ? 0.8 : 1
 
     Behavior on scale {
-        NumberAnimation { duration: 200; easing.type: Theme.motion.spring }
+        NumberAnimation { duration: 320; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
     }
 
     Box {

@@ -40,7 +40,8 @@ QtObject {
         },
         motion: {
             spring: Easing.OutBack,
-            springIn: Easing.InBack
+            springIn: Easing.InBack,
+            bounce: 3.2              // springy: well past and back
         },
         swatches: {
             accents: [

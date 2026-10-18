@@ -17,10 +17,10 @@ Item {
         height: parent.height - (root.control.selected ? 6 : 0)
         radius: height / 2
         color: root.control.color
-        scale: root.control.hovered && !root.control.selected ? 1.1 : 1
+        scale: root.control.hovered && !root.control.selected ? 1.18 : 1
 
         Behavior on scale {
-            NumberAnimation { duration: 160; easing.type: Theme.motion.spring }
+            NumberAnimation { duration: 260; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
         }
     }
     Rectangle {

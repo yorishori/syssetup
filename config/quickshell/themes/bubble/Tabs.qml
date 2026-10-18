@@ -24,7 +24,7 @@ Item {
         fill: Theme.palette.surface
 
         Behavior on x {
-            NumberAnimation { duration: 280; easing.type: Theme.motion.spring }
+            NumberAnimation { duration: 380; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
         }
     }
 

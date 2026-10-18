@@ -12,10 +12,10 @@ Item {
     implicitWidth: label.implicitWidth + 26
     implicitHeight: label.implicitHeight + 12
     opacity: control.enabled ? 1 : 0.4
-    scale: control.pressed ? 0.94 : 1
+    scale: control.pressed ? 0.88 : 1
 
     Behavior on scale {
-        NumberAnimation { duration: 200; easing.type: Theme.motion.spring }
+        NumberAnimation { duration: 320; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
     }
 
     Box {

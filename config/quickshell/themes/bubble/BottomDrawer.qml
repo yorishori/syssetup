@@ -3,7 +3,7 @@ import qs.components as C
 import qs.core
 
 // A card floating a little above the screen edge, on a soft shadow; it pops
-// up with a spring.
+// up with a bounce.
 Item {
     id: root
 
@@ -13,19 +13,20 @@ Item {
     readonly property real lift: 12
     property real shownHeight: control.open ? control.openHeight : 0
     property real contentOpacity: control.open ? 1 : 0
-    property real popScale: control.open ? 1 : 0.94
+    property real popScale: control.open ? 1 : 0.8
 
     Behavior on shownHeight {
         NumberAnimation {
-            duration: root.control.open ? 260 : 140
-            easing.type: root.control.open ? Easing.OutCubic : Easing.InCubic
+            duration: root.control.open ? 420 : 160
+            easing.type: root.control.open ? Theme.motion.spring : Easing.InCubic
+            easing.overshoot: Theme.motion.bounce / 2
         }
     }
     Behavior on contentOpacity {
         NumberAnimation { duration: root.control.open ? 200 : 80 }
     }
     Behavior on popScale {
-        NumberAnimation { duration: 320; easing.type: Theme.motion.spring }
+        NumberAnimation { duration: 460; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
     }
 
     Box {

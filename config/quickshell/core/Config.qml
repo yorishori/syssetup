@@ -32,7 +32,7 @@ Singleton {
         },
         bar: {
             height: 32,
-            padding: 12,
+            padding: 18,
             spacing: 16,
             workspaces: 5  // minimum number of workspaces shown
         },

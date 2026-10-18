@@ -71,7 +71,7 @@ ScreenFill {
             NumberAnimation { target: shake; property: "x"; to: -10; duration: 50 }
             NumberAnimation { target: shake; property: "x"; to: 10; duration: 70 }
             NumberAnimation { target: shake; property: "x"; to: -6; duration: 60 }
-            NumberAnimation { target: shake; property: "x"; to: 0; duration: 80; easing.type: Theme.motion.spring }
+            NumberAnimation { target: shake; property: "x"; to: 0; duration: 80; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
         }
         Connections {
             target: Session
