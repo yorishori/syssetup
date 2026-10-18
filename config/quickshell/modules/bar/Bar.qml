@@ -166,18 +166,12 @@ PanelWindow {
     // compositor may blur behind it (a Hyprland layer rule or SwayFX
     // layer_effects on "qs-bar", see README). Transparent otherwise, so
     // nothing is blurred.
-    Rectangle {
+    Backdrop {
         anchors.fill: parent
-        color: Config.colors.bg
-        opacity: bar.panels.some(p => p.blur && p.name === bar.openDrop) ? Config.effects.backdrop : 0
-        visible: opacity > 0
-
-        Behavior on opacity {
-            NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
-        }
+        shown: bar.panels.some(p => p.blur && p.name === bar.openDrop)
     }
 
-    Rectangle {
+    BarStrip {
         id: background
 
         anchors {
@@ -186,22 +180,13 @@ PanelWindow {
             right: parent.right
         }
         height: Config.bar.height
-        color: Config.colors.bg  // a dark console strip, distinct from wallpaper and windows
-
-        Scanlines {
-            anchors.fill: parent
-        }
-
-        // Hairline bottom edge; drops continue it around themselves.
-        Rectangle {
-            anchors.bottom: parent.bottom
-            width: parent.width
-            height: Config.shape.border
-            color: Config.colors.border
-        }
+        // The groups of keys, for themes that draw them apart.
+        islands: [[leftGroup], [launcherButton, workspaces, centerRow], [rightGroup]]
 
         // Left: power, time, tray
         RowLayout {
+            id: leftGroup
+
             anchors {
                 left: parent.left
                 verticalCenter: parent.verticalCenter
@@ -227,6 +212,8 @@ PanelWindow {
 
         // Center: launcher key, workspaces, recording indicator
         LauncherButton {
+            id: launcherButton
+
             anchors {
                 right: workspaces.left
                 rightMargin: Config.bar.spacing
@@ -241,6 +228,8 @@ PanelWindow {
             anchors.centerIn: parent
         }
         Row {
+            id: centerRow
+
             anchors {
                 left: workspaces.right
                 leftMargin: Config.bar.spacing
@@ -263,6 +252,8 @@ PanelWindow {
 
         // Right: controls
         RowLayout {
+            id: rightGroup
+
             anchors {
                 right: parent.right
                 verticalCenter: parent.verticalCenter
@@ -308,7 +299,7 @@ PanelWindow {
 
             required property var modelData
 
-            y: Config.bar.height - Config.shape.border
+            y: Config.bar.height - background.seam
             anchorItem: bar.anchorFor(modelData.name)
             edge: modelData.edge ?? ""
             open: bar.openDrop === modelData.name

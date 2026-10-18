@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.core
 
-// Integer setting: [−] 013 PX [+]. Scroll works too. Emits moved(value).
+// Integer setting: [−] 013 px [+]. Scroll works too. Emits moved(value).
 RowLayout {
     id: root
 
@@ -32,8 +32,9 @@ RowLayout {
     StyledText {
         Layout.minimumWidth: 44
         horizontalAlignment: Text.AlignHCenter
-        text: String(root.value).padStart(2, "0") + (root.suffix ? " " + root.suffix.toUpperCase() : "")
-        color: Config.colors.accent
+        text: String(root.value).padStart(2, "0") + (root.suffix ? " " + root.suffix : "")
+        caps: true
+        color: Theme.palette.accent
         glow: true
         font.bold: true
 

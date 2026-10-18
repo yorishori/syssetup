@@ -15,7 +15,7 @@ BarLabel {
 
     text: Notifs.dnd ? "\u{F009B}" : count > 0 ? `\u{F009A} ${count}` : "\u{F009A}"
     lit: active || (!Notifs.dnd && count > 0)
-    color: Notifs.dnd ? Config.colors.off : lit ? Config.colors.accent : Config.colors.dim
+    color: Notifs.dnd ? Theme.palette.off : lit ? Theme.palette.accent : Theme.palette.dim
 
     Behavior on color {
         ColorAnimation { duration: 150 }

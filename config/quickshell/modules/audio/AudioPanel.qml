@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import QtQuick.Layouts
 import Quickshell.Services.Mpris
 import Quickshell.Services.Pipewire
@@ -34,7 +33,7 @@ ColumnLayout {
         IconButton {
             size: 24
             icon: row.muted ? row.mutedIcon : row.icon
-            iconColor: row.muted ? Config.colors.off : Config.colors.fg
+            iconColor: row.muted ? Theme.palette.off : Theme.palette.fg
             onClicked: {
                 const mute = !row.muted;
                 for (const n of [row.node, ...row.linked])
@@ -45,7 +44,7 @@ ColumnLayout {
         Meter {
             Layout.fillWidth: true
             value: row.volume
-            color: row.muted ? Config.colors.off : Config.colors.accent
+            color: row.muted ? Theme.palette.off : Theme.palette.accent
             onMoved: value => {
                 for (const n of [row.node, ...row.linked])
                     Audio.setNodeVolume(n, value);
@@ -55,7 +54,7 @@ ColumnLayout {
             Layout.preferredWidth: 30
             horizontalAlignment: Text.AlignRight
             text: String(Math.round(row.volume * 100)).padStart(3, "0")
-            color: row.muted ? Config.colors.off : Config.colors.dim
+            color: row.muted ? Theme.palette.off : Theme.palette.dim
             font.bold: true
         }
     }
@@ -81,7 +80,7 @@ ColumnLayout {
         StyledText {
             Layout.fillWidth: true
             text: device.label
-            color: device.selected ? Config.colors.accent : Config.colors.dim
+            color: device.selected ? Theme.palette.accent : Theme.palette.dim
             glow: device.selected
             elide: Text.ElideRight
         }
@@ -107,22 +106,23 @@ ColumnLayout {
             onClicked: picker.open = !picker.open
 
             StyledText {
-                text: "PROFILE"
-                color: Config.colors.muted
-                font.pixelSize: Config.font.size - 2
+                text: "profile"
+                caps: true
+                color: Theme.palette.muted
+                font.pixelSize: Theme.font.size - 2
                 font.bold: true
-                font.letterSpacing: 1.5
+                tracking: 1.5
             }
             StyledText {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignRight
                 text: picker.profiles.switching ? "switching..." : picker.profiles.current?.label ?? "--"
-                color: Config.colors.dim
+                color: Theme.palette.dim
                 elide: Text.ElideRight
             }
             StyledText {
                 text: picker.open ? "\u{F0143}" : "\u{F0140}"
-                color: Config.colors.muted
+                color: Theme.palette.muted
             }
         }
         Repeater {
@@ -146,8 +146,8 @@ ColumnLayout {
         visible: Media.player !== null
 
         SectionTitle {
-            text: "NOW PLAYING"
-            code: Media.players.length > 1 ? "" : Media.player?.identity.toUpperCase() ?? ""
+            text: "Now playing"
+            code: Media.players.length > 1 ? "" : Media.player?.identity ?? ""
         }
 
         // Player switcher: one icon per player, a lamp under the current one,
@@ -175,20 +175,21 @@ ColumnLayout {
                 }
                 StyledText {
                     anchors.centerIn: parent
-                    text: switchItem.modelData.identity.slice(0, 2).toUpperCase()
+                    text: switchItem.modelData.identity.slice(0, 2)
+                    caps: true
                     visible: switchItem.icon === ""
-                    color: switchItem.current ? Config.colors.fg : Config.colors.muted
-                    font.pixelSize: Config.font.size - 3
+                    color: switchItem.current ? Theme.palette.fg : Theme.palette.muted
+                    font.pixelSize: Theme.font.size - 3
                     font.bold: true
                 }
-                Rectangle {
+                Marker {
                     anchors {
                         bottom: parent.bottom
                         horizontalCenter: parent.horizontalCenter
                     }
                     width: 12
                     height: 2
-                    color: switchItem.modelData.isPlaying ? Config.colors.accent : Config.colors.dim
+                    color: switchItem.modelData.isPlaying ? Theme.palette.accent : Theme.palette.dim
                     visible: switchItem.current || switchItem.modelData.isPlaying
                     opacity: switchItem.current ? 1 : 0.5
                 }
@@ -205,52 +206,13 @@ ColumnLayout {
         spacing: 12
         visible: Media.player !== null
 
-        // Cover art in a cut-corner frame; the app's icon when there's none.
-        Item {
+        // Cover art; the app's icon when there's none.
+        Picture {
             implicitWidth: 56
             implicitHeight: 56
             visible: Media.art !== "" || Media.icon !== ""
-
-            Image {
-                id: art
-
-                anchors.fill: parent
-                source: Media.art
-                fillMode: Image.PreserveAspectCrop
-                sourceSize.width: 112
-                sourceSize.height: 112
-                asynchronous: true
-                visible: false
-            }
-            Chamfer {
-                id: artMask
-
-                anchors.fill: parent
-                cut: 8
-                fill: "white"
-                visible: false
-                layer.enabled: true
-            }
-            MultiEffect {
-                anchors.fill: parent
-                source: art
-                maskEnabled: true
-                maskSource: artMask
-                visible: art.status === Image.Ready
-            }
-            Chamfer {
-                anchors.fill: parent
-                cut: 8
-                fill: "transparent"
-                stroke: Config.colors.border
-                visible: art.status === Image.Ready
-            }
-            IconImage {
-                anchors.centerIn: parent
-                implicitSize: 34
-                source: Media.icon
-                visible: art.status !== Image.Ready && Media.icon !== ""
-            }
+            source: Media.art
+            icon: Media.icon
         }
         ColumnLayout {
             Layout.fillWidth: true
@@ -265,7 +227,7 @@ ColumnLayout {
             StyledText {
                 Layout.fillWidth: true
                 text: Media.artist
-                color: Config.colors.muted
+                color: Theme.palette.muted
                 elide: Text.ElideRight
                 visible: text !== ""
             }
@@ -297,7 +259,7 @@ ColumnLayout {
         id: tabs
 
         Layout.topMargin: Media.player !== null ? 4 : 0
-        tabs: ["OUTPUT", "INPUT", "MIXER"]
+        tabs: ["Output", "Input", "Mixer"]
     }
 
     // Output
@@ -368,8 +330,8 @@ ColumnLayout {
                 StyledText {
                     Layout.preferredWidth: 64
                     text: app.modelData.name.toLowerCase()
-                    color: Config.colors.dim
-                    font.pixelSize: Config.font.size - 1
+                    color: Theme.palette.dim
+                    font.pixelSize: Theme.font.size - 1
                     elide: Text.ElideRight
                 }
                 LevelRow {

@@ -1,4 +1,5 @@
 import QtQuick
+import qs.components
 import qs.core
 import qs.services
 
@@ -32,11 +33,11 @@ Item {
             BarLabel {
                 anchors.centerIn: parent
                 text: String(cellItem.wsId).padStart(2, "0")
-                font.pixelSize: Config.font.size
+                font.pixelSize: Theme.font.size
                 lit: cellItem.active
-                color: cellItem.active ? Config.colors.accent
-                    : Wm.isOccupied(cellItem.wsId) ? Config.colors.fg
-                    : Config.colors.muted
+                color: cellItem.active ? Theme.palette.accent
+                    : Wm.isOccupied(cellItem.wsId) ? Theme.palette.fg
+                    : Theme.palette.muted
 
                 Behavior on color {
                     ColorAnimation { duration: 150 }
@@ -51,18 +52,17 @@ Item {
         }
     }
 
-    Rectangle {
+    Marker {
         readonly property bool shown: Wm.activeWorkspace >= 1 && Wm.activeWorkspace <= root.count
 
         x: (Wm.activeWorkspace - 1) * root.cell + 5
         y: root.height - 4
         width: root.cell - 10
         height: 2
-        color: Config.colors.accent
         visible: shown
 
         Behavior on x {
-            NumberAnimation { duration: 260; easing.type: Easing.OutBack }
+            NumberAnimation { duration: 260; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
         }
     }
 }

@@ -4,10 +4,10 @@ import qs.components
 import qs.core
 import qs.services
 
-// Clock readout and a month grid. Today is lit; days of other months are
-// faded; ISO week numbers on the left. With a CalDAV server configured
-// (services/Events.qml), days with events get lamps in their calendar's color
-// and an agenda lists the selected day's events (click a day to select it).
+// Clock readout and a month grid with ISO week numbers on the left. With a
+// CalDAV server configured (services/Events.qml), days with events are marked
+// in their calendar's color and an agenda lists the selected day's events
+// (click a day to select it).
 // Keys: Left/Right or PageUp/PageDown change month, Home jumps back to today,
 // Escape closes. Scrolling over the grid changes month too.
 ColumnLayout {
@@ -107,7 +107,7 @@ ColumnLayout {
 
         StyledText {
             text: Qt.formatDateTime(Time.nowSeconds, "HH:mm")
-            color: Config.colors.accent
+            color: Theme.palette.accent
             glow: true
             font.pixelSize: 34
             font.bold: true
@@ -116,8 +116,8 @@ ColumnLayout {
             Layout.alignment: Qt.AlignBottom
             Layout.bottomMargin: 6
             text: Qt.formatDateTime(Time.nowSeconds, ":ss")
-            color: Config.colors.dim
-            font.pixelSize: Config.font.size + 2
+            color: Theme.palette.dim
+            font.pixelSize: Theme.font.size + 2
             font.bold: true
         }
         Item {
@@ -129,26 +129,27 @@ ColumnLayout {
             StyledText {
                 Layout.alignment: Qt.AlignRight
                 text: "W" + String(root.isoWeek(root.today)).padStart(2, "0")
-                color: Config.colors.dim
-                font.pixelSize: Config.font.size - 2
+                color: Theme.palette.dim
+                font.pixelSize: Theme.font.size - 2
                 font.bold: true
-                font.letterSpacing: 1.5
+                tracking: 1.5
             }
             StyledText {
                 Layout.alignment: Qt.AlignRight
                 text: "D" + String(root.dayOfYear(root.today)).padStart(3, "0")
-                color: Config.colors.muted
-                font.pixelSize: Config.font.size - 2
-                font.letterSpacing: 1.5
+                color: Theme.palette.muted
+                font.pixelSize: Theme.font.size - 2
+                tracking: 1.5
             }
         }
     }
     StyledText {
-        text: Qt.formatDate(root.today, "dddd d MMMM yyyy").toUpperCase()
-        color: Config.colors.dim
-        font.pixelSize: Config.font.size - 2
+        text: Qt.formatDate(root.today, "dddd d MMMM yyyy")
+        caps: true
+        color: Theme.palette.dim
+        font.pixelSize: Theme.font.size - 2
         font.bold: true
-        font.letterSpacing: 1.5
+        tracking: 1.5
     }
 
     // ── Month navigation ─────────────────────────────────────────────────────
@@ -168,10 +169,11 @@ ColumnLayout {
 
             StyledText {
                 anchors.centerIn: parent
-                text: Qt.formatDate(new Date(root.viewYear, root.viewMonth, 1), "MMMM yyyy").toUpperCase()
-                color: root.onToday ? Config.colors.fg : monthArea.containsMouse ? Config.colors.accent : Config.colors.dim
+                text: Qt.formatDate(new Date(root.viewYear, root.viewMonth, 1), "MMMM yyyy")
+                caps: true
+                color: root.onToday ? Theme.palette.fg : monthArea.containsMouse ? Theme.palette.accent : Theme.palette.dim
                 font.bold: true
-                font.letterSpacing: 1.5
+                tracking: 1.5
             }
             // Clicking the month label jumps back to today.
             MouseArea {
@@ -209,16 +211,18 @@ ColumnLayout {
 
                 to: 0
                 duration: 220
-                easing.type: Easing.OutBack
+                easing.type: Theme.motion.spring
+                easing.overshoot: Theme.motion.bounce
             }
 
             // Header: week column, then weekday names.
             StyledText {
                 Layout.preferredWidth: 26
                 horizontalAlignment: Text.AlignHCenter
-                text: "WK"
-                color: Config.colors.muted
-                font.pixelSize: Config.font.size - 4
+                text: "wk"
+                caps: true
+                color: Theme.palette.muted
+                font.pixelSize: Theme.font.size - 4
                 font.bold: true
             }
             Repeater {
@@ -230,11 +234,12 @@ ColumnLayout {
 
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
-                    text: Qt.locale().dayName(weekday, Locale.ShortFormat).slice(0, 2).toUpperCase()
-                    color: weekday === 0 || weekday === 6 ? Config.colors.muted : Config.colors.dim
-                    font.pixelSize: Config.font.size - 3
+                    text: Qt.locale().dayName(weekday, Locale.ShortFormat).slice(0, 2)
+                    caps: true
+                    color: weekday === 0 || weekday === 6 ? Theme.palette.muted : Theme.palette.dim
+                    font.pixelSize: Theme.font.size - 3
                     font.bold: true
-                    font.letterSpacing: 1
+                    tracking: 1
                 }
             }
 
@@ -248,68 +253,28 @@ ColumnLayout {
                     required property int index
                     readonly property bool isWeek: index % 8 === 0
                     readonly property date day: root.days[Math.floor(index / 8) * 7 + (index % 8) - 1] ?? new Date()
-                    readonly property bool inMonth: !isWeek && day.getMonth() === root.viewMonth
-                    readonly property bool isToday: !isWeek && root.sameDay(day, root.today)
-                    readonly property bool weekend: day.getDay() === 0 || day.getDay() === 6
-                    readonly property bool isSelected: !isWeek && !isToday && root.sameDay(day, root.selected)
-                    // One lamp per calendar with events that day (max 3).
-                    readonly property var lamps: isWeek ? [] : [...new Set(Events.on(day).map(e => e.color))].slice(0, 3)
 
                     Layout.fillWidth: true
                     Layout.preferredWidth: isWeek ? 26 : 34
                     implicitHeight: 30
 
-                    Chamfer {
-                        anchors.fill: parent
-                        cut: 5
-                        visible: !cell.isWeek
-                        fill: cell.isToday ? Config.colors.accent : dayArea.containsMouse ? Config.colors.surface : "transparent"
-                        stroke: cell.isSelected ? Config.colors.accent : "transparent"
-                    }
                     StyledText {
                         anchors.centerIn: parent
-                        text: cell.isWeek
-                            ? String(root.isoWeek(root.days[Math.floor(cell.index / 8) * 7 + (root.weekStart === 1 ? 3 : 4)])).padStart(2, "0")
-                            : cell.day.getDate()
-                        color: cell.isWeek ? Config.colors.muted
-                            : cell.isToday ? Config.colors.shadow
-                            : !cell.inMonth ? Config.colors.surface
-                            : cell.weekend ? Config.colors.dim
-                            : Config.colors.fg
-                        font.pixelSize: cell.isWeek ? Config.font.size - 3 : Config.font.size
-                        font.bold: cell.isToday
+                        text: String(root.isoWeek(root.days[Math.floor(cell.index / 8) * 7 + (root.weekStart === 1 ? 3 : 4)])).padStart(2, "0")
+                        color: Theme.palette.muted
+                        font.pixelSize: Theme.font.size - 3
+                        visible: cell.isWeek
                     }
-                    Row {
-                        anchors {
-                            bottom: parent.bottom
-                            bottomMargin: 3
-                            horizontalCenter: parent.horizontalCenter
-                        }
-                        spacing: 2
-
-                        Repeater {
-                            model: cell.lamps
-
-                            Rectangle {
-                                required property string modelData
-
-                                width: 5
-                                height: 2
-                                color: cell.isToday ? Config.colors.shadow : modelData
-                                opacity: cell.inMonth ? 1 : 0.4
-                            }
-                        }
-                    }
-                    MouseArea {
-                        id: dayArea
-
+                    CalendarDay {
                         anchors.fill: parent
-                        hoverEnabled: !cell.isWeek
-                        cursorShape: cell.isWeek ? Qt.ArrowCursor : Qt.PointingHandCursor
-                        onClicked: {
-                            if (!cell.isWeek)
-                                root.selected = cell.day;
-                        }
+                        visible: !cell.isWeek
+                        day: cell.day
+                        isToday: root.sameDay(cell.day, root.today)
+                        selected: !isToday && root.sameDay(cell.day, root.selected)
+                        inMonth: cell.day.getMonth() === root.viewMonth
+                        // One lamp per calendar with events that day (max 3).
+                        lamps: cell.isWeek ? [] : [...new Set(Events.on(cell.day).map(e => e.color))].slice(0, 3)
+                        onClicked: root.selected = cell.day
                     }
                 }
             }
@@ -331,13 +296,13 @@ ColumnLayout {
         visible: Events.available
 
         SectionTitle {
-            text: root.sameDay(root.selected, root.today) ? "TODAY" : Qt.formatDate(root.selected, "ddd d MMM").toUpperCase()
+            text: root.sameDay(root.selected, root.today) ? "today" : Qt.formatDate(root.selected, "ddd d MMM")
             code: root.agenda.length > 0 ? String(root.agenda.length).padStart(2, "0") : ""
         }
         StyledText {
             Layout.leftMargin: 8
             text: "-- nothing scheduled --"
-            color: Config.colors.muted
+            color: Theme.palette.muted
             visible: root.agenda.length === 0
         }
         Repeater {
@@ -353,19 +318,21 @@ ColumnLayout {
                 spacing: 8
                 opacity: past ? 0.45 : 1
 
-                Rectangle {
+                Marker {
                     implicitWidth: 3
                     implicitHeight: 14
+                    vertical: true
                     color: event.modelData.color
                 }
                 StyledText {
                     Layout.preferredWidth: 86
-                    text: event.modelData.allDay ? "ALL DAY"
+                    text: event.modelData.allDay ? "all day"
                         : `${Qt.formatTime(event.modelData.start, "HH:mm")}–${Qt.formatTime(event.modelData.end, "HH:mm")}`
-                    color: Config.colors.dim
-                    font.pixelSize: Config.font.size - 2
+                    color: Theme.palette.dim
+                    font.pixelSize: Theme.font.size - 2
                     font.bold: true
-                    font.letterSpacing: event.modelData.allDay ? 1.5 : 0
+                    caps: true
+                    tracking: event.modelData.allDay ? 1.5 : 0
                 }
                 StyledText {
                     Layout.fillWidth: true
@@ -377,8 +344,8 @@ ColumnLayout {
         StyledText {
             Layout.leftMargin: 8
             text: `+${root.agenda.length - 8} more`
-            color: Config.colors.muted
-            font.pixelSize: Config.font.size - 2
+            color: Theme.palette.muted
+            font.pixelSize: Theme.font.size - 2
             visible: root.agenda.length > 8
         }
     }

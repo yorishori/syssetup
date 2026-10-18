@@ -18,8 +18,8 @@ ColumnLayout {
 
     // Wired
     SectionTitle {
-        text: "WIRED"
-        code: "NETWORKD"
+        text: "Wired"
+        code: "networkd"
         visible: Network.wired.length > 0
     }
     Repeater {
@@ -39,14 +39,15 @@ ColumnLayout {
             StyledText {
                 Layout.fillWidth: true
                 text: modelData.name
-                color: modelData.connected ? Config.colors.accent : Config.colors.dim
+                color: modelData.connected ? Theme.palette.accent : Theme.palette.dim
                 glow: modelData.connected
             }
             StyledText {
-                text: modelData.connected ? "LINK" : "NO CABLE"
-                color: Config.colors.muted
-                font.pixelSize: Config.font.size - 3
-                font.letterSpacing: 1
+                text: modelData.connected ? "link" : "no cable"
+                caps: true
+                color: Theme.palette.muted
+                font.pixelSize: Theme.font.size - 3
+                tracking: 1
             }
         }
     }
@@ -58,15 +59,15 @@ ColumnLayout {
 
         SectionTitle {
             Layout.fillWidth: true
-            text: "WI-FI"
-            code: "IWD"
+            text: "Wi-Fi"
+            code: "iwd"
         }
         // Only the glyph spins; the key is disabled (no hover) while scanning.
         IconButton {
             icon: "\u{F0450}"
             visible: Network.wifiEnabled
             enabled: !Network.scanning
-            iconColor: Network.scanning ? Config.colors.accent : Config.colors.fg
+            iconColor: Network.scanning ? Theme.palette.accent : Theme.palette.fg
             onClicked: Network.scan()
 
             NumberAnimation on iconRotation {
@@ -81,7 +82,7 @@ ColumnLayout {
         IconButton {
             icon: Network.wifiEnabled ? "\u{F05A9}" : "\u{F05AA}"
             lit: Network.wifiEnabled
-            iconColor: Config.colors.off
+            iconColor: Theme.palette.off
             onClicked: Network.setWifiEnabled(!Network.wifiEnabled)
         }
     }
@@ -89,8 +90,8 @@ ColumnLayout {
     StyledText {
         Layout.fillWidth: true
         Layout.leftMargin: 8
-        text: "ERR " + Network.error
-        color: Config.colors.error
+        text: Theme.caps("err") + " " + Network.error
+        color: Theme.palette.error
         wrapMode: Text.Wrap
         visible: Network.error !== ""
     }
@@ -98,7 +99,7 @@ ColumnLayout {
     StyledText {
         Layout.leftMargin: 8
         text: !Network.wifiEnabled ? "-- radio off --" : Network.scanning ? "scanning…" : "-- no networks --"
-        color: Config.colors.muted
+        color: Theme.palette.muted
         visible: Network.networks.length === 0
     }
 
@@ -132,23 +133,24 @@ ColumnLayout {
                 SignalBars {
                     Layout.alignment: Qt.AlignVCenter
                     strength: item.modelData.strength
-                    color: item.modelData.connected ? Config.colors.accent : Config.colors.dim
+                    color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
                 }
                 StyledText {
                     Layout.fillWidth: true
                     text: item.modelData.name
-                    color: item.modelData.connected ? Config.colors.accent : Config.colors.dim
+                    color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
                     glow: item.modelData.connected
                     elide: Text.ElideRight
                 }
                 StyledText {
-                    text: Network.pending === item.modelData.name ? "LINKING…"
-                        : item.modelData.connected ? "LINK"
-                        : item.modelData.known ? "SAVED"
-                        : item.modelData.secure ? "\u{F033E}" : "OPEN"
-                    color: Config.colors.muted
-                    font.pixelSize: Config.font.size - 3
-                    font.letterSpacing: 1
+                    text: Network.pending === item.modelData.name ? "linking…"
+                        : item.modelData.connected ? "link"
+                        : item.modelData.known ? "saved"
+                        : item.modelData.secure ? "\u{F033E}" : "open"
+                    caps: true
+                    color: Theme.palette.muted
+                    font.pixelSize: Theme.font.size - 3
+                    tracking: 1
                 }
             }
 

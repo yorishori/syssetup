@@ -44,27 +44,27 @@ ColumnLayout {
             StyledText {
                 Layout.fillWidth: true
                 text: row.modelData
-                color: Config.colors.dim
+                color: Theme.palette.dim
                 elide: Text.ElideRight
             }
             IconButton {
                 size: 20
                 icon: "\u{F0143}"
-                iconColor: Config.colors.muted
+                iconColor: Theme.palette.muted
                 visible: row.index > 0
                 onClicked: root.changed(root.moved(row.index, row.index - 1))
             }
             IconButton {
                 size: 20
                 icon: "\u{F0140}"
-                iconColor: Config.colors.muted
+                iconColor: Theme.palette.muted
                 visible: row.index < root.items.length - 1
                 onClicked: root.changed(root.moved(row.index, row.index + 1))
             }
             IconButton {
                 size: 20
                 icon: "\u{F0156}"
-                iconColor: Config.colors.muted
+                iconColor: Theme.palette.muted
                 onClicked: root.changed(root.items.filter((_, i) => i !== row.index))
             }
         }

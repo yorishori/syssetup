@@ -29,7 +29,7 @@ Card {
 
     implicitWidth: 360
     implicitHeight: content.implicitHeight + 24
-    stroke: critical ? Config.colors.error : hovered ? Config.colors.accent : Config.colors.border
+    tone: critical ? Theme.palette.error : hovered ? Theme.palette.accent : "transparent"
 
     HoverHandler {
         id: hover
@@ -69,27 +69,12 @@ Card {
             Layout.alignment: Qt.AlignTop
             spacing: 4
 
-            // App name on a label tag, like a sticker on hardware.
-            Item {
-                implicitWidth: tagText.implicitWidth + 14
-                implicitHeight: tagText.implicitHeight + 4
-                visible: tagText.text !== ""
-
-                Chamfer {
-                    anchors.fill: parent
-                    cut: 4
-                    fill: root.critical ? Config.colors.error : Config.colors.surface
-                }
-                StyledText {
-                    id: tagText
-
-                    anchors.centerIn: parent
-                    text: (root.notif?.appName ?? "").toUpperCase()
-                    color: root.critical ? Config.colors.shadow : Config.colors.dim
-                    font.pixelSize: Config.font.size - 3
-                    font.bold: true
-                    font.letterSpacing: 1.5
-                }
+            // App name on a tag.
+            Tag {
+                text: root.notif?.appName ?? ""
+                fill: root.critical ? Theme.palette.error : Theme.palette.surface
+                textColor: root.critical ? Theme.palette.shadow : Theme.palette.dim
+                visible: text !== ""
             }
 
             StyledText {

@@ -81,6 +81,7 @@ PanelWindow {
 
         anchors {
             bottom: parent.bottom
+            bottomMargin: drawer.lift
             horizontalCenter: parent.horizontalCenter
         }
         width: 680
@@ -95,9 +96,9 @@ PanelWindow {
             Keys.onEscapePressed: Panels.close()
 
             SectionTitle {
-                text: "COMPOSE"
-                code: !Compose.loaded ? "LOADING" : win.typed === "" ? `${Compose.entries.length} SEQUENCES`
-                    : win.byName ? `${win.results.length} BY NAME` : `${win.results.length} MATCHES`
+                text: "Compose"
+                code: !Compose.loaded ? "loading" : win.typed === "" ? `${Compose.entries.length} sequences`
+                    : win.byName ? `${win.results.length} by name` : `${win.results.length} matches`
             }
 
             Placeholder {
@@ -121,25 +122,18 @@ PanelWindow {
                     cellHeight: 70
                     model: win.results
 
-                    delegate: Item {
+                    delegate: Tile {
                         id: tile
 
                         required property var modelData
                         required property int index
-                        readonly property bool current: win.selected === index
 
                         width: grid.cellWidth
                         height: grid.cellHeight
+                        current: win.selected === index
+                        onEntered: win.selected = tile.index
+                        onClicked: Compose.insert(tile.modelData.result)
 
-                        Chamfer {
-                            anchors {
-                                fill: parent
-                                margins: 2
-                            }
-                            cut: 5
-                            fill: tile.current ? Config.colors.surface : tileArea.containsMouse ? Config.colors.bgAlt : "transparent"
-                            stroke: tile.current ? Config.colors.accent : "transparent"
-                        }
                         ColumnLayout {
                             anchors.centerIn: parent
                             spacing: 2
@@ -147,7 +141,7 @@ PanelWindow {
                             StyledText {
                                 Layout.alignment: Qt.AlignHCenter
                                 text: tile.modelData.result
-                                color: tile.current ? Config.colors.accent : Config.colors.fg
+                                color: tile.current ? Theme.palette.accent : Theme.palette.fg
                                 glow: tile.current
                                 font.pixelSize: 24
                             }
@@ -161,21 +155,12 @@ PanelWindow {
                                     const esc = s => [...s].map(c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c).join(" ");
                                     const typedPart = esc(seq.slice(0, done));
                                     const rest = esc(seq.slice(done));
-                                    return `<font color="${Config.colors.muted}">${typedPart}</font>${typedPart && rest ? " " : ""}${rest}`;
+                                    return `<font color="${Theme.palette.muted}">${typedPart}</font>${typedPart && rest ? " " : ""}${rest}`;
                                 }
-                                color: Config.colors.dim
-                                font.pixelSize: Config.font.size - 2
+                                color: Theme.palette.dim
+                                font.pixelSize: Theme.font.size - 2
                                 font.bold: true
                             }
-                        }
-                        MouseArea {
-                            id: tileArea
-
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: win.selected = tile.index
-                            onClicked: Compose.insert(tile.modelData.result)
                         }
                     }
                 }
@@ -187,11 +172,12 @@ PanelWindow {
             // Selected: name
             StyledText {
                 Layout.fillWidth: true
-                text: win.results[win.selected]?.name.toUpperCase() ?? ""
-                color: Config.colors.muted
-                font.pixelSize: Config.font.size - 2
+                text: win.results[win.selected]?.name ?? ""
+                caps: true
+                color: Theme.palette.muted
+                font.pixelSize: Theme.font.size - 2
                 font.bold: true
-                font.letterSpacing: 1.5
+                tracking: 1.5
                 elide: Text.ElideRight
                 visible: text !== ""
             }

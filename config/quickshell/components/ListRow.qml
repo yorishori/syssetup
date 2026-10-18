@@ -1,13 +1,12 @@
 import QtQuick
 import QtQuick.Layouts
-import qs.core
 
-// A row in any panel list: cut-corner hover/selection fill, an accent marker
-// when `current` (keyboard selection), and a click area. Content goes in as
-// children and is laid out in a row with side margins.
+// A row in any panel list: hover/selection state, a marker when `current`
+// (keyboard selection), and a click area. Content goes in as children and is
+// laid out in a row with side margins.
 //
 //   ListRow { current: …; onClicked: mouse => …; StyledText { … } }
-Item {
+Skinned {
     id: root
 
     property bool current: false      // keyboard selection: fill + marker
@@ -24,22 +23,10 @@ Item {
     signal clicked(var mouse)
     signal entered
 
+    skin: "ListRow"
     Layout.fillWidth: true
     implicitHeight: 28
     opacity: enabled ? 1 : 0.5
-
-    Chamfer {
-        anchors.fill: parent
-        cut: 5
-        fill: root.current || root.highlighted || (root.hovered && root.enabled) ? Config.colors.surface : "transparent"
-    }
-    Rectangle {
-        anchors.verticalCenter: parent.verticalCenter
-        width: 2
-        height: 14
-        color: Config.colors.accent
-        visible: root.marker && root.current
-    }
 
     // Under the content, so buttons inside the row keep their own clicks.
     MouseArea {
@@ -66,5 +53,4 @@ Item {
         }
         spacing: 10
     }
-
 }

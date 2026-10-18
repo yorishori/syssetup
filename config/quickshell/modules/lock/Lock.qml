@@ -22,7 +22,7 @@ Scope {
         WlSessionLockSurface {
             id: surface
 
-            color: Config.colors.bg
+            color: Theme.palette.bg
 
             LockView {
                 anchors.fill: parent

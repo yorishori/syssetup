@@ -42,7 +42,7 @@ Scope {
                 right: true
             }
             exclusionMode: ExclusionMode.Ignore
-            color: Config.wallpaper.color || Config.colors.bg
+            color: Config.wallpaper.color || Theme.palette.bg
             WlrLayershell.layer: WlrLayer.Background
             WlrLayershell.namespace: "qs-wallpaper"
 

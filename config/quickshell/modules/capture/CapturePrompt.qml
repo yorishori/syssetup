@@ -21,7 +21,7 @@ PanelWindow {
 
     screen: Display.primary
     anchors.bottom: true
-    implicitWidth: drawer.width + 2 * drawer.shoulder
+    implicitWidth: drawer.width + 2 * drawer.overhang
     implicitHeight: 420
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
@@ -45,6 +45,7 @@ PanelWindow {
 
         anchors {
             bottom: parent.bottom
+            bottomMargin: drawer.lift
             horizontalCenter: parent.horizontalCenter
         }
         width: 560
@@ -57,7 +58,7 @@ PanelWindow {
             Keys.onEscapePressed: Capture.discard()
 
             SectionTitle {
-                text: win.isShot ? "SCREENSHOT" : Capture.kind === "screen" ? "SCREEN RECORDING" : "VOICE MEMO"
+                text: win.isShot ? "Screenshot" : Capture.kind === "screen" ? "Screen recording" : "Voice memo"
                 code: win.isShot ? `${Math.round(Capture.selection.width)}×${Math.round(Capture.selection.height)}` : win.duration(Capture.elapsed)
             }
 
@@ -81,7 +82,7 @@ PanelWindow {
 
                     StyledText {
                         text: Capture.kind === "screen" ? "\u{F0567}" : "\u{F036C}"
-                        color: Config.colors.accent
+                        color: Theme.palette.accent
                         glow: true
                         font.pixelSize: 26
                     }

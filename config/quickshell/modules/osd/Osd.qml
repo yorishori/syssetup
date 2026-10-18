@@ -29,7 +29,7 @@ PanelWindow {
 
     screen: Display.primary
     anchors.bottom: true
-    implicitWidth: drawer.width + 2 * drawer.shoulder
+    implicitWidth: drawer.width + 2 * drawer.overhang
     implicitHeight: 80
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
@@ -62,6 +62,7 @@ PanelWindow {
 
         anchors {
             bottom: parent.bottom
+            bottomMargin: drawer.lift
             horizontalCenter: parent.horizontalCenter
         }
         width: 380
@@ -78,9 +79,9 @@ PanelWindow {
                 text: win.kind === "mic"
                     ? (parent.muted ? "\u{F036D}" : "\u{F036C}")
                     : (parent.muted ? "\u{F075F}" : "\u{F057E}")
-                color: parent.muted ? Config.colors.off : Config.colors.accent
+                color: parent.muted ? Theme.palette.off : Theme.palette.accent
                 glow: !parent.muted
-                font.pixelSize: Config.font.size + 5
+                font.pixelSize: Theme.font.size + 5
             }
             Meter {
                 Layout.fillWidth: true
@@ -88,15 +89,16 @@ PanelWindow {
                 interactive: false
                 segments: 20
                 value: win.kind === "mic" ? (Audio.input?.audio?.volume ?? 0) : Audio.volume
-                color: parent.muted ? Config.colors.off : Config.colors.accent
+                color: parent.muted ? Theme.palette.off : Theme.palette.accent
             }
             StyledText {
                 Layout.preferredWidth: 44
                 horizontalAlignment: Text.AlignRight
-                text: parent.muted ? "MUTE" : String(win.kind === "mic" ? Math.round((Audio.input?.audio?.volume ?? 0) * 100) : Audio.percent).padStart(3, "0")
-                color: parent.muted ? Config.colors.off : Config.colors.fg
+                text: parent.muted ? "mute" : String(win.kind === "mic" ? Math.round((Audio.input?.audio?.volume ?? 0) * 100) : Audio.percent).padStart(3, "0")
+                color: parent.muted ? Theme.palette.off : Theme.palette.fg
+                caps: true
                 font.bold: true
-                font.letterSpacing: parent.muted ? 1.5 : 0
+                tracking: parent.muted ? 1.5 : 0
             }
         }
     }

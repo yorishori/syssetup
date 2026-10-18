@@ -58,10 +58,11 @@ Item {
         StyledText {
             Layout.preferredWidth: 52
             text: parent.label
-            color: Config.colors.muted
-            font.pixelSize: Config.font.size - 3
+            caps: true
+            color: Theme.palette.muted
+            font.pixelSize: Theme.font.size - 3
             font.bold: true
-            font.letterSpacing: 1.5
+            tracking: 1.5
         }
         StyledText {
             Layout.fillWidth: true
@@ -90,20 +91,20 @@ Item {
             interactive: false
             segments: 24
             value: parent.value
-            color: parent.value >= 0.85 ? Config.colors.warn : Config.colors.accent
+            color: parent.value >= 0.85 ? Theme.palette.warn : Theme.palette.accent
         }
         StyledText {
             text: root.percent(parent.value)
-            color: Config.colors.dim
-            font.pixelSize: Config.font.size - 2
+            color: Theme.palette.dim
+            font.pixelSize: Theme.font.size - 2
             font.bold: true
         }
         StyledText {
             Layout.preferredWidth: 34
             horizontalAlignment: Text.AlignRight
             text: parent.extra
-            color: Config.colors.muted
-            font.pixelSize: Config.font.size - 2
+            color: Theme.palette.muted
+            font.pixelSize: Theme.font.size - 2
             visible: text !== ""
         }
     }
@@ -129,8 +130,8 @@ Item {
                 spacing: 4
 
                 SectionTitle {
-                    text: "SYSTEM"
-                    code: `${Session.hostname.toUpperCase()} · UP ${Session.uptimeText}`
+                    text: "System"
+                    code: `${Session.hostname} · up ${Session.uptimeText}`
                 }
                 IconButton {
                     size: 24
@@ -163,15 +164,15 @@ Item {
                 value: Sysinfo.memTotal > 0 ? Sysinfo.memUsed / Sysinfo.memTotal : 0
             }
             Fact {
-                label: "BOARD"
+                label: "board"
                 value: Sysinfo.board
             }
             Fact {
-                label: "KERNEL"
+                label: "kernel"
                 value: Sysinfo.kernel
 
                 trailing: Tag {
-                    text: "REBOOT PENDING"
+                    text: "reboot pending"
                     visible: Sysinfo.rebootPending
                 }
             }
@@ -183,14 +184,14 @@ Item {
                 spacing: 4
 
                 SectionTitle {
-                    text: "UPDATES"
+                    text: "Updates"
                     code: Updates.checking ? "" : Updates.count > 0 ? String(Updates.count).padStart(2, "0") : "--"
                 }
                 IconButton {
                     size: 24
                     icon: "\u{F0450}"
                     enabled: !Updates.checking
-                    iconColor: Updates.checking ? Config.colors.accent : Config.colors.fg
+                    iconColor: Updates.checking ? Theme.palette.accent : Theme.palette.fg
                     onClicked: Updates.check(true)
 
                     NumberAnimation on iconRotation {
@@ -228,17 +229,18 @@ Item {
                         StyledText {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
-                            text: parent.modelData.toUpperCase()
-                            color: Config.colors.muted
-                            font.pixelSize: Config.font.size - 3
+                            text: parent.modelData
+                            caps: true
+                            color: Theme.palette.muted
+                            font.pixelSize: Theme.font.size - 3
                             font.bold: true
-                            font.letterSpacing: 1.5
+                            tracking: 1.5
                         }
                         StyledText {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
                             text: Updates.checking ? "··" : String(parent.n).padStart(2, "0")
-                            color: parent.n > 0 && !Updates.checking ? Config.colors.accent : Config.colors.surface
+                            color: parent.n > 0 && !Updates.checking ? Theme.palette.accent : Theme.palette.surface
                             glow: parent.n > 0 && !Updates.checking
                             font.pixelSize: 22
                             font.bold: true
@@ -257,8 +259,8 @@ Item {
                         : Updates.failed ? "-- check failed (offline?) --"
                         : Updates.count === 0 ? "-- up to date --"
                         : `last upgrade ${root.ago(Updates.lastUpgrade)}`
-                    color: Config.colors.muted
-                    font.pixelSize: Config.font.size - 2
+                    color: Theme.palette.muted
+                    font.pixelSize: Theme.font.size - 2
                 }
                 TextButton {
                     text: `\u{F06B0}  update${Updates.aurHelper ? " (" + Updates.aurHelper + ")" : ""}`
@@ -273,13 +275,13 @@ Item {
             // ── Storage ──────────────────────────────────────────────────────
             SectionTitle {
                 Layout.topMargin: 6
-                text: "STORAGE"
+                text: "Storage"
                 code: String(Storage.mounted.length + Storage.network.length).padStart(2, "0")
             }
             StyledText {
                 Layout.leftMargin: 8
-                text: "ERR " + Storage.error
-                color: Config.colors.error
+                text: Theme.caps("err") + " " + Storage.error
+                color: Theme.palette.error
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
                 visible: Storage.error !== ""
@@ -303,7 +305,7 @@ Item {
                         StyledText {
                             Layout.preferredWidth: 52
                             text: disk.modelData.removable ? "\u{F129E}" : "\u{F02CA}"
-                            color: disk.usage >= 0.85 ? Config.colors.warn : Config.colors.dim
+                            color: disk.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
                         }
                         StyledText {
                             text: disk.modelData.mount
@@ -312,26 +314,26 @@ Item {
                         StyledText {
                             Layout.fillWidth: true
                             text: `${disk.modelData.name} · ${disk.modelData.fstype}`
-                            color: Config.colors.muted
-                            font.pixelSize: Config.font.size - 2
+                            color: Theme.palette.muted
+                            font.pixelSize: Theme.font.size - 2
                             elide: Text.ElideRight
                         }
                         StyledText {
                             text: `${Storage.human(disk.modelData.avail)} free`
-                            color: disk.usage >= 0.85 ? Config.colors.warn : Config.colors.dim
-                            font.pixelSize: Config.font.size - 2
+                            color: disk.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
+                            font.pixelSize: Theme.font.size - 2
                             font.bold: true
                         }
                         IconButton {
                             size: 22
                             icon: "\u{F07AF}"
-                            iconColor: Config.colors.dim
+                            iconColor: Theme.palette.dim
                             onClicked: root.run(`ncdu -x '${disk.modelData.mount}'`)
                         }
                         IconButton {
                             size: 22
                             icon: "\u{F01EA}"
-                            iconColor: Config.colors.dim
+                            iconColor: Theme.palette.dim
                             visible: disk.modelData.removable
                             onClicked: Storage.eject(disk.modelData.device)
                         }
@@ -354,12 +356,12 @@ Item {
                     StyledText {
                         Layout.preferredWidth: 52
                         text: "\u{F129E}"
-                        color: Config.colors.muted
+                        color: Theme.palette.muted
                     }
                     StyledText {
                         Layout.fillWidth: true
                         text: `${modelData.name} · ${modelData.fstype} · ${Storage.human(modelData.size)}`
-                        color: Config.colors.dim
+                        color: Theme.palette.dim
                         elide: Text.ElideRight
                     }
                     TextButton {
@@ -390,32 +392,32 @@ Item {
                         StyledText {
                             Layout.preferredWidth: 52
                             text: "\u{F08F3}"
-                            color: share.modelData.state === "failed" ? Config.colors.warn
-                                : share.mounted ? Config.colors.dim : Config.colors.muted
+                            color: share.modelData.state === "failed" ? Theme.palette.warn
+                                : share.mounted ? Theme.palette.dim : Theme.palette.muted
                         }
                         StyledText {
                             text: share.modelData.mount
                             font.bold: true
-                            color: share.mounted ? Config.colors.fg : Config.colors.dim
+                            color: share.mounted ? Theme.palette.fg : Theme.palette.dim
                         }
                         StyledText {
                             Layout.fillWidth: true
                             text: `${share.modelData.source} · ${share.modelData.fstype}`
-                            color: Config.colors.muted
-                            font.pixelSize: Config.font.size - 2
+                            color: Theme.palette.muted
+                            font.pixelSize: Theme.font.size - 2
                             elide: Text.ElideRight
                         }
                         StyledText {
                             text: `${Storage.human(share.modelData.avail)} free`
-                            color: share.usage >= 0.85 ? Config.colors.warn : Config.colors.dim
-                            font.pixelSize: Config.font.size - 2
+                            color: share.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
+                            font.pixelSize: Theme.font.size - 2
                             font.bold: true
                             visible: share.mounted && share.modelData.size > 0
                         }
                         Tag {
-                            text: share.modelData.state === "failed" ? "FAILED" : share.modelData.state === "idle" ? "IDLE" : "OFF"
-                            fill: share.modelData.state === "failed" ? Config.colors.warn : Config.colors.surface
-                            textColor: share.modelData.state === "failed" ? Config.colors.shadow : Config.colors.dim
+                            text: share.modelData.state === "failed" ? "failed" : share.modelData.state === "idle" ? "idle" : "off"
+                            fill: share.modelData.state === "failed" ? Theme.palette.warn : Theme.palette.surface
+                            textColor: share.modelData.state === "failed" ? Theme.palette.shadow : Theme.palette.dim
                             visible: !share.mounted
                         }
                         TextButton {
@@ -426,7 +428,7 @@ Item {
                         IconButton {
                             size: 22
                             icon: "\u{F07AF}"
-                            iconColor: Config.colors.dim
+                            iconColor: Theme.palette.dim
                             visible: share.mounted
                             onClicked: root.run(`ncdu -x '${share.modelData.mount}'`)
                         }
@@ -439,8 +441,8 @@ Item {
                     StyledText {
                         Layout.leftMargin: 62
                         text: `systemd: ${share.modelData.reason}`
-                        color: Config.colors.warn
-                        font.pixelSize: Config.font.size - 3
+                        color: Theme.palette.warn
+                        font.pixelSize: Theme.font.size - 3
                         visible: share.modelData.state === "failed"
                     }
                 }
@@ -468,18 +470,18 @@ Item {
                     StyledText {
                         Layout.preferredWidth: 52
                         text: "\u{F0553}"
-                        color: Config.colors.dim
+                        color: Theme.palette.dim
                     }
                     StyledText {
                         Layout.fillWidth: true
                         text: modelData.name
-                        color: Config.colors.dim
+                        color: Theme.palette.dim
                         elide: Text.ElideRight
                     }
                     StyledText {
                         text: modelData.id
-                        color: Config.colors.muted
-                        font.pixelSize: Config.font.size - 3
+                        color: Theme.palette.muted
+                        font.pixelSize: Theme.font.size - 3
                     }
                 }
             }
@@ -487,7 +489,7 @@ Item {
             // ── Tools ────────────────────────────────────────────────────────
             SectionTitle {
                 Layout.topMargin: 6
-                text: "TOOLS"
+                text: "Tools"
             }
             Flow {
                 Layout.fillWidth: true

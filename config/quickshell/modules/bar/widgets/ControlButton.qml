@@ -11,7 +11,7 @@ BarLabel {
 
     text: "\u{F062E}"
     lit: active
-    color: active ? Config.colors.accent : area.containsMouse ? Config.colors.fg : Config.colors.dim
+    color: active ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
 
     Behavior on color {
         ColorAnimation { duration: 150 }

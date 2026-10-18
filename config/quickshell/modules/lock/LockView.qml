@@ -9,7 +9,7 @@ import qs.services
 // date; on the primary screen also the console: password prompt (focus always
 // returns to it), passcode lamps when lock.passcode is set, and power keys
 // (reboot and power off need a second press within 3 s).
-Rectangle {
+ScreenFill {
     id: root
 
     property bool primary: true
@@ -55,12 +55,6 @@ Rectangle {
         onClicked: root.refocus()
     }
 
-    color: Config.colors.bg
-
-    Scanlines {
-        anchors.fill: parent
-    }
-
     ColumnLayout {
         id: panel
 
@@ -77,7 +71,7 @@ Rectangle {
             NumberAnimation { target: shake; property: "x"; to: -10; duration: 50 }
             NumberAnimation { target: shake; property: "x"; to: 10; duration: 70 }
             NumberAnimation { target: shake; property: "x"; to: -6; duration: 60 }
-            NumberAnimation { target: shake; property: "x"; to: 0; duration: 80; easing.type: Easing.OutBack }
+            NumberAnimation { target: shake; property: "x"; to: 0; duration: 80; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
         }
         Connections {
             target: Session
@@ -103,17 +97,18 @@ Rectangle {
         StyledText {
             Layout.alignment: Qt.AlignHCenter
             text: Qt.formatDateTime(Time.now, "HH:mm")
-            color: Config.colors.accent
+            color: Theme.palette.accent
             glow: true
             font.pixelSize: 96
             font.bold: true
         }
         StyledText {
             Layout.alignment: Qt.AlignHCenter
-            text: Qt.formatDate(Time.now, "dddd d MMMM").toUpperCase()
-            color: Config.colors.dim
+            text: Qt.formatDate(Time.now, "dddd d MMMM")
+            caps: true
+            color: Theme.palette.dim
             font.bold: true
-            font.letterSpacing: 3
+            tracking: 3
         }
 
         // Console (primary screen only)
@@ -140,15 +135,15 @@ Rectangle {
                 spacing: 12
 
                 SectionTitle {
-                    text: "LOCKED"
-                    code: Session.hostname.toUpperCase()
+                    text: "Locked"
+                    code: Session.hostname
                 }
                 RowLayout {
                     spacing: 10
 
                     Lamp {
                         on: true
-                        litColor: Session.authState === "failed" ? Config.colors.warn : Config.colors.accent
+                        litColor: Session.authState === "failed" ? Theme.palette.warn : Theme.palette.accent
                     }
                     StyledText {
                         text: Quickshell.env("USER") ?? ""
@@ -190,34 +185,33 @@ Rectangle {
                             implicitWidth: 12
                             implicitHeight: 12
                             on: index < field.text.length
-                            litColor: Session.authState === "failed" ? Config.colors.warn : Config.colors.accent
+                            litColor: Session.authState === "failed" ? Theme.palette.warn : Theme.palette.accent
                         }
                     }
                 }
                 StyledText {
-                    text: Session.authState === "checking" ? "AUTHENTICATING…"
-                        : Session.authState === "failed" ? `ACCESS DENIED · ${String(Session.failures).padStart(2, "0")}`
-                        : root.passcode > 0 ? "TYPE YOUR PASSCODE" : "ENTER TO UNLOCK"
-                    color: Session.authState === "failed" ? Config.colors.warn : Config.colors.muted
-                    font.pixelSize: Config.font.size - 2
+                    text: Session.authState === "checking" ? "authenticating…"
+                        : Session.authState === "failed" ? `access denied · ${String(Session.failures).padStart(2, "0")}`
+                        : root.passcode > 0 ? "type your passcode" : "enter to unlock"
+                    caps: true
+                    color: Session.authState === "failed" ? Theme.palette.warn : Theme.palette.muted
+                    font.pixelSize: Theme.font.size - 2
                     font.bold: true
-                    font.letterSpacing: 1.5
+                    tracking: 1.5
                 }
                 StyledText {
                     Layout.fillWidth: true
                     text: Session.authMessage
-                    color: Config.colors.muted
-                    font.pixelSize: Config.font.size - 3
+                    color: Theme.palette.muted
+                    font.pixelSize: Theme.font.size - 3
                     wrapMode: Text.Wrap
                     visible: text !== ""
                 }
 
                 // Power keys
-                Rectangle {
+                Divider {
                     Layout.fillWidth: true
                     Layout.topMargin: 4
-                    implicitHeight: 1
-                    color: Config.colors.border
                 }
                 RowLayout {
                     Layout.fillWidth: true

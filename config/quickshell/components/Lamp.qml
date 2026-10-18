@@ -1,12 +1,12 @@
 import QtQuick
 import qs.core
 
-// Small square indicator lamp: lit (accent, or `color`) when `on`.
-Rectangle {
+// Indicator lamp: lit (accent, or `litColor`) when `on`; `pulse` makes it
+// throb (something is live, e.g. recording).
+Skinned {
     property bool on: false
-    property color litColor: Config.colors.accent
+    property color litColor: Theme.palette.accent
+    property bool pulse: false
 
-    implicitWidth: 6
-    implicitHeight: 6
-    color: on ? litColor : Config.colors.surface
+    skin: "Lamp"
 }

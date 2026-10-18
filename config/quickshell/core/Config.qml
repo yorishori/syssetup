@@ -18,44 +18,21 @@ Singleton {
 
     readonly property var defaults: ({
         screen: "",  // output name, e.g. "DP-3"; empty = first screen
-        font: {
-            family: "JetBrainsMono Nerd Font",
-            size: 13
-        },
-        // Catppuccin Mocha, by role.
-        colors: {
-            bg: "#11111b",       // crust: the console (bar and drops)
-            bgAlt: "#181825",    // mantle: recessed wells (meters, inputs)
-            shadow: "#11111b",   // crust: text on lit surfaces
-            surface: "#313244",  // surface0: hover, unlit segments
-            border: "#45475a",   // surface1: hairlines
-            fg: "#cdd6f4",       // text: primary content
-            dim: "#a6adc8",      // subtext0: calm state (bar default)
-            muted: "#6c7086",    // overlay0: empty, secondary
-            off: "#99eba0ac",    // maroon at 60%: switched off by you (mute, DND, radio off)
-            accent: "#94e2d5",   // teal: lit / active / in use
-            ok: "#a6e3a1",       // green: up / healthy (lamps)
-            warn: "#fab387",     // peach: needs attention
-            error: "#f38ba8"     // red: broken
+        // The look: which theme (themes/<name>), and your tweaks to each one's
+        // tokens, e.g. cyber: { palette: { accent: "#89b4fa" } }. See core/Theme.qml.
+        theme: {
+            name: "cyber",
+            cyber: {},
+            bubble: {}
         },
         wallpaper: {
             path: "",            // image file ("~/…" ok); empty = plain color
             fit: "fill",         // fill (crop), fit, center, tile
-            color: ""            // the plain color; empty = colors.bg
-        },
-        // Retro-futurist geometry and effects.
-        shape: {
-            cut: 6,              // size of the 45-degree corner cuts, px
-            border: 1            // hairline width, px
-        },
-        effects: {
-            glow: 0.6,           // phosphor glow on lit elements, 0 = off
-            scanlines: 0.25,     // scanline strength on panels, 0 = off
-            backdrop: 0.45       // darkening behind the launcher, 0 = off
+            color: ""            // the plain color; empty = the theme's background
         },
         bar: {
             height: 32,
-            padding: 12,
+            padding: 18,
             spacing: 16,
             workspaces: 5  // minimum number of workspaces shown
         },
@@ -111,12 +88,9 @@ Singleton {
     property var values: defaults
 
     readonly property string screen: values.screen
-    readonly property var font: values.font
-    readonly property var colors: values.colors
+    readonly property var theme: values.theme
     readonly property var wallpaper: values.wallpaper
     readonly property var idle: values.idle
-    readonly property var shape: values.shape
-    readonly property var effects: values.effects
     readonly property var bar: values.bar
     readonly property var launcher: values.launcher
     readonly property var calendar: values.calendar
@@ -126,7 +100,7 @@ Singleton {
     readonly property var clipboard: values.clipboard
     readonly property var notifications: values.notifications
 
-    // The setting at a dotted path, e.g. get("effects.glow").
+    // The setting at a dotted path, e.g. get("bar.height").
     function get(path: string): var {
         return path.split(".").reduce((o, k) => o?.[k], values);
     }
@@ -172,25 +146,55 @@ Singleton {
         printErrors: false
     }
 
-    // Recursively overlay `over` onto `base`; keys unknown to base are ignored.
+    // Recursively overlay `over` onto `base`; keys unknown to base are ignored,
+    // except under an empty object, which takes whatever is there (the
+    // per-theme tweaks: their keys are the theme's business).
     function merge(base: var, over: var): var {
         const out = {};
         for (const key in base) {
             const b = base[key], o = over?.[key];
+            const isObject = v => v !== null && typeof v === "object" && !Array.isArray(v);
             if (o === undefined)
                 out[key] = b;
             else if (Array.isArray(b))
                 out[key] = Array.isArray(o) ? o : b;
-            else if (b !== null && typeof b === "object")
-                out[key] = merge(b, o);
+            else if (isObject(b))
+                out[key] = !isObject(o) ? b : Object.keys(b).length === 0 ? o : merge(b, o);
             else
                 out[key] = o;
         }
         return out;
     }
 
+    // Older configs kept the look at the top level (colors, font, shape,
+    // effects): move it into the cyber theme's tweaks. True if anything moved.
+    function migrate(json: var): bool {
+        const old = ["colors", "font", "shape", "effects"].filter(k => k in json);
+        if (old.length === 0)
+            return false;
+        const cyber = {};
+        if (json.colors)
+            cyber.palette = json.colors;
+        if (json.font)
+            cyber.font = json.font;
+        if (json.shape)
+            cyber.shape = json.shape;
+        if (json.effects) {
+            const effects = Object.assign({}, json.effects);
+            if (effects.glow !== undefined)
+                cyber.glow = { opacity: effects.glow };
+            delete effects.glow;
+            cyber.effects = effects;
+        }
+        json.theme = json.theme ?? {};
+        json.theme.cyber = Object.assign(cyber, json.theme.cyber ?? {});
+        for (const k of old)
+            delete json[k];
+        return true;
+    }
+
     // qs ipc call config <get PATH|set PATH JSON|add PATH ITEM|remove PATH ITEM>
-    //   config set effects.glow 0.8      config set colors.accent '"#cba6f7"'
+    //   config set theme.name '"bubble"'      config set theme.cyber.palette.accent '"#cba6f7"'
     //   config add notifications.mutedApps steam
     IpcHandler {
         target: "config"
@@ -205,7 +209,8 @@ Singleton {
             } catch (e) {
                 return `not JSON: ${e.message} (strings need quotes: '"text"')`;
             }
-            if (root.get(path) === undefined)
+            // Theme tweaks are free-form (the theme decides what they mean).
+            if (root.get(path) === undefined && !path.startsWith("theme."))
                 return `unknown setting: ${path}`;
             root.set(path, value);
             return "ok";
@@ -245,8 +250,12 @@ Singleton {
             if (content === root.writtenText)
                 return;
             try {
-                root.values = root.merge(root.defaults, JSON.parse(content));
+                const json = JSON.parse(content);
+                const migrated = root.migrate(json);
+                root.values = root.merge(root.defaults, json);
                 Health.resolve("config");
+                if (migrated)
+                    writeDelay.restart();
             } catch (e) {
                 Health.report("config", `config.json is invalid, keeping previous values: ${e.message}`);
             }

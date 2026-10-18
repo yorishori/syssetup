@@ -21,15 +21,16 @@ Item {
 
         BarLabel {
             text: Time.format("HH:mm")
-            color: root.active ? Config.colors.accent : Config.colors.fg
+            color: root.active ? Theme.palette.accent : Theme.palette.fg
             lit: root.active
         }
         BarLabel {
             anchors.verticalCenter: parent.verticalCenter
-            text: Time.format("ddd dd MMM").toUpperCase()
-            color: area.containsMouse || root.active ? Config.colors.fg : Config.colors.dim
-            font.pixelSize: Config.font.size - 1
-            font.letterSpacing: 1
+            text: Time.format("ddd dd MMM")
+            caps: true
+            color: area.containsMouse || root.active ? Theme.palette.fg : Theme.palette.dim
+            font.pixelSize: Theme.font.size - 1
+            tracking: 1
         }
     }
 

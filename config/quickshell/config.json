@@ -1,41 +1,49 @@
 {
   "screen": "DP-3",
-  "font": {
-    "family": "JetBrainsMono Nerd Font",
-    "size": 14
-  },
-  "colors": {
-    "bg": "#11111b",
-    "bgAlt": "#181825",
-    "shadow": "#11111b",
-    "surface": "#313244",
-    "border": "#45475a",
-    "fg": "#cdd6f4",
-    "dim": "#a6adc8",
-    "muted": "#6c7086",
-    "off": "#99eba0ac",
-    "accent": "#89b4fa",
-    "ok": "#a6e3a1",
-    "warn": "#fab387",
-    "error": "#f38ba8"
+  "theme": {
+    "name": "cyber",
+    "cyber": {
+      "palette": {
+        "bg": "#11111b",
+        "bgAlt": "#181825",
+        "shadow": "#11111b",
+        "surface": "#313244",
+        "border": "#45475a",
+        "fg": "#cdd6f4",
+        "dim": "#a6adc8",
+        "muted": "#6c7086",
+        "off": "#99eba0ac",
+        "accent": "#89b4fa",
+        "ok": "#a6e3a1",
+        "warn": "#fab387",
+        "error": "#f38ba8"
+      },
+      "font": {
+        "family": "JetBrainsMono Nerd Font",
+        "size": 14
+      },
+      "shape": {
+        "cut": 6,
+        "border": 1
+      },
+      "glow": {
+        "opacity": 0.6
+      },
+      "effects": {
+        "scanlines": 0.25,
+        "backdrop": 0.45
+      }
+    },
+    "bubble": {}
   },
   "wallpaper": {
     "path": "",
     "fit": "center",
     "color": "#2c2633"
   },
-  "shape": {
-    "cut": 6,
-    "border": 1
-  },
-  "effects": {
-    "glow": 0.6,
-    "scanlines": 0.25,
-    "backdrop": 0.45
-  },
   "bar": {
     "height": 40,
-    "padding": 12,
+    "padding": 18,
     "spacing": 16,
     "workspaces": 6
   },

@@ -11,8 +11,8 @@ BarLabel {
 
     text: "\u{F08C7}"
     lit: active
-    color: active ? Config.colors.accent : area.containsMouse ? Config.colors.fg : Config.colors.dim
-    font.pixelSize: Config.font.size + 3
+    color: active ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
+    font.pixelSize: Theme.font.size + 3
 
     Behavior on color {
         ColorAnimation { duration: 150 }

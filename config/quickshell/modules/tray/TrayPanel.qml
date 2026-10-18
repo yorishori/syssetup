@@ -106,14 +106,14 @@ ColumnLayout {
     }
 
     SectionTitle {
-        text: root.title.toUpperCase()
-        code: "TRAY"
+        text: root.title
+        code: "tray"
     }
 
     // Back row inside submenus
     MenuRow {
         visible: root.stack.length > 0
-        label: "BACK"
+        label: "back"
         glyph: "\u{F0141}"
         stencil: true
         onClicked: root.back()
@@ -136,11 +136,9 @@ ColumnLayout {
             Layout.fillWidth: true
             implicitHeight: modelData.isSeparator ? 9 : 26
 
-            Rectangle {
+            Divider {
                 anchors.centerIn: parent
                 width: parent.width - 12
-                height: 1
-                color: Config.colors.border
                 visible: entryItem.modelData.isSeparator
             }
 
@@ -191,25 +189,26 @@ ColumnLayout {
         }
         StyledText {
             text: row.glyph
-            color: Config.colors.dim
+            color: Theme.palette.dim
             visible: row.glyph !== ""
         }
         StyledText {
             Layout.fillWidth: true
             text: row.label
             elide: Text.ElideRight
-            color: !row.enabled ? Config.colors.muted
-                : row.checked ? Config.colors.accent
-                : row.current || row.hovered ? Config.colors.fg
-                : Config.colors.dim
+            color: !row.enabled ? Theme.palette.muted
+                : row.checked ? Theme.palette.accent
+                : row.current || row.hovered ? Theme.palette.fg
+                : Theme.palette.dim
             glow: row.checked && row.enabled
-            font.pixelSize: row.stencil ? Config.font.size - 2 : Config.font.size
+            font.pixelSize: row.stencil ? Theme.font.size - 2 : Theme.font.size
             font.bold: row.stencil
-            font.letterSpacing: row.stencil ? 1.5 : 0
+            caps: row.stencil
+            tracking: row.stencil ? 1.5 : 0
         }
         StyledText {
             text: "\u{F0142}"
-            color: Config.colors.muted
+            color: Theme.palette.muted
             visible: row.submenu
         }
     }
