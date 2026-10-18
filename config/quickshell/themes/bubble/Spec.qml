@@ -57,7 +57,7 @@ QtObject {
         shape: {
             radius: 16,          // corner rounding of cards and panels, px
             border: 2,           // outline width (focus, selection), px
-            outline: 1           // edge of islands, panels and cards, px; 0 = none
+            outline: 2           // edge of islands, panels and cards, px; 0 = none
         },
         effects: {
             shadow: 0.5,         // shadow under floating things, 0 = off
