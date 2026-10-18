@@ -26,9 +26,9 @@ BarLabel {
             : s >= 0 ? "\u{F091F}"
             : "\u{F092F}";
     }
-    color: online ? Config.colors.dim
-        : !Network.wifiEnabled ? Config.colors.off
-        : Config.colors.warn
+    color: online ? Theme.palette.dim
+        : !Network.wifiEnabled ? Theme.palette.off
+        : Theme.palette.warn
 
     Behavior on color {
         ColorAnimation { duration: 250 }

@@ -13,7 +13,9 @@ import qs.services
 // text, words (space-separated list), strings, objects, colors (list editors),
 // action (a key that runs something: run(), busy(), status(); no path).
 // Optional: `when: () => bool` shows a setting only while it applies; a color
-// setting takes `palette: "dark"` for background tones.
+// setting takes `palette: "dark"` for background tones. `themed` marks the
+// active theme's own settings (from its Spec.qml): read through Theme, with
+// the theme's values as defaults.
 Item {
     id: root
 
@@ -23,28 +25,25 @@ Item {
     property int section: 0
 
     readonly property var sections: [
-        { title: "APPEARANCE", items: [
+        { title: "Appearance", items: [
             { label: "Wallpaper", path: "wallpaper.path", type: "text", hint: "image file; empty = plain" },
             { label: "Fit", path: "wallpaper.fit", type: "choice",
-              options: [{ label: "FILL", value: "fill" }, { label: "FIT", value: "fit" },
-                        { label: "CENTER", value: "center" }, { label: "TILE", value: "tile" }],
+              options: [{ label: "fill", value: "fill" }, { label: "fit", value: "fit" },
+                        { label: "center", value: "center" }, { label: "tile", value: "tile" }],
               when: () => !!Config.wallpaper.path },
             { label: "Plain color", path: "wallpaper.color", type: "color", palette: "dark",
               hint: "the background without a wallpaper", when: () => !Config.wallpaper.path },
-            { label: "Accent", path: "colors.accent", type: "color", hint: "lit, active, in use" },
-            { label: "Warning", path: "colors.warn", type: "color", hint: "needs attention" },
-            { label: "Font size", path: "font.size", type: "int", min: 10, max: 18, suffix: "px" },
-            { label: "Corner cut", path: "shape.cut", type: "int", min: 0, max: 14, suffix: "px" },
-            { label: "Glow", path: "effects.glow", type: "level", hint: "halo on lit things" },
-            { label: "Scanlines", path: "effects.scanlines", type: "level" },
-            { label: "Backdrop", path: "effects.backdrop", type: "level", hint: "darkening behind big panels" }
+            // The active theme's own knobs (its Spec.qml), kept per theme.
+            ...(Theme.spec?.settings ?? []).map(item => Object.assign({}, item, {
+                path: `theme.${Theme.name}.${item.path}`, themed: item.path
+            }))
         ] },
-        { title: "BAR", items: [
+        { title: "Bar", items: [
             { label: "Screen", path: "screen", type: "screen", hint: "where the shell lives" },
             { label: "Height", path: "bar.height", type: "int", min: 24, max: 48, suffix: "px" },
             { label: "Workspaces", path: "bar.workspaces", type: "int", min: 1, max: 10, hint: "shown at least" }
         ] },
-        { title: "LAUNCHER", items: [
+        { title: "Launcher", items: [
             { label: "Terminal", path: "launcher.terminal", type: "words", hint: "command prefix, e.g. kitty -e" },
             { label: "Web search", path: "launcher.search", type: "text", hint: "%s is the query" },
             { label: "Entries", path: "launcher.entries", type: "objects", hint: "your own commands",
@@ -58,18 +57,18 @@ Item {
               ],
               title: e => e.name ?? "", subtitle: e => e.command ?? "" }
         ] },
-        { title: "CALENDAR", items: [
+        { title: "Calendar", items: [
             { label: "Week starts", path: "calendar.weekStart", type: "choice",
-              options: [{ label: "MON", value: 1 }, { label: "SUN", value: 0 }] },
+              options: [{ label: "mon", value: 1 }, { label: "sun", value: 0 }] },
             { label: "CalDAV URL", path: "calendar.url", type: "text", hint: "login from ~/.netrc" },
             { label: "Colors", path: "calendar.colors", type: "colors", hint: "one per calendar, in order" }
         ] },
-        { title: "NOTIFICATIONS", items: [
+        { title: "Notifications", items: [
             { label: "Popup time", path: "notifications.timeout", type: "int", min: 1, max: 30, suffix: "s",
               hint: "when the app doesn't say" },
             { label: "Muted apps", path: "notifications.mutedApps", type: "strings", hint: "popups silenced" }
         ] },
-        { title: "LOCK", items: [
+        { title: "Lock", items: [
             { label: "Lock after", path: "idle.lock", type: "int", min: 0, max: 120, suffix: "min",
               hint: "idle time before locking; 0 = never" },
             { label: "Screen off", path: "idle.screenOff", type: "int", min: 0, max: 120, suffix: "min",
@@ -79,7 +78,7 @@ Item {
             { label: "Passcode", path: "lock.passcode", type: "int", min: 0, max: 12, suffix: "ch",
               hint: "checks by itself after this many characters; must equal your password's length; 0 = press Enter" }
         ] },
-        { title: "CONTROL", items: [
+        { title: "Control", items: [
             { label: "Tools", path: "controlCenter.tools", type: "objects", hint: "terminal keys",
               fields: [
                   { key: "label", label: "label", type: "text" },
@@ -87,22 +86,24 @@ Item {
               ],
               title: t => t.label ?? "", subtitle: t => t.command ?? "" }
         ] },
-        { title: "CLIPBOARD", items: [
+        { title: "Clipboard", items: [
             { label: "Terminals", path: "clipboard.terminals", type: "strings",
               hint: "window classes that paste with Ctrl+Shift+V" },
             { label: "Symbols", type: "action", button: "\u{F0450}  refresh",
               hint: "download the latest emoji, Nerd glyphs and symbols; kaomoji from assets/kaomoji.json",
               run: () => Symbols.refresh(), busy: () => Symbols.refreshing, status: () => Symbols.refreshStatus }
         ] },
-        { title: "SHELL", items: [
+        { title: "Shell", items: [
+            { label: "Theme", path: "theme.name", type: "choice", hint: "how the shell looks; tweaks are kept per theme",
+              options: Theme.names.map(n => ({ label: Theme.specs[n]?.label ?? n, value: n })) },
             { label: "Restart", type: "action", button: "\u{F0453}  restart",
               hint: "start Quickshell over as a new process; also: qs ipc call session restart",
               run: () => Session.restartShell(), busy: () => false, status: () => "" }
         ] }
     ]
 
-    function defaultOf(path: string): var {
-        return path.split(".").reduce((o, k) => o?.[k], Config.defaults);
+    function defaultOf(item: var): var {
+        return item.themed ? Theme.defaultOf(item.themed) : item.path.split(".").reduce((o, k) => o?.[k], Config.defaults);
     }
 
     width: 700
@@ -133,7 +134,7 @@ Item {
             spacing: 2
 
             SectionTitle {
-                text: "SETTINGS"
+                text: "Settings"
             }
             Repeater {
                 model: root.sections
@@ -149,11 +150,12 @@ Item {
                     StyledText {
                         Layout.fillWidth: true
                         text: modelData.title
-                        color: root.section === index ? Config.colors.accent : Config.colors.dim
+                        caps: true
+                        color: root.section === index ? Theme.palette.accent : Theme.palette.dim
                         glow: root.section === index
-                        font.pixelSize: Config.font.size - 2
+                        font.pixelSize: Theme.font.size - 2
                         font.bold: true
-                        font.letterSpacing: 1.5
+                        tracking: 1.5
                     }
                 }
             }
@@ -169,10 +171,9 @@ Item {
             }
         }
 
-        Rectangle {
+        Divider {
             Layout.fillHeight: true
-            implicitWidth: 1
-            color: Config.colors.border
+            vertical: true
         }
 
         // ── The section's settings ───────────────────────────────────────────
@@ -198,7 +199,7 @@ Item {
 
                     SectionTitle {
                         text: root.sections[root.section].title
-                        code: "CONFIG.JSON"
+                        code: "config.json"
                     }
 
                     Repeater {
@@ -208,9 +209,9 @@ Item {
                             id: setting
 
                             required property var modelData
-                            readonly property var value: modelData.path ? Config.get(modelData.path) : undefined
+                            readonly property var value: modelData.themed ? Theme.get(modelData.themed) : modelData.path ? Config.get(modelData.path) : undefined
                             readonly property bool wide: ["objects", "strings", "colors"].includes(modelData.type)
-                            readonly property bool changed: !!modelData.path && JSON.stringify(value) !== JSON.stringify(root.defaultOf(modelData.path))
+                            readonly property bool changed: !!modelData.path && JSON.stringify(value) !== JSON.stringify(root.defaultOf(modelData))
 
                             function save(v: var): void {
                                 Config.set(modelData.path, v);
@@ -241,16 +242,16 @@ Item {
                                         IconButton {
                                             size: 18
                                             icon: "\u{F0450}"
-                                            iconColor: Config.colors.muted
+                                            iconColor: Theme.palette.muted
                                             visible: setting.changed
-                                            onClicked: setting.save(root.defaultOf(setting.modelData.path))
+                                            onClicked: setting.save(root.defaultOf(setting.modelData))
                                         }
                                     }
                                     StyledText {
                                         Layout.fillWidth: true
                                         text: setting.modelData.hint ?? ""
-                                        color: Config.colors.muted
-                                        font.pixelSize: Config.font.size - 3
+                                        color: Theme.palette.muted
+                                        font.pixelSize: Theme.font.size - 3
                                         wrapMode: Text.Wrap
                                         visible: text !== ""
                                     }
@@ -309,7 +310,7 @@ Item {
                                     }
                                     StyledText {
                                         text: String(Math.round(setting.value * 100)).padStart(3, "0")
-                                        color: Config.colors.dim
+                                        color: Theme.palette.dim
                                         font.bold: true
                                     }
                                 }
@@ -319,7 +320,7 @@ Item {
 
                                 Swatches {
                                     palette: setting.modelData.palette === "dark" ? dark : accents
-                                    current: setting.value || (setting.modelData.palette === "dark" ? Config.colors.bg : "")
+                                    current: setting.value || (setting.modelData.palette === "dark" ? Theme.palette.bg : "")
                                     onPicked: color => setting.save(color)
                                 }
                             }
@@ -342,7 +343,7 @@ Item {
 
                                 RowLayout {
                                     Choice {
-                                        options: [{ label: "AUTO", value: "" }, ...Quickshell.screens.map(s => ({ label: s.name, value: s.name }))]
+                                        options: [{ label: "auto", value: "" }, ...Quickshell.screens.map(s => ({ label: s.name, value: s.name }))]
                                         current: setting.value
                                         onPicked: v => setting.save(v)
                                     }
@@ -384,8 +385,8 @@ Item {
                                     StyledText {
                                         Layout.fillWidth: true
                                         text: setting.modelData.status()
-                                        color: Config.colors.dim
-                                        font.pixelSize: Config.font.size - 2
+                                        color: Theme.palette.dim
+                                        font.pixelSize: Theme.font.size - 2
                                         wrapMode: Text.Wrap
                                     }
                                 }

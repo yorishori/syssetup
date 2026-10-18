@@ -54,8 +54,8 @@ Item {
     FontMetrics {
         id: metrics
 
-        font.family: Config.font.family
-        font.pixelSize: Config.font.size - 1
+        font.family: Theme.font.family
+        font.pixelSize: Theme.font.size - 1
         font.bold: true
     }
 
@@ -66,8 +66,8 @@ Item {
         spacing: 10
 
         SectionTitle {
-            text: "KEYS"
-            code: Keybinds.error ? "" : `${Keybinds.count} BINDS · SWAY CONFIG`
+            text: "Keys"
+            code: Keybinds.error ? "" : `${Keybinds.count} binds · sway config`
         }
 
         Placeholder {
@@ -131,7 +131,7 @@ Item {
 
                                     SectionTitle {
                                         Layout.preferredHeight: root.titleHeight - 8
-                                        text: group.modelData.title.toUpperCase()
+                                        text: group.modelData.title
                                     }
 
                                     Repeater {
@@ -151,17 +151,17 @@ Item {
                                                 text: {
                                                     const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                                                     const mods = modelData.mods.map(m => `${esc(m)}+`).join("");
-                                                    return `<font color="${Config.colors.muted}">${mods}</font>${esc(modelData.key)}`;
+                                                    return `<font color="${Theme.palette.muted}">${mods}</font>${esc(modelData.key)}`;
                                                 }
-                                                color: Config.colors.accent
-                                                font.pixelSize: Config.font.size - 1
+                                                color: Theme.palette.accent
+                                                font.pixelSize: Theme.font.size - 1
                                                 font.bold: true
                                             }
                                             StyledText {
                                                 Layout.fillWidth: true
                                                 text: modelData.action
-                                                color: Config.colors.fg
-                                                font.pixelSize: Config.font.size - 1
+                                                color: Theme.palette.fg
+                                                font.pixelSize: Theme.font.size - 1
                                                 elide: Text.ElideRight
                                             }
                                         }

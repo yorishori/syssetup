@@ -12,7 +12,7 @@ BarLabel {
     visible: Bluez.available
     text: !Bluez.enabled ? "\u{F00B2}" : Bluez.connected.length > 0 ? "\u{F00B1}" : "\u{F00AF}"
     lit: Bluez.enabled && Bluez.connected.length > 0
-    color: !Bluez.enabled ? Config.colors.off : lit ? Config.colors.accent : Config.colors.dim
+    color: !Bluez.enabled ? Theme.palette.off : lit ? Theme.palette.accent : Theme.palette.dim
 
     Behavior on color {
         ColorAnimation { duration: 200 }

@@ -6,7 +6,7 @@ import qs.services
 
 // Session menu: lock, shutdown, reboot, sleep as big stacked keys.
 // 1-4 or Up/Down select, Enter activates, Escape cancels / closes.
-// Shutdown and reboot arm first: the key turns peach and a fuse burns for 3s
+// Shutdown and reboot arm first: the key warns and a fuse burns for 3s
 // before it runs (press again to go now, Escape to cancel). Lock is immediate;
 // sleep locks first, then suspends.
 ColumnLayout {
@@ -20,10 +20,10 @@ ColumnLayout {
     property int armed: -1
 
     readonly property var actions: [
-        { label: "LOCK", glyph: "\u{F033E}", confirm: false, run: () => Session.lock() },
-        { label: "SHUTDOWN", glyph: "\u{F0425}", confirm: true, run: () => Session.poweroff() },
-        { label: "REBOOT", glyph: "\u{F0709}", confirm: true, run: () => Session.reboot() },
-        { label: "SLEEP", glyph: "\u{F0904}", confirm: false, run: () => Session.suspend() }
+        { label: "Lock", glyph: "\u{F033E}", confirm: false, run: () => Session.lock() },
+        { label: "Shutdown", glyph: "\u{F0425}", confirm: true, run: () => Session.poweroff() },
+        { label: "Reboot", glyph: "\u{F0709}", confirm: true, run: () => Session.reboot() },
+        { label: "Sleep", glyph: "\u{F0904}", confirm: false, run: () => Session.suspend() }
     ]
 
     width: 300
@@ -74,108 +74,29 @@ ColumnLayout {
     }
 
     SectionTitle {
-        text: "SESSION"
-        code: `${Session.hostname.toUpperCase()} · UP ${Session.uptimeText}`
+        text: "Session"
+        code: `${Session.hostname} · up ${Session.uptimeText}`
     }
 
     Repeater {
         model: root.actions
 
-        Item {
-            id: key
-
+        SessionKey {
             required property var modelData
             required property int index
-            readonly property bool current: root.selected === index
-            readonly property bool isArmed: root.armed === index
-            readonly property color tone: isArmed ? Config.colors.warn : Config.colors.accent
 
             Layout.fillWidth: true
-            implicitHeight: 76
-            scale: keyArea.pressed ? 0.97 : 1
-
-            Behavior on scale {
-                NumberAnimation { duration: 180; easing.type: Easing.OutBack }
+            label: armed ? "confirm?" : modelData.label
+            glyph: modelData.glyph
+            number: index + 1
+            current: root.selected === index
+            armed: root.armed === index
+            onHoveredChanged: {
+                if (hovered && root.armed !== index)
+                    root.selected = index;
             }
-
-            Chamfer {
-                anchors.fill: parent
-                cut: 10
-                fill: key.isArmed ? Qt.alpha(Config.colors.warn, 0.12) : key.current ? Config.colors.surface : Config.colors.bgAlt
-                stroke: key.current || key.isArmed ? key.tone : Config.colors.border
-                strokeWidth: key.current || key.isArmed ? 2 : 1
-            }
-
-            RowLayout {
-                anchors {
-                    fill: parent
-                    leftMargin: 20
-                    rightMargin: 18
-                }
-                spacing: 18
-
-                StyledText {
-                    text: key.modelData.glyph
-                    color: key.current || key.isArmed ? key.tone : Config.colors.dim
-                    glow: key.current || key.isArmed
-                    font.pixelSize: 38
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    text: key.isArmed ? "CONFIRM?" : key.modelData.label
-                    color: key.current || key.isArmed ? Config.colors.fg : Config.colors.dim
-                    font.pixelSize: Config.font.size + 5
-                    font.bold: true
-                    font.letterSpacing: 3
-                }
-                // Index code, like a label on a hardware key.
-                StyledText {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.topMargin: 10
-                    text: String(key.index + 1).padStart(2, "0")
-                    color: key.current ? key.tone : Config.colors.muted
-                    font.pixelSize: Config.font.size - 2
-                    font.bold: true
-                }
-            }
-
-            // Armed: a fuse burns for 3s, then the action runs.
-            Rectangle {
-                anchors {
-                    left: parent.left
-                    bottom: parent.bottom
-                    leftMargin: 14
-                    bottomMargin: 10
-                }
-                height: 3
-                width: 0
-                color: Config.colors.warn
-                visible: key.isArmed
-
-                NumberAnimation on width {
-                    running: key.isArmed
-                    from: key.width - 28
-                    to: 0
-                    duration: 3000
-                    onFinished: {
-                        if (key.isArmed)
-                            root.execute(key.index);
-                    }
-                }
-            }
-
-            MouseArea {
-                id: keyArea
-
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onEntered: {
-                    if (root.armed !== key.index)
-                        root.selected = key.index;
-                }
-                onClicked: root.activate(key.index)
-            }
+            onClicked: root.activate(index)
+            onFused: root.execute(index)
         }
     }
 

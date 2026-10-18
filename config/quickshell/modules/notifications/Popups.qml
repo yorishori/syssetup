@@ -72,18 +72,18 @@ PanelWindow {
         }
 
         add: Transition {
-            NumberAnimation { property: "x"; from: 400; duration: 450; easing.type: Easing.OutBack }
+            NumberAnimation { property: "x"; from: 400; duration: 450; easing.type: Theme.motion.spring }
             NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 200 }
         }
         remove: Transition {
-            NumberAnimation { property: "x"; to: 400; duration: 300; easing.type: Easing.InBack }
+            NumberAnimation { property: "x"; to: 400; duration: 300; easing.type: Theme.motion.springIn }
             NumberAnimation { property: "opacity"; to: 0; duration: 300 }
         }
         // Also finish any interrupted add animation (x, opacity), or a card
         // pushed down mid-entry stays half-transparent.
         displaced: Transition {
-            NumberAnimation { property: "y"; duration: 350; easing.type: Easing.OutBack }
-            NumberAnimation { property: "x"; to: 0; duration: 300; easing.type: Easing.OutBack }
+            NumberAnimation { property: "y"; duration: 350; easing.type: Theme.motion.spring }
+            NumberAnimation { property: "x"; to: 0; duration: 300; easing.type: Theme.motion.spring }
             NumberAnimation { property: "opacity"; to: 1; duration: 200 }
         }
     }

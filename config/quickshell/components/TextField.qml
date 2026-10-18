@@ -1,10 +1,14 @@
 import QtQuick
 import qs.core
 
-// Terminal line: recessed well, ">" prompt, blinking block cursor.
+// Single-line input with a `prompt` and a `placeholder`.
 // For settings-style fields: submitOnEnter makes Enter leave the field (which
-// ends editing, like clicking away), and flash() lights it green with "saved".
-Item {
+// ends editing, like clicking away), and flash() confirms a save for a moment.
+//
+// The skin draws everything around the text and tells the input where to sit
+// (inputLeft / inputRight), how to color it (textColor, selectionColor,
+// selectedTextColor) and what cursor to use (cursor: Component).
+Skinned {
     id: root
 
     property alias text: input.text
@@ -12,6 +16,8 @@ Item {
     property string placeholder
     property string prompt: ">"
     readonly property bool inputFocused: input.activeFocus
+    readonly property bool flashing: saved.running
+    readonly property real inputHeight: input.implicitHeight
 
     // When set, Left/Right don't move the text cursor but emit horizontal()
     // (e.g. to move through a grid of results).
@@ -36,15 +42,7 @@ Item {
             root.forceActiveFocus();  // keys now go to the panel (Escape closes it)
     }
 
-    implicitWidth: 200
-    implicitHeight: input.implicitHeight + 12
-
-    Chamfer {
-        anchors.fill: parent
-        cut: 5
-        fill: Config.colors.bgAlt
-        stroke: saved.running ? Config.colors.ok : input.activeFocus ? Config.colors.accent : Config.colors.border
-    }
+    skin: "TextField"
 
     Timer {
         id: saved
@@ -52,35 +50,18 @@ Item {
         interval: 1200
     }
 
-    StyledText {
-        id: promptLabel
-
-        anchors {
-            left: parent.left
-            leftMargin: 10
-            verticalCenter: parent.verticalCenter
-        }
-        text: root.prompt
-        color: input.activeFocus ? Config.colors.accent : Config.colors.muted
-        glow: input.activeFocus
-        font.bold: true
-    }
-
     TextInput {
         id: input
 
-        anchors {
-            left: promptLabel.right
-            right: savedLabel.visible ? savedLabel.left : parent.right
-            leftMargin: 8
-            rightMargin: 10
-            verticalCenter: parent.verticalCenter
-        }
-        color: Config.colors.fg
-        selectionColor: Config.colors.accent
-        selectedTextColor: Config.colors.shadow
-        font.family: Config.font.family
-        font.pixelSize: Config.font.size
+        anchors.verticalCenter: parent.verticalCenter
+        x: root.view?.inputLeft ?? 0
+        width: root.width - x - (root.view?.inputRight ?? 0)
+        color: root.view?.textColor ?? Theme.palette.fg
+        selectionColor: root.view?.selectionColor ?? Theme.palette.accent
+        selectedTextColor: root.view?.selectedTextColor ?? Theme.palette.bg
+        cursorDelegate: root.view?.cursor ?? null
+        font.family: Theme.font.family
+        font.pixelSize: Theme.font.size
         clip: true
         Keys.onLeftPressed: event => {
             if (root.captureHorizontal)
@@ -97,45 +78,5 @@ Item {
         onEditingFinished: root.editingFinished()
         Keys.onReturnPressed: event => root.enter(event.modifiers)
         Keys.onEnterPressed: event => root.enter(event.modifiers)
-
-        cursorDelegate: Rectangle {
-            width: 8
-            color: Config.colors.accent
-            visible: input.activeFocus
-
-            SequentialAnimation on opacity {
-                running: input.activeFocus
-                loops: Animation.Infinite
-
-                PropertyAction { value: 1 }
-                PauseAnimation { duration: 530 }
-                PropertyAction { value: 0 }
-                PauseAnimation { duration: 530 }
-            }
-        }
-
-        StyledText {
-            anchors.fill: parent
-            anchors.leftMargin: input.activeFocus ? 12 : 0  // clear of the block cursor
-            text: root.placeholder
-            color: Config.colors.muted
-            visible: input.text === ""
-        }
-    }
-
-    StyledText {
-        id: savedLabel
-
-        anchors {
-            right: parent.right
-            rightMargin: 10
-            verticalCenter: parent.verticalCenter
-        }
-        text: "SAVED"
-        color: Config.colors.ok
-        font.pixelSize: Config.font.size - 3
-        font.bold: true
-        font.letterSpacing: 1.5
-        visible: saved.running
     }
 }

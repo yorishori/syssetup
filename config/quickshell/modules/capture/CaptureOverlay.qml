@@ -35,9 +35,9 @@ PanelWindow {
         { key: "mark", glyph: "\u{F0652}" },
         { key: "block", glyph: "\u{F0764}" }
     ]
-    readonly property var inks: [Config.colors.warn, Config.colors.error, Config.colors.accent]
+    readonly property var inks: [Theme.palette.warn, Theme.palette.error, Theme.palette.accent]
     property string tool: "box"
-    property color ink: Config.colors.warn
+    property color ink: Theme.palette.warn
     property var marks: []
     property var current: null
 
@@ -141,7 +141,7 @@ PanelWindow {
                         ctx.lineWidth = 3;
                         ctx.strokeRect(Math.min(m.x0, m.x1), Math.min(m.y0, m.y1), Math.abs(m.x1 - m.x0), Math.abs(m.y1 - m.y0));
                     } else if (m.tool === "block") {
-                        ctx.fillStyle = Config.colors.shadow;
+                        ctx.fillStyle = Theme.palette.shadow;
                         ctx.fillRect(Math.min(m.x0, m.x1), Math.min(m.y0, m.y1), Math.abs(m.x1 - m.x0), Math.abs(m.y1 - m.y0));
                     } else if (m.tool === "arrow") {
                         const angle = Math.atan2(m.y1 - m.y0, m.x1 - m.x0);
@@ -182,35 +182,19 @@ PanelWindow {
         }
     }
 
-    // ── Dimming outside the outlined area ────────────────────────────────────
-    Item {
+    // ── The outlined area, set apart from the rest ───────────────────────────
+    Selection {
         anchors.fill: parent
+        area: win.hasShown ? win.shown : Qt.rect(0, 0, 0, 0)
         visible: win.ready
-
-        readonly property rect r: win.hasShown ? win.shown : Qt.rect(0, 0, 0, 0)
-
-        Rectangle { x: 0; y: 0; width: parent.width; height: parent.r.y; color: "#000"; opacity: 0.45 }
-        Rectangle { x: 0; y: parent.r.y + parent.r.height; width: parent.width; height: parent.height - y; color: "#000"; opacity: 0.45 }
-        Rectangle { x: 0; y: parent.r.y; width: parent.r.x; height: parent.r.height; color: "#000"; opacity: 0.45 }
-        Rectangle { x: parent.r.x + parent.r.width; y: parent.r.y; width: parent.width - x; height: parent.r.height; color: "#000"; opacity: 0.45 }
     }
 
-    // Outline and size readout
-    Rectangle {
-        x: win.shown.x - 1
-        y: win.shown.y - 1
-        width: win.shown.width + 2
-        height: win.shown.height + 2
-        color: "transparent"
-        border.width: 2
-        border.color: Config.colors.accent
-        visible: win.ready && win.hasShown
-    }
+    // Size readout
     Tag {
         x: win.shown.x
         y: win.shown.y > 28 ? win.shown.y - height - 6 : win.shown.y + 6
         text: `${Math.round(win.shown.width)}×${Math.round(win.shown.height)}`
-        fill: Config.colors.accent
+        fill: Theme.palette.accent
         visible: win.ready && win.hasShown && !win.marking
     }
 
@@ -221,10 +205,10 @@ PanelWindow {
             topMargin: 48
             horizontalCenter: parent.horizontalCenter
         }
-        text: Capture.kind === "screenshot" ? "CLICK A WINDOW · DRAG A REGION · ENTER FOR THE SCREEN" : "RECORD: CLICK A WINDOW · DRAG A REGION · ENTER FOR THE SCREEN"
-        fill: Config.colors.surface
-        textColor: Config.colors.fg
-        size: Config.font.size - 1
+        text: Capture.kind === "screenshot" ? "click a window · drag a region · enter for the screen" : "record: click a window · drag a region · enter for the screen"
+        fill: Theme.palette.surface
+        textColor: Theme.palette.fg
+        size: Theme.font.size - 1
         visible: win.ready && !win.marking
     }
 
@@ -332,10 +316,9 @@ PanelWindow {
                     onClicked: win.tool = modelData.key
                 }
             }
-            Rectangle {
-                implicitWidth: 1
+            Divider {
                 implicitHeight: 20
-                color: Config.colors.border
+                vertical: true
             }
             Repeater {
                 model: win.inks
@@ -346,26 +329,19 @@ PanelWindow {
                     implicitWidth: 22
                     implicitHeight: 22
 
-                    Chamfer {
+                    Swatch {
                         anchors.centerIn: parent
                         width: 16
                         height: 16
-                        cut: 4
-                        fill: parent.modelData
-                        stroke: Qt.colorEqual(win.ink, parent.modelData) ? Config.colors.fg : "transparent"
-                        strokeWidth: 2
-                    }
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
+                        color: parent.modelData
+                        selected: Qt.colorEqual(win.ink, parent.modelData)
                         onClicked: win.ink = parent.modelData
                     }
                 }
             }
-            Rectangle {
-                implicitWidth: 1
+            Divider {
                 implicitHeight: 20
-                color: Config.colors.border
+                vertical: true
             }
             IconButton {
                 icon: "\u{F054C}"

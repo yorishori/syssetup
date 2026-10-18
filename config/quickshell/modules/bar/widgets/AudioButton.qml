@@ -15,7 +15,7 @@ BarLabel {
 
     text: off ? "\u{F075F}" : "\u{F057E}"
     lit: !off && Media.playing
-    color: off ? Config.colors.off : lit ? Config.colors.accent : Config.colors.dim
+    color: off ? Theme.palette.off : lit ? Theme.palette.accent : Theme.palette.dim
 
     Behavior on color {
         ColorAnimation { duration: 250 }

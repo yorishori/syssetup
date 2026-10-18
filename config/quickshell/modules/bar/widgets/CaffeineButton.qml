@@ -9,7 +9,7 @@ BarLabel {
 
     text: Idle.caffeinated ? "\u{F0176}" : "\u{F06CA}"
     lit: Idle.caffeinated
-    color: Idle.caffeinated ? Config.colors.accent : area.containsMouse ? Config.colors.fg : Config.colors.dim
+    color: Idle.caffeinated ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
 
     Behavior on color {
         ColorAnimation { duration: 150 }

@@ -110,7 +110,7 @@ ColumnLayout {
         Tabs {
             id: tabs
 
-            tabs: ["SEARCH", `WINDOWS ${Wm.windows.length}`, "APPS"]
+            tabs: ["Search", `Windows ${Wm.windows.length}`, "Apps"]
             onCurrentChanged: root.setMode(root.modes[current])
         }
 
@@ -129,7 +129,7 @@ ColumnLayout {
 
                 size: 26
                 icon: modelData.icon
-                iconColor: Config.colors.dim
+                iconColor: Theme.palette.dim
                 // Screen and voice recording wait while a capture is running.
                 enabled: !(modelData.busy && Capture.busy)
                 opacity: enabled ? 1 : 0.4
@@ -180,16 +180,16 @@ ColumnLayout {
             StyledText {
                 anchors.centerIn: parent
                 text: row.modelData.glyph
-                color: row.lit ? Config.colors.accent : Config.colors.dim
+                color: row.lit ? Theme.palette.accent : Theme.palette.dim
                 font.bold: true
-                font.pixelSize: Config.font.size + 2
+                font.pixelSize: Theme.font.size + 2
                 visible: row.modelData.icon === ""
             }
         }
         StyledText {
             Layout.maximumWidth: 260
             text: row.modelData.kind === "web" ? `"${row.modelData.name}"` : row.modelData.name
-            color: row.modelData.kind === "calc" ? Config.colors.accent : row.current ? Config.colors.fg : Config.colors.dim
+            color: row.modelData.kind === "calc" ? Theme.palette.accent : row.current ? Theme.palette.fg : Theme.palette.dim
             glow: row.modelData.kind === "calc"
             font.bold: row.current || row.modelData.kind === "calc"
             elide: Text.ElideRight
@@ -197,16 +197,17 @@ ColumnLayout {
         StyledText {
             Layout.fillWidth: true
             text: row.modelData.detail
-            color: Config.colors.muted
-            font.pixelSize: Config.font.size - 1
+            color: Theme.palette.muted
+            font.pixelSize: Theme.font.size - 1
             elide: Text.ElideRight
         }
         StyledText {
-            text: ({ calc: "COPY", window: "FOCUS", app: "RUN", custom: "CMD", web: "WEB" })[row.modelData.kind] ?? ""
-            color: row.lit ? Config.colors.accent : Config.colors.muted
-            font.pixelSize: Config.font.size - 3
+            text: ({ calc: "copy", window: "focus", app: "run", custom: "cmd", web: "web" })[row.modelData.kind] ?? ""
+            caps: true
+            color: row.lit ? Theme.palette.accent : Theme.palette.muted
+            font.pixelSize: Theme.font.size - 3
             font.bold: true
-            font.letterSpacing: 1.5
+            tracking: 1.5
         }
     }
 
@@ -257,10 +258,8 @@ ColumnLayout {
         Layout.topMargin: 2
         spacing: 14
 
-        Rectangle {
+        Divider {
             Layout.fillWidth: true
-            implicitHeight: 1
-            color: Config.colors.border
         }
         KeyHints {
             hints: [

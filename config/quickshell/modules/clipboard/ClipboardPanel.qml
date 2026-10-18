@@ -7,9 +7,8 @@ import qs.core
 import qs.services
 
 // "Insert something" (SUPER+V): clipboard history, emoji, Nerd Font glyphs,
-// symbols and kaomoji, rising from the bottom edge of the screen. A drawer
-// like the bar's, upside down: it grows out of the bottom edge with angled
-// shoulders and the same hairline. Tabs on top, prompt at the bottom.
+// symbols and kaomoji, in a drawer rising from the bottom edge of the
+// screen. Tabs on top, prompt at the bottom.
 //
 // Whatever you pick is pasted into the window you were in (Enter), or only
 // copied (Shift+Enter). Tab / Shift+Tab switch tabs, arrows move, Shift+Delete
@@ -18,11 +17,11 @@ PanelWindow {
     id: win
 
     readonly property var tabs: [
-        { key: "history", label: "HISTORY" },
-        { key: "emoji", label: "EMOJI" },
-        { key: "nerd", label: "NERD" },
-        { key: "symbol", label: "SYMBOLS" },
-        { key: "kaomoji", label: "KAOMOJI" }
+        { key: "history", label: "History" },
+        { key: "emoji", label: "Emoji" },
+        { key: "nerd", label: "Nerd" },
+        { key: "symbol", label: "Symbols" },
+        { key: "kaomoji", label: "Kaomoji" }
     ]
     readonly property string tab: tabs[tabBar.current].key
     readonly property bool onHistory: tab === "history"
@@ -113,16 +112,11 @@ PanelWindow {
     }
 
     // Darkened, blurred backdrop; click to close.
-    Rectangle {
+    Backdrop {
         id: backdrop
 
         anchors.fill: parent
-        color: Config.colors.bg
-        opacity: Clipboard.open ? Config.effects.backdrop : 0
-
-        Behavior on opacity {
-            NumberAnimation { duration: 180; easing.type: Easing.OutQuad }
-        }
+        shown: Clipboard.open
 
         MouseArea {
             anchors.fill: parent
@@ -217,8 +211,8 @@ PanelWindow {
                         StyledText {
                             Layout.preferredWidth: 22
                             text: String(row.index + 1).padStart(2, "0")
-                            color: row.current ? Config.colors.accent : Config.colors.muted
-                            font.pixelSize: Config.font.size - 3
+                            color: row.current ? Theme.palette.accent : Theme.palette.muted
+                            font.pixelSize: Theme.font.size - 3
                             font.bold: true
                         }
                         Image {
@@ -234,15 +228,16 @@ PanelWindow {
                         StyledText {
                             Layout.fillWidth: true
                             text: row.modelData.image ? "" : row.modelData.text
-                            color: row.current ? Config.colors.fg : Config.colors.dim
+                            color: row.current ? Theme.palette.fg : Theme.palette.dim
                             elide: Text.ElideRight
                         }
                         StyledText {
-                            text: row.modelData.image ? row.modelData.meta : "TXT"
-                            color: Config.colors.muted
-                            font.pixelSize: Config.font.size - 3
+                            text: row.modelData.image ? row.modelData.meta : "txt"
+                            caps: true
+                            color: Theme.palette.muted
+                            font.pixelSize: Theme.font.size - 3
                             font.bold: true
-                            font.letterSpacing: 1.5
+                            tracking: 1.5
                         }
                     }
                 }
@@ -269,42 +264,26 @@ PanelWindow {
                     cellHeight: 44
                     model: win.symbols
 
-                    delegate: Item {
+                    delegate: Tile {
                         id: tile
 
                         required property var modelData
                         required property int index
-                        readonly property bool current: win.selected === index
 
                         width: grid.cellWidth
                         height: grid.cellHeight
+                        current: win.selected === index
+                        onEntered: win.selected = tile.index
+                        onClicked: mouse => win.pick(tile.index, mouse.modifiers)
 
-                        Chamfer {
-                            anchors {
-                                fill: parent
-                                margins: 2
-                            }
-                            cut: 5
-                            fill: tile.current ? Config.colors.surface : tileArea.containsMouse ? Config.colors.bgAlt : "transparent"
-                            stroke: tile.current ? Config.colors.accent : "transparent"
-                        }
                         StyledText {
                             anchors.centerIn: parent
                             width: parent.width - 8
                             horizontalAlignment: Text.AlignHCenter
                             text: tile.modelData.ch
-                            color: tile.current ? Config.colors.accent : Config.colors.fg
-                            font.pixelSize: win.tab === "kaomoji" ? Config.font.size : 20
+                            color: tile.current ? Theme.palette.accent : Theme.palette.fg
+                            font.pixelSize: win.tab === "kaomoji" ? Theme.font.size : 20
                             elide: Text.ElideRight
-                        }
-                        MouseArea {
-                            id: tileArea
-
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onEntered: win.selected = tile.index
-                            onClicked: mouse => win.pick(tile.index, mouse.modifiers)
                         }
                     }
                 }
@@ -325,7 +304,7 @@ PanelWindow {
                 StyledText {
                     Layout.maximumWidth: 220
                     text: detail.current?.ch ?? ""
-                    color: Config.colors.accent
+                    color: Theme.palette.accent
                     glow: true
                     font.pixelSize: 26
                     elide: Text.ElideRight
@@ -338,8 +317,8 @@ PanelWindow {
                 }
                 StyledText {
                     text: detail.current?.detail ?? ""
-                    color: Config.colors.muted
-                    font.pixelSize: Config.font.size - 2
+                    color: Theme.palette.muted
+                    font.pixelSize: Theme.font.size - 2
                 }
             }
 

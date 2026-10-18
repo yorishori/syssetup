@@ -66,9 +66,9 @@ PanelWindow {
         }
     }
 
-    Rectangle {
+    Backdrop {
         anchors.fill: parent
-        color: Qt.alpha(Config.colors.bg, Math.max(Config.effects.backdrop, 0.6))
+        strong: true
 
         // Clicking anywhere puts the focus back in the input.
         MouseArea {
@@ -95,12 +95,12 @@ PanelWindow {
             NumberAnimation { target: shake; property: "x"; to: -10; duration: 50 }
             NumberAnimation { target: shake; property: "x"; to: 10; duration: 70 }
             NumberAnimation { target: shake; property: "x"; to: -6; duration: 60 }
-            NumberAnimation { target: shake; property: "x"; to: 0; duration: 80; easing.type: Easing.OutBack }
+            NumberAnimation { target: shake; property: "x"; to: 0; duration: 80; easing.type: Theme.motion.spring }
         }
 
         Card {
             anchors.fill: parent
-            stroke: Config.colors.warn
+            tone: Theme.palette.warn
         }
 
         ColumnLayout {
@@ -115,8 +115,8 @@ PanelWindow {
             spacing: 12
 
             SectionTitle {
-                text: "AUTHORIZE"
-                code: "POLKIT"
+                text: "Authorize"
+                code: "polkit"
             }
 
             // The request
@@ -144,8 +144,8 @@ PanelWindow {
                     StyledText {
                         Layout.fillWidth: true
                         text: win.flow?.actionId ?? ""
-                        color: Config.colors.muted
-                        font.pixelSize: Config.font.size - 3
+                        color: Theme.palette.muted
+                        font.pixelSize: Theme.font.size - 3
                         elide: Text.ElideRight
                     }
                 }
@@ -157,7 +157,7 @@ PanelWindow {
 
                 Lamp {
                     on: true
-                    litColor: win.flow?.failed ? Config.colors.warn : Config.colors.accent
+                    litColor: win.flow?.failed ? Theme.palette.warn : Theme.palette.accent
                 }
                 StyledText {
                     text: {
@@ -203,22 +203,21 @@ PanelWindow {
                 Layout.fillWidth: true
                 readonly property string extra: win.flow?.supplementaryMessage ?? ""
 
-                text: win.checking ? "AUTHENTICATING…"
+                text: win.checking ? "authenticating…"
                     : extra ? extra
-                    : win.flow?.failed ? "ACCESS DENIED · TRY AGAIN"
-                    : "ENTER TO AUTHORIZE · ESC TO CANCEL"
-                color: win.flow?.failed || win.flow?.supplementaryIsError ? Config.colors.warn : Config.colors.muted
-                font.pixelSize: Config.font.size - 2
+                    : win.flow?.failed ? "access denied · try again"
+                    : "enter to authorize · esc to cancel"
+                caps: extra === ""  // the agent's own message as it comes
+                color: win.flow?.failed || win.flow?.supplementaryIsError ? Theme.palette.warn : Theme.palette.muted
+                font.pixelSize: Theme.font.size - 2
                 font.bold: true
-                font.letterSpacing: 1.5
+                tracking: 1.5
                 wrapMode: Text.Wrap
             }
 
-            Rectangle {
+            Divider {
                 Layout.fillWidth: true
                 Layout.topMargin: 4
-                implicitHeight: 1
-                color: Config.colors.border
             }
             RowLayout {
                 Layout.fillWidth: true

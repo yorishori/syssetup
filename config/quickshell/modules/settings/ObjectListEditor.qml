@@ -71,34 +71,34 @@ ColumnLayout {
 
                 StyledText {
                     text: root.title(entry.modelData) || "(unnamed)"
-                    color: entry.open ? Config.colors.accent : Config.colors.fg
+                    color: entry.open ? Theme.palette.accent : Theme.palette.fg
                     font.bold: true
                 }
                 StyledText {
                     Layout.fillWidth: true
                     text: root.subtitle(entry.modelData)
-                    color: Config.colors.muted
-                    font.pixelSize: Config.font.size - 2
+                    color: Theme.palette.muted
+                    font.pixelSize: Theme.font.size - 2
                     elide: Text.ElideRight
                 }
                 IconButton {
                     size: 20
                     icon: "\u{F0143}"
-                    iconColor: Config.colors.muted
+                    iconColor: Theme.palette.muted
                     visible: entry.index > 0
                     onClicked: root.move(entry.index, entry.index - 1)
                 }
                 IconButton {
                     size: 20
                     icon: "\u{F0140}"
-                    iconColor: Config.colors.muted
+                    iconColor: Theme.palette.muted
                     visible: entry.index < root.items.length - 1
                     onClicked: root.move(entry.index, entry.index + 1)
                 }
                 IconButton {
                     size: 20
                     icon: "\u{F0156}"
-                    iconColor: Config.colors.muted
+                    iconColor: Theme.palette.muted
                     onClicked: {
                         root.expanded = -1;
                         root.changed(root.items.filter((_, i) => i !== entry.index));
@@ -127,11 +127,12 @@ ColumnLayout {
                         Layout.row: index
                         Layout.column: 0
                         Layout.preferredWidth: 90
-                        text: modelData.label.toUpperCase()
-                        color: Config.colors.muted
-                        font.pixelSize: Config.font.size - 3
+                        text: modelData.label
+                        caps: true
+                        color: Theme.palette.muted
+                        font.pixelSize: Theme.font.size - 3
                         font.bold: true
-                        font.letterSpacing: 1.5
+                        tracking: 1.5
                     }
                 }
                 Repeater {

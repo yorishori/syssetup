@@ -7,10 +7,10 @@ import qs.core
 Shape {
     id: root
 
-    property int cut: Config.shape.cut
-    property color fill: Config.colors.bg
+    property int cut: Theme.values.shape.cut
+    property color fill: Theme.palette.bg
     property color stroke: "transparent"
-    property real strokeWidth: Config.shape.border
+    property real strokeWidth: Theme.values.shape.border
     property bool cutTopLeft: true
     property bool cutTopRight: false
     property bool cutBottomRight: true

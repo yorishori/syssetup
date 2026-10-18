@@ -7,8 +7,8 @@ import qs.core
 StyledText {
     property bool lit: false
 
-    color: Config.colors.dim
+    color: Theme.palette.dim
     glow: lit
     font.bold: true
-    font.pixelSize: Config.font.size + 1
+    font.pixelSize: Theme.font.size + 1
 }

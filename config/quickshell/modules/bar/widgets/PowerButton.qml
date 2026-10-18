@@ -6,7 +6,7 @@ import qs.services
 BarLabel {
     text: "\u{F0425}"
     lit: Panels.isOpen("session")
-    color: Panels.isOpen("session") ? Config.colors.accent : area.containsMouse ? Config.colors.fg : Config.colors.dim
+    color: Panels.isOpen("session") ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
 
     Behavior on color {
         ColorAnimation { duration: 150 }

@@ -1,24 +1,10 @@
 import QtQuick
-import qs.core
 
-// Panel: console fill, hairline outline, cut corners, faint scanlines.
-Item {
-    id: root
+// Panel surface for content that floats on its own (lock console, polkit
+// prompt, notification popups). `tone` makes it call for attention in that
+// color (critical, hovered, a prompt that needs you).
+Skinned {
+    property color tone: "transparent"
 
-    property color fill: Config.colors.bg
-    property color stroke: Config.colors.border
-
-    Chamfer {
-        anchors.fill: parent
-        fill: root.fill
-        stroke: root.stroke
-    }
-
-    Scanlines {
-        anchors {
-            fill: parent
-            topMargin: Config.shape.cut
-            bottomMargin: Config.shape.cut
-        }
-    }
+    skin: "Card"
 }

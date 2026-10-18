@@ -1,25 +1,10 @@
 import QtQuick
 import qs.core
 
-// Four rising bars for signal strength (0-100).
-Row {
-    id: root
-
+// Signal strength (0-100).
+Skinned {
     property int strength: 0
-    property color color: Config.colors.fg
+    property color color: Theme.palette.fg
 
-    spacing: 2
-
-    Repeater {
-        model: 4
-
-        Rectangle {
-            required property int index
-
-            anchors.bottom: parent.bottom
-            width: 3
-            height: 4 + index * 3
-            color: root.strength > index * 25 ? root.color : Config.colors.surface
-        }
-    }
+    skin: "SignalBars"
 }

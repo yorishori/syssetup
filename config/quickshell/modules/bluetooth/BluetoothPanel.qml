@@ -61,32 +61,33 @@ ColumnLayout {
 
             StyledText {
                 text: Bluez.glyph(item.modelData)
-                color: item.modelData.connected ? Config.colors.accent : Config.colors.dim
+                color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
                 glow: item.modelData.connected
             }
             StyledText {
                 Layout.fillWidth: true
                 text: item.modelData.name
-                color: item.modelData.connected ? Config.colors.accent : Config.colors.dim
+                color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
                 glow: item.modelData.connected
                 elide: Text.ElideRight
             }
             Gauge {
                 visible: item.modelData.connected && item.modelData.batteryAvailable
                 value: item.modelData.battery
-                color: item.modelData.battery <= 0.2 ? Config.colors.warn : Config.colors.accent
+                color: item.modelData.battery <= 0.2 ? Theme.palette.warn : Theme.palette.accent
             }
             StyledText {
-                text: item.busy ? (item.modelData.pairing ? "PAIRING…" : "LINKING…")
-                    : item.failed ? "FAILED"
+                text: item.busy ? (item.modelData.pairing ? "pairing…" : "linking…")
+                    : item.failed ? "failed"
                     : item.modelData.connected
-                        ? (item.modelData.batteryAvailable ? String(Math.round(item.modelData.battery * 100)).padStart(3, "0") : "LINK")
-                    : item.modelData.paired ? "SAVED"
-                    : "NEW"
-                color: item.failed ? Config.colors.error : Config.colors.muted
-                font.pixelSize: Config.font.size - 3
+                        ? (item.modelData.batteryAvailable ? String(Math.round(item.modelData.battery * 100)).padStart(3, "0") : "link")
+                    : item.modelData.paired ? "saved"
+                    : "new"
+                caps: true
+                color: item.failed ? Theme.palette.error : Theme.palette.muted
+                font.pixelSize: Theme.font.size - 3
                 font.bold: true
-                font.letterSpacing: 1
+                tracking: 1
             }
         }
 
@@ -95,9 +96,9 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.leftMargin: 8
             Layout.rightMargin: 8
-            text: "ERR " + Bluez.error
-            color: Config.colors.error
-            font.pixelSize: Config.font.size - 2
+            text: Theme.caps("err") + " " + Bluez.error
+            color: Theme.palette.error
+            font.pixelSize: Theme.font.size - 2
             wrapMode: Text.Wrap
             visible: item.failed
         }
@@ -149,15 +150,15 @@ ColumnLayout {
 
         SectionTitle {
             Layout.fillWidth: true
-            text: "BLUETOOTH"
-            code: (Bluez.adapter?.name ?? "").toUpperCase()
+            text: "Bluetooth"
+            code: (Bluez.adapter?.name ?? "")
         }
         // Only the glyph spins; the key is disabled (no hover) while scanning.
         IconButton {
             icon: "\u{F0450}"
             visible: Bluez.enabled
             enabled: !Bluez.discovering
-            iconColor: Bluez.discovering ? Config.colors.accent : Config.colors.fg
+            iconColor: Bluez.discovering ? Theme.palette.accent : Theme.palette.fg
             onClicked: Bluez.scan()
 
             NumberAnimation on iconRotation {
@@ -172,7 +173,7 @@ ColumnLayout {
         IconButton {
             icon: Bluez.enabled ? "\u{F00AF}" : "\u{F00B2}"
             lit: Bluez.enabled
-            iconColor: Config.colors.off
+            iconColor: Theme.palette.off
             onClicked: Bluez.setEnabled(!Bluez.enabled)
         }
     }
@@ -180,32 +181,32 @@ ColumnLayout {
     StyledText {
         Layout.leftMargin: 8
         text: "-- radio off --"
-        color: Config.colors.muted
+        color: Theme.palette.muted
         visible: !Bluez.enabled
     }
     StyledText {
         Layout.leftMargin: 8
         text: "-- no devices, scan to find some --"
-        color: Config.colors.muted
+        color: Theme.palette.muted
         visible: Bluez.enabled && Bluez.devices.length === 0 && !Bluez.discovering
     }
 
     Section {
-        title: "CONNECTED"
+        title: "Connected"
         devices: Bluez.enabled ? Bluez.connected : []
     }
     Section {
-        title: "PAIRED"
+        title: "Paired"
         devices: Bluez.enabled ? Bluez.paired : []
     }
     Section {
-        title: "NEARBY"
+        title: "Nearby"
         devices: Bluez.enabled ? Bluez.nearby : []
     }
     StyledText {
         Layout.leftMargin: 8
         text: "scanning…"
-        color: Config.colors.muted
+        color: Theme.palette.muted
         visible: Bluez.discovering && Bluez.nearby.length === 0
     }
 }

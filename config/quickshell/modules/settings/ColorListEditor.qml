@@ -22,35 +22,16 @@ ColumnLayout {
         Repeater {
             model: root.items
 
-            Item {
-                id: chip
-
+            Swatch {
                 required property string modelData
                 required property int index
-                readonly property bool current: root.selected === index
 
                 width: 46
                 height: 24
-
-                Chamfer {
-                    anchors.fill: parent
-                    cut: 5
-                    fill: chip.modelData
-                    stroke: chip.current ? Config.colors.fg : "transparent"
-                    strokeWidth: 2
-                }
-                StyledText {
-                    anchors.centerIn: parent
-                    text: String(chip.index + 1).padStart(2, "0")
-                    color: Config.colors.shadow
-                    font.pixelSize: Config.font.size - 3
-                    font.bold: true
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.selected = chip.index
-                }
+                color: modelData
+                text: String(index + 1).padStart(2, "0")
+                selected: root.selected === index
+                onClicked: root.selected = index
             }
         }
         IconButton {
@@ -58,14 +39,14 @@ ColumnLayout {
             icon: "\u{F0415}"
             onClicked: {
                 const index = root.items.length;
-                root.changed([...root.items, Config.colors.accent]);
+                root.changed([...root.items, Theme.palette.accent]);
                 root.selected = index;
             }
         }
         IconButton {
             size: 24
             icon: "\u{F0156}"
-            iconColor: Config.colors.muted
+            iconColor: Theme.palette.muted
             visible: root.items.length > 1
             onClicked: {
                 root.changed(root.items.filter((_, i) => i !== root.selected));
