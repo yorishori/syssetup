@@ -43,8 +43,8 @@ seat * {
 
 # ── 3. Look ─────────────────────────────────────────────────────────────────
 
-gaps inner 8
-gaps outer 4
+gaps inner 0
+gaps outer 0
 default_border pixel 2
 default_floating_border pixel 2
 hide_edge_borders none
