@@ -4,7 +4,8 @@ import qs.core
 
 // Rounded box, the basic bubble shape. `roundness` defaults to the theme's
 // and never exceeds half the box (so a large one makes a pill); the outline
-// is optional. `raised` floats it on a soft shadow.
+// is optional. `raised` floats it on a soft shadow, edged with the theme's
+// outline unless it has a stroke of its own.
 Rectangle {
     id: root
 
@@ -17,8 +18,10 @@ Rectangle {
 
     radius: Math.max(0, Math.min(roundness, width / 2, height / 2))
     color: fill
-    border.color: stroke
-    border.width: stroke.a > 0 ? strokeWidth : 0
+    readonly property real outline: Theme.values.shape?.outline ?? 0
+
+    border.color: stroke.a > 0 ? stroke : Theme.palette.border
+    border.width: stroke.a > 0 ? strokeWidth : raised ? outline : 0
 
     RectangularShadow {
         z: -1

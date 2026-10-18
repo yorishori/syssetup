@@ -56,7 +56,8 @@ QtObject {
         // Bubble's own.
         shape: {
             radius: 16,          // corner rounding of cards and panels, px
-            border: 2            // outline width (focus, selection), px
+            border: 2,           // outline width (focus, selection), px
+            outline: 1           // edge of islands, panels and cards, px; 0 = none
         },
         effects: {
             shadow: 0.5,         // shadow under floating things, 0 = off
@@ -70,6 +71,7 @@ QtObject {
         { label: "Warning", path: "palette.warn", type: "color", hint: "needs attention" },
         { label: "Font size", path: "font.size", type: "int", min: 10, max: 18, suffix: "px" },
         { label: "Roundness", path: "shape.radius", type: "int", min: 4, max: 24, suffix: "px", hint: "cards and panels; keys stay pills" },
+        { label: "Outline", path: "shape.outline", type: "int", min: 0, max: 3, suffix: "px", hint: "edge of islands, panels and cards" },
         { label: "Shadow", path: "effects.shadow", type: "level", hint: "under floating things" },
         { label: "Backdrop", path: "effects.backdrop", type: "level", hint: "darkening behind big panels" }
     ]
