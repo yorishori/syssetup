@@ -3,7 +3,7 @@ import qs.core
 
 // A label punched on a label maker and stuck on the panel beside a part:
 // glossy black plastic tape, the letters pressed into it standing out thin and
-// white where the plastic was stretched, never quite in line. `tape` for
+// white where the plastic was stretched. `tape` for
 // another color of tape; `hovered` when the label itself is a button.
 Item {
     id: root
@@ -39,7 +39,7 @@ Item {
         }
     }
 
-    // The letters, each pressed a little off from the last.
+    // The letters.
     Repeater {
         model: root.letters
 
@@ -48,14 +48,9 @@ Item {
 
             required property int index
             required property string modelData
-            // Steady per letter, so the label doesn't shift between frames.
-            readonly property int seed: (index * 7919 + modelData.charCodeAt(0) * 31) % 7
-
             x: 4.5 + index * root.pitch
-            y: (seed - 3) * 0.25
             width: root.pitch
             height: root.height
-            rotation: (seed - 3) * 0.6
 
             // The stretched plastic catching light above, shade below.
             Text {
