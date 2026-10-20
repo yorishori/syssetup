@@ -19,6 +19,8 @@ Column {
         size: 180
         color: root.tone
         glyph: root.control.glyph
+        // Dim until it's hovered, selected or armed.
+        rest: 2.8
         open: root.control.hovered || root.control.current || root.control.armed
         pressed: root.control.pressed
         alarm: root.control.armed

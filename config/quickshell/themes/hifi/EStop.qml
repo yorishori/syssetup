@@ -16,6 +16,8 @@ Item {
     property bool open: false
     property bool pressed: false
     property bool alarm: false
+    // How dark the head is while not lit (Qt.darker's factor).
+    property real rest: 1.7
 
     readonly property real s: size / 42
     readonly property real side: 3 * s
@@ -102,7 +104,7 @@ Item {
     Item {
         id: head
 
-        readonly property color c: root.open ? Qt.lighter(root.color, 1.08) : Qt.darker(root.color, 1.7)
+        readonly property color c: root.open ? Qt.lighter(root.color, 1.08) : Qt.darker(root.color, root.rest)
 
         x: collar.x + 3 * root.s
         y: collar.y + 2 * root.s + root.sink
@@ -165,7 +167,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: root.glyph
-            color: Qt.alpha("white", root.open ? 0.92 : 0.6)
+            color: Qt.alpha("white", root.open ? 0.92 : 0.6 * 1.7 / root.rest)
             font.family: Theme.font.family
             font.pixelSize: Math.round(12 * root.s)
             visible: text !== ""

@@ -29,6 +29,7 @@ Skinned {
     ]
     readonly property string hostname: Session.hostname
     readonly property string uptimeText: Session.uptimeText
+    readonly property int uptime: Session.uptime  // seconds
 
     skin: "SessionMenu"
     focus: open
