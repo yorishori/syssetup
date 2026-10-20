@@ -162,13 +162,15 @@ Row {
                 MultiEffect {
                     anchors.fill: sticker
                     source: sticker
-                    saturation: -0.4
-                    contrast: -0.15
-                    brightness: -0.06
+                    saturation: -0.2
+                    contrast: -0.1
+                    brightness: -0.04
                     maskEnabled: true
                     maskSource: wear
-                    maskThresholdMin: 0.5
-                    maskSpreadAtMin: 0.5
+                    // Light wear: the rim chips and scratches show, the
+                    // icon stays readable.
+                    maskThresholdMin: 0.2
+                    maskSpreadAtMin: 0.25
                 }
             }
         }
