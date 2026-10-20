@@ -5,24 +5,38 @@ import qs.core
 
 // As a control, a fader: a slot cut into the plate, lit up to the level, with
 // a ribbed cap riding in it. As a readout, an LED ladder behind glass, one
-// segment per step.
+// segment per step. Upright (`vertical`), it fills from the bottom.
 Item {
     id: root
 
     required property C.Meter control
+    readonly property bool upright: control.vertical
     readonly property int n: Math.max(1, control.segments)
     readonly property real level: control.lit / n
     readonly property real glow: Theme.glow.opacity ?? 0
+    // Along the travel, and across it.
+    readonly property real length: upright ? height : width
+    readonly property real breadth: upright ? width : height
+
+    // A box `from` and `size` along the travel, `across` the travel centered,
+    // turned to lie along it.
+    function box(from: real, size: real, across: real): rect {
+        return upright ? Qt.rect((width - across) / 2, height - from - size, across, size)
+                       : Qt.rect(from, (height - across) / 2, size, across);
+    }
 
     // Readout.
     Well {
-        id: window
-
         anchors.fill: parent
         roundness: 2
         visible: !root.control.interactive
     }
     Item {
+        id: ladder
+
+        readonly property real span: root.length - 4
+        readonly property real step: (span + 1) / root.n
+
         anchors {
             fill: parent
             margins: 2
@@ -30,28 +44,28 @@ Item {
         visible: !root.control.interactive
 
         RectangularShadow {
-            width: parent.width * root.level
-            height: parent.height
+            readonly property rect area: root.box(0, ladder.span * root.level, root.breadth - 4)
+
+            x: area.x - 2
+            y: area.y - 2
+            width: area.width
+            height: area.height
             visible: root.control.lit > 0 && root.glow > 0
             blur: 6
             color: Qt.alpha(root.control.color, 0.5 * root.glow)
         }
-        Row {
-            id: ladder
+        Repeater {
+            model: root.n
 
-            anchors.fill: parent
-            spacing: 1
+            Rectangle {
+                required property int index
+                readonly property rect area: root.box(index * ladder.step, ladder.step - 1, root.breadth - 4)
 
-            Repeater {
-                model: root.n
-
-                Rectangle {
-                    required property int index
-
-                    width: (ladder.width - (root.n - 1) * ladder.spacing) / root.n
-                    height: parent.height
-                    color: index < root.control.lit ? root.control.color : Qt.alpha(root.control.color, 0.1)
-                }
+                x: area.x - 2
+                y: area.y - 2
+                width: area.width
+                height: area.height
+                color: index < root.control.lit ? root.control.color : Qt.alpha(root.control.color, 0.1)
             }
         }
     }
@@ -60,48 +74,59 @@ Item {
     Well {
         id: slot
 
-        anchors.verticalCenter: parent.verticalCenter
-        width: parent.width
-        height: Math.max(5, Math.round(parent.height * 0.55))
-        roundness: height / 2
+        readonly property real across: Math.max(5, Math.round(root.breadth * 0.55))
+        readonly property rect area: root.box(0, root.length, across)
+
+        x: area.x
+        y: area.y
+        width: area.width
+        height: area.height
+        roundness: across / 2
         visible: root.control.interactive
     }
     Item {
-        x: slot.x + 1
-        anchors.verticalCenter: slot.verticalCenter
-        width: Math.max(0, (slot.width - 2) * root.level)
-        height: slot.height - 2
+        id: fill
+
+        property real reach: Math.max(0, (root.length - 2) * root.level)
+        readonly property rect area: root.box(1, reach, slot.across - 2)
+
+        x: area.x
+        y: area.y
+        width: area.width
+        height: area.height
         visible: root.control.interactive && root.control.lit > 0
 
-        Behavior on width {
+        Behavior on reach {
             NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
         }
 
         RectangularShadow {
             anchors.fill: parent
             visible: root.glow > 0
-            radius: height / 2
+            radius: Math.min(width, height) / 2
             blur: 6
             color: Qt.alpha(root.control.color, 0.6 * root.glow)
         }
         Rectangle {
             anchors.fill: parent
-            radius: height / 2
+            radius: Math.min(width, height) / 2
             color: root.control.color
         }
     }
     Item {
         id: cap
 
-        readonly property real w: 12
+        readonly property real thick: 12
+        property real at: Math.max(0, Math.min(root.length - thick, root.length * root.level - thick / 2))
+        readonly property rect area: root.box(at, thick, root.breadth + 8)
 
-        x: Math.max(0, Math.min(root.width - w, root.width * root.level - w / 2))
-        anchors.verticalCenter: parent.verticalCenter
-        width: w
-        height: root.height + 8
+        x: area.x
+        y: area.y
+        width: area.width
+        height: area.height
         visible: root.control.interactive
 
-        Behavior on x {
+        Behavior on at {
             NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
         }
 
@@ -124,8 +149,10 @@ Item {
             }
         }
         // The grip: grooves across the cap, and the line that marks the level.
-        Column {
+        Grid {
             anchors.centerIn: parent
+            rows: root.upright ? 3 : 1
+            columns: root.upright ? 1 : 3
             spacing: 2
 
             Repeater {
@@ -134,8 +161,8 @@ Item {
                 Rectangle {
                     required property int index
 
-                    width: cap.w - 4
-                    height: 1
+                    width: root.upright ? cap.width - 4 : 1
+                    height: root.upright ? 1 : cap.height - 4
                     color: index === 1 ? Qt.darker(root.control.color, 1.6) : Qt.alpha(Theme.palette.shadow, 0.45)
                 }
             }

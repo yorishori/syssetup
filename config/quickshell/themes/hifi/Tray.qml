@@ -1,12 +1,10 @@
 import QtQuick
 import QtQuick.Effects
-import Quickshell.Widgets
 import qs.core
 import qs.modules.bar.widgets as W
 
 // A jack field labelled AUX: a row of sockets, always there; each running
-// tray app is a plug in one, with an old sticker of its icon on the cap,
-// faded and worn through in places. Plugs push in as apps start; sockets
+// tray app is a plug in one, with an old sticker of its icon on the cap. Plugs push in as apps start; sockets
 // are added if there are more apps than sockets.
 Row {
     id: root
@@ -122,55 +120,10 @@ Row {
                         GradientStop { position: 1; color: Qt.darker(Theme.palette.surface, 1.5) }
                     }
                 }
-                // The sticker: the icon printed on paper, aged, then worn
-                // down to the plastic where the mask is thin.
-                Item {
-                    id: sticker
-
+                Sticker {
                     anchors.centerIn: parent
-                    width: 20
-                    height: 20
-                    visible: false
-                    layer.enabled: true
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: width / 2
-                        color: "#d8d1c0"
-                    }
-                    IconImage {
-                        anchors.centerIn: parent
-                        implicitSize: 14
-                        source: plug.modelData.icon
-                    }
-                }
-                Item {
-                    id: wear
-
-                    anchors.fill: sticker
-                    visible: false
-                    layer.enabled: true
-
-                    Image {
-                        anchors.fill: parent
-                        source: Qt.resolvedUrl("wear.png")
-                        // Each sticker wore its own way.
-                        rotation: plug.index * 137
-                        smooth: true
-                    }
-                }
-                MultiEffect {
-                    anchors.fill: sticker
-                    source: sticker
-                    saturation: -0.2
-                    contrast: -0.1
-                    brightness: -0.04
-                    maskEnabled: true
-                    maskSource: wear
-                    // Light wear: the rim chips and scratches show, the
-                    // icon stays readable.
-                    maskThresholdMin: 0.2
-                    maskSpreadAtMin: 0.25
+                    source: plug.modelData.icon
+                    seed: plug.index
                 }
             }
         }

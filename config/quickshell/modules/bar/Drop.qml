@@ -7,7 +7,8 @@ import qs.core
 // instead, as if it grew out of the screen edge and the bar together.
 //
 // The skin draws and animates it: its `shownHeight` is the drop's height,
-// `contentOpacity` the content's, `popScale` the drop's scale, `overhang`
+// `contentOpacity` the content's, `popScale` the drop's scale, `swing` turns
+// it on a hinge along its top edge (degrees; 0 = hanging flat), `overhang`
 // how far it draws past its sides (kept clear of the screen edge when
 // placing it) and `inset` how far a flush drop stays off the screen edge.
 Skinned {
@@ -30,6 +31,11 @@ Skinned {
     visible: height > 0
     scale: view?.popScale ?? 1
     transformOrigin: Item.Top
+    transform: Rotation {
+        origin.x: root.width / 2
+        axis { x: 1; y: 0; z: 0 }
+        angle: root.view?.swing ?? 0
+    }
 
     onOpenChanged: if (open) place()
     onAnchorItemChanged: if (open) place()
