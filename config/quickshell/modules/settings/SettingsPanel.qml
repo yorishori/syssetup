@@ -40,8 +40,7 @@ Item {
         ] },
         { title: "Bar", items: [
             { label: "Screen", path: "screen", type: "screen", hint: "where the shell lives" },
-            { label: "Height", path: "bar.height", type: "int", min: 24, max: 48, suffix: "px" },
-            { label: "Workspaces", path: "bar.workspaces", type: "int", min: 1, max: 10, hint: "shown at least" }
+            { label: "Height", path: "bar.height", type: "int", min: 24, max: 48, suffix: "px", hint: "themes may need it taller" }
         ] },
         { title: "Launcher", items: [
             { label: "Terminal", path: "launcher.terminal", type: "words", hint: "command prefix, e.g. kitty -e" },

@@ -33,9 +33,9 @@ PanelWindow {
         { name: "bluetooth" },
         { name: "audio" },
         { name: "notifications" },
-        { name: "control", edge: "right", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } },
-        { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } },
-        { name: "keys", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } }
+        { name: "control", edge: "right", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
+        { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
+        { name: "keys", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } }
     ]
 
     // The bar key each drop hangs under.
@@ -94,7 +94,7 @@ PanelWindow {
         right: true
     }
     implicitHeight: screen?.height ?? 1080
-    exclusiveZone: Config.bar.height
+    exclusiveZone: Theme.barHeight
     color: "transparent"
     WlrLayershell.namespace: "qs-bar"
     // Fullscreen windows cover the top layer, so an open drop moves up to the
@@ -179,7 +179,7 @@ PanelWindow {
             left: parent.left
             right: parent.right
         }
-        height: Config.bar.height
+        height: Theme.barHeight
         // The groups of keys, for themes that draw them apart.
         islands: [[leftGroup], [launcherButton, workspaces, centerRow], [rightGroup]]
 
@@ -210,7 +210,7 @@ PanelWindow {
             }
         }
 
-        // Center: launcher key, workspaces, recording indicator
+        // Center: launcher key, workspaces, caffeine, status lamps, recording
         LauncherButton {
             id: launcherButton
 
@@ -240,14 +240,12 @@ PanelWindow {
             CaffeineButton {
                 anchors.verticalCenter: parent.verticalCenter
             }
-            // Idling: no input, nothing holding it off.
-            BarLabel {
+            StatusLamps {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "\u{F04B2}"
-                visible: Idle.idle
             }
-            PrivacyIndicator {}
-            RecordingKey {}
+            RecordingKey {
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
 
         // Right: controls
@@ -299,7 +297,7 @@ PanelWindow {
 
             required property var modelData
 
-            y: Config.bar.height - background.seam
+            y: Theme.barHeight - background.seam
             anchorItem: bar.anchorFor(modelData.name)
             edge: modelData.edge ?? ""
             open: bar.openDrop === modelData.name

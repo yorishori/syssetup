@@ -10,7 +10,9 @@ import Quickshell
 //                of its own) and the knobs it puts in Settings → Appearance
 //   <Skin>.qml   one skin per themed widget, drawing it from its `control`
 //                (see components/Skinned.qml)
-// Every theme provides every skin (scripts/check-theme.sh lists gaps).
+// Every theme provides every skin (scripts/check-theme.sh lists gaps). Skins
+// shared by several themes live in a folder without a Spec.qml (themes/glyphs:
+// the bar drawn as glyphs), and a theme's own skin file just points there.
 //
 // Which theme is active, and your tweaks to each one, live in config.json
 // under `theme`: { name: "cyber", cyber: { palette: { accent: … } }, … }.
@@ -38,6 +40,10 @@ Singleton {
     readonly property var glow: values.glow
     readonly property var motion: values.motion
     readonly property var swatches: values.swatches
+
+    // The bar's height: yours (Config bar.height), but at least what the
+    // theme needs for its parts (its Spec's bar.height).
+    readonly property int barHeight: Math.max(Config.bar.height, values.bar?.height ?? 0)
 
     function loadSpec(n: string): QtObject {
         const comp = Qt.createComponent(Qt.resolvedUrl(`../themes/${n}/Spec.qml`));

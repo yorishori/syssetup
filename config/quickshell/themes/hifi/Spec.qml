@@ -1,13 +1,19 @@
 import QtQuick
 
-// Hi-Fi: the shell as a rack of dark hi-fi gear, built from real materials
-// lit from above. The bar is a brushed-metal faceplate with its workspaces in
-// a black-glass display; panels are chassis plates that slide out from under
-// it, screwed at the corners. Keys are keycaps that travel when pressed and
-// latch in when on, lamps are LEDs in bezels, levels are LED ladders and
-// faders, inputs and readouts are recessed glass displays whose lit text
-// glows like a vacuum fluorescent display. Labels are silk-screened capitals.
-// Motion is mechanical: firm, damped, no bounce.
+// Hi-Fi: the shell as a dark sci-fi work table, part receiver, part console,
+// built from real materials lit from above. The bar is the table's panel,
+// and every part on it is always there; only its state changes:
+//   an emergency stop under a flip guard (session), a red seven-segment
+//   clock, a jack field whose plugs are the tray apps, a RUN key (launcher),
+//   a tuner whose needle points at the workspace, toggle switches (awake,
+//   Bluetooth), an annunciator panel (mic, camera, screen, idle), a tape
+//   counter (recording), an oscilloscope (the network link), the volume
+//   knob, a split-flap counter (notifications), a fault printer (health)
+//   and a service hatch (control center).
+// Panels are chassis plates that slide out from under it, screwed at the
+// corners. Keys are keycaps that travel when pressed and latch in when on,
+// lamps are LEDs in bezels, inputs and readouts are recessed glass displays
+// that glow. Labels are silk-screened capitals. Motion is mechanical.
 QtObject {
     readonly property string label: "Hi-Fi"
 
@@ -62,6 +68,18 @@ QtObject {
             ]
         },
         // Hi-Fi's own.
+        // The bar is a work-table panel; its parts need the room.
+        bar: {
+            height: 50
+        },
+        // What each display on the panel glows in.
+        display: {
+            clock: "#ff4a32",    // the clock's red segments
+            dial: "#ffcf8a",     // the tuner's warm backlight and print
+            needle: "#ff3b2f",   // the tuner's needle
+            scope: "#5cff95",    // the oscilloscope's phosphor
+            hazard: "#f4c21b"    // safety yellow (the emergency stop)
+        },
         shape: {
             radius: 4,           // corner rounding of plates, keycaps and wells, px
             border: 1            // bevel and ring width, px

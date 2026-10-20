@@ -1,38 +1,18 @@
 import QtQuick
-import qs.core
+import qs.components
 import qs.services
 
-// Time (bright) and date (dim), e.g. "01:48  SUN 27 SEP". Click opens the
-// calendar drop; glows while it's open.
-Item {
+// The time and date. Click opens the calendar drop (`active` while it's open).
+Skinned {
     id: root
 
     property bool active: false
+    readonly property date now: Time.now
+    readonly property bool hovered: area.containsMouse
 
     signal clicked
 
-    implicitWidth: row.implicitWidth
-    implicitHeight: row.implicitHeight
-
-    Row {
-        id: row
-
-        spacing: 8
-
-        BarLabel {
-            text: Time.format("HH:mm")
-            color: root.active ? Theme.palette.accent : Theme.palette.fg
-            lit: root.active
-        }
-        BarLabel {
-            anchors.verticalCenter: parent.verticalCenter
-            text: Time.format("ddd dd MMM")
-            caps: true
-            color: area.containsMouse || root.active ? Theme.palette.fg : Theme.palette.dim
-            font.pixelSize: Theme.font.size - 1
-            tracking: 1
-        }
-    }
+    skin: "Clock"
 
     MouseArea {
         id: area

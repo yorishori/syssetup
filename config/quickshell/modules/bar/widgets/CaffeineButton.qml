@@ -1,19 +1,17 @@
 import QtQuick
-import qs.core
+import qs.components
 import qs.services
 
-// Caffeinate: an empty cup, dim; click fills it (accent) and the screen
-// neither locks nor turns off on idle until it's clicked again.
-BarLabel {
+// Caffeinate: while on, the screen neither locks nor turns off on idle.
+// Click toggles it.
+Skinned {
     id: root
 
-    text: Idle.caffeinated ? "\u{F0176}" : "\u{F06CA}"
-    lit: Idle.caffeinated
-    color: Idle.caffeinated ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
+    readonly property bool on: Idle.caffeinated
+    readonly property bool hovered: area.containsMouse
+    readonly property bool pressed: area.pressed
 
-    Behavior on color {
-        ColorAnimation { duration: 150 }
-    }
+    skin: "CaffeineButton"
 
     MouseArea {
         id: area
