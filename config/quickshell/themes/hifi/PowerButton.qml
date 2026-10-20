@@ -4,8 +4,7 @@ import qs.core
 import qs.modules.bar.widgets as W
 
 // The emergency stop: a red mushroom head standing in a recessed collar on a
-// dark plinth, a thin ring of safety yellow round it, under a clear red guard
-// hinged at its bottom edge. Hover and the guard swings down toward you and
+// dark plinth, under a clear red guard hinged at its bottom edge. Hover and the guard swings down toward you and
 // the head lights up; it stays open while the session menu is. Pressed, the
 // head sinks into the collar.
 Item {
@@ -13,7 +12,6 @@ Item {
 
     required property W.PowerButton control
     readonly property bool armed: control.hovered || control.open
-    readonly property color hazard: Theme.values.display?.hazard ?? Theme.palette.warn
     readonly property color red: Theme.palette.error
     readonly property real side: 3
     readonly property real sink: control.pressed ? 2 : 0
@@ -68,7 +66,7 @@ Item {
         }
     }
 
-    // The collar: a recess, with the yellow ring round its rim.
+    // The collar: a recess, its metal rim catching the light.
     Rectangle {
         id: collar
 
@@ -78,7 +76,7 @@ Item {
         height: 32
         radius: 16
         border.width: 1.5
-        border.color: Qt.alpha(root.hazard, 0.85)
+        border.color: Qt.lighter(Theme.palette.border, 1.25)
         gradient: Gradient {
             GradientStop { position: 0; color: "#050506" }
             GradientStop { position: 1; color: "#2c2d31" }

@@ -110,7 +110,8 @@ Row {
             }
         }
 
-        // The beam.
+        // The beam, glowing; cut off at the edge of the screen (outside the
+        // glow, which would otherwise spread past it).
         Item {
             anchors {
                 fill: parent
@@ -118,31 +119,35 @@ Row {
             }
             clip: true
             visible: root.mode !== "off"
-            layer.enabled: (Theme.glow.opacity ?? 0) > 0
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: root.phosphor
-                shadowOpacity: Theme.glow.opacity ?? 0
-                shadowBlur: 0.45
-                blurMax: 10
-                shadowHorizontalOffset: 0
-                shadowVerticalOffset: 0
-            }
 
-            Shape {
-                x: -screen.offset
-                width: parent.width + screen.period
-                height: parent.height
-                preferredRendererType: Shape.CurveRenderer
+            Item {
+                anchors.fill: parent
+                layer.enabled: (Theme.glow.opacity ?? 0) > 0
+                layer.effect: MultiEffect {
+                    shadowEnabled: true
+                    shadowColor: root.phosphor
+                    shadowOpacity: Theme.glow.opacity ?? 0
+                    shadowBlur: 0.45
+                    blurMax: 10
+                    shadowHorizontalOffset: 0
+                    shadowVerticalOffset: 0
+                }
 
-                ShapePath {
-                    strokeColor: root.phosphor
-                    strokeWidth: 1.5
-                    fillColor: "transparent"
-                    joinStyle: ShapePath.RoundJoin
+                Shape {
+                    x: -screen.offset
+                    width: parent.width + screen.period
+                    height: parent.height
+                    preferredRendererType: Shape.CurveRenderer
 
-                    PathPolyline {
-                        path: screen.trace()
+                    ShapePath {
+                        strokeColor: root.phosphor
+                        strokeWidth: 1.5
+                        fillColor: "transparent"
+                        joinStyle: ShapePath.RoundJoin
+
+                        PathPolyline {
+                            path: screen.trace()
+                        }
                     }
                 }
             }
