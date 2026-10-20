@@ -31,7 +31,7 @@ Item {
 
     // The top door follows the armed key's fuse down, and goes back up when
     // it's cancelled.
-    readonly property M.SessionKey armedKey: control.armed < 0 ? null : control.armed < 2 ? leftKeys.itemAt(control.armed) : rightKeys.itemAt(control.armed - 2)
+    readonly property M.SessionKey armedKey: control.armed < 0 ? null : (control.armed < 2 ? leftKeys.itemAt(control.armed) : rightKeys.itemAt(control.armed - 2)) as M.SessionKey
     readonly property real lid: armedKey ? 1 - armedKey.fuse : rising
     property real lastLid: 0
     property real rising: 0  // where it is while going back up
