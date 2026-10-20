@@ -1,12 +1,13 @@
 import QtQuick
 import QtQuick.Effects
+import qs.components as C
 import qs.core
 import qs.modules.bar.widgets as W
 
-// A tuner: the workspaces are stations on a backlit dial, printed 10 to 70,
-// and a red needle behind the glass points at the focused one. The needle
-// swings over on a spring, overshooting and settling; the tuning knob beside
-// the dial turns with it. Occupied stations have their marker lit.
+// A tuner: the workspaces are stations on a dial, printed 10 to 70, and a
+// red needle behind the glass points at the focused one. It travels over
+// and settles on a spring. The numbers of the stations with something on
+// them are lit from behind; the rest are only printed.
 Item {
     id: root
 
@@ -34,7 +35,7 @@ Item {
         return Math.max(1, Math.min(stations, Math.round((x - margin) / step) + 1));
     }
 
-    implicitWidth: dialWidth + 10 + knob.width
+    implicitWidth: dialWidth
     implicitHeight: 40
 
     // The needle runs at most so fast, so a long jump travels and then
@@ -123,35 +124,25 @@ Item {
 
                 required property int index
                 readonly property int wsId: index + 1
-                readonly property bool active: root.control.active === wsId
-                readonly property bool occupied: root.control.occupied(wsId)
+                readonly property bool lit: root.control.active === wsId || root.control.occupied(wsId)
+                readonly property bool hovered: root.control.hovered === wsId
 
                 x: root.stationX(wsId) - width / 2
                 width: root.step
-                height: root.height
+                height: root.scaleLine - 6
 
-                Text {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: 4
+                C.StyledText {
+                    anchors.centerIn: parent
                     text: station.wsId * 10
-                    color: root.ink
-                    opacity: station.active ? 1 : root.control.hovered === station.wsId ? 0.85 : station.occupied ? 0.62 : 0.32
-                    font.family: Theme.font.family
-                    font.pixelSize: 13
+                    color: station.lit ? Qt.lighter(root.ink, 1.1) : root.ink
+                    opacity: station.lit ? 1 : station.hovered ? 0.55 : 0.28
+                    glow: station.lit
+                    font.pixelSize: 14
                     font.bold: true
 
                     Behavior on opacity {
-                        NumberAnimation { duration: 200 }
+                        NumberAnimation { duration: 220 }
                     }
-                }
-                // The station's marker, lit while something is on it.
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: 21
-                    width: 5
-                    height: 5
-                    radius: 2.5
-                    color: station.occupied ? root.ink : Qt.alpha(root.ink, 0.12)
                 }
             }
         }
@@ -183,86 +174,6 @@ Item {
                 margins: 1
             }
             roundness: glass.r
-        }
-    }
-
-    // The tuning knob, geared to the needle.
-    Item {
-        id: knob
-
-        readonly property real turn: root.needleX * 1.6
-
-        x: root.dialWidth + 10
-        anchors.verticalCenter: parent.verticalCenter
-        width: 34
-        height: 34
-
-        RectangularShadow {
-            anchors.fill: parent
-            radius: width / 2
-            offset.y: 2
-            blur: 6
-            color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
-        }
-        // The knurled skirt.
-        Rectangle {
-            anchors.fill: parent
-            radius: width / 2
-            border.width: 1
-            border.color: Theme.palette.shadow
-            gradient: Gradient {
-                GradientStop { position: 0; color: Qt.lighter(Theme.palette.surface, 1.3) }
-                GradientStop { position: 1; color: Qt.darker(Theme.palette.surface, 1.6) }
-            }
-        }
-        Item {
-            anchors.fill: parent
-            rotation: knob.turn
-
-            Repeater {
-                model: 24
-
-                Rectangle {
-                    required property int index
-
-                    x: knob.width / 2 - 0.5
-                    y: 1
-                    width: 1
-                    height: 4
-                    color: Qt.alpha(Theme.palette.shadow, 0.8)
-                    transform: Rotation {
-                        origin.x: 0.5
-                        origin.y: knob.height / 2 - 1
-                        angle: index * 15
-                    }
-                }
-            }
-        }
-        // The cap.
-        Rectangle {
-            anchors.centerIn: parent
-            width: 24
-            height: 24
-            radius: 12
-            border.width: 1
-            border.color: Qt.alpha(Theme.palette.shadow, 0.8)
-            gradient: Gradient {
-                GradientStop { position: 0; color: Qt.lighter(Theme.palette.border, 1.7) }
-                GradientStop { position: 1; color: Qt.darker(Theme.palette.border, 1.2) }
-            }
-        }
-        Item {
-            anchors.fill: parent
-            rotation: knob.turn
-
-            Rectangle {
-                anchors.horizontalCenter: parent.horizontalCenter
-                y: 7
-                width: 3
-                height: 3
-                radius: 1.5
-                color: Theme.palette.shadow
-            }
         }
     }
 }

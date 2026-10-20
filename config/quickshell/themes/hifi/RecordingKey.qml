@@ -24,10 +24,14 @@ Row {
             on: root.control.recording
             color: Theme.palette.error
         }
-        Legend {
+        Engraved {
             anchors.horizontalCenter: parent.horizontalCenter
             text: root.control.recording ? root.control.label : "rec"
+            caps: true
+            tracking: 1.5
             color: root.control.recording ? Theme.palette.error : Theme.palette.dim
+            font.pixelSize: Math.max(8, Theme.font.size - 4)
+            font.bold: true
         }
     }
 

@@ -21,7 +21,7 @@ Row {
     Legend {
         anchors.verticalCenter: parent.verticalCenter
         text: "vol"
-        color: root.muted ? Theme.palette.error : root.control.hovered ? Theme.palette.fg : Theme.palette.dim
+        hovered: root.control.hovered
     }
 
     Item {

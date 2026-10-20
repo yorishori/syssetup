@@ -25,7 +25,6 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         y: 8
         text: "fault"
-        color: root.lines.length > 0 ? Theme.palette.error : Theme.palette.dim
     }
 
     // The slot.

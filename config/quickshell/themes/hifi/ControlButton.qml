@@ -81,6 +81,6 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         text: "service"
-        color: root.control.active ? Theme.palette.accent : root.control.hovered ? Theme.palette.fg : Theme.palette.dim
+        hovered: root.control.hovered
     }
 }

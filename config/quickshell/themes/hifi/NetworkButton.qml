@@ -29,7 +29,7 @@ Row {
     Legend {
         anchors.verticalCenter: parent.verticalCenter
         text: "link"
-        color: root.control.hovered ? Theme.palette.fg : Theme.palette.dim
+        hovered: root.control.hovered
     }
 
     Item {

@@ -16,7 +16,7 @@ Row {
     Legend {
         anchors.verticalCenter: parent.verticalCenter
         text: "msg"
-        color: root.control.active ? Theme.palette.accent : root.control.hovered ? Theme.palette.fg : Theme.palette.dim
+        hovered: root.control.hovered
     }
 
     Item {

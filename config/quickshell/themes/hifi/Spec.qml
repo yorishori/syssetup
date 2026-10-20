@@ -78,6 +78,7 @@ QtObject {
             dial: "#ffcf8a",     // the tuner's warm backlight and print
             needle: "#ff3b2f",   // the tuner's needle
             scope: "#5cff95",    // the oscilloscope's phosphor
+            idle: "#4a86ff",     // the IDLE sign's blue glass
             hazard: "#f4c21b"    // safety yellow (the emergency stop)
         },
         shape: {
