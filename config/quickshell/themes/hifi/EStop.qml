@@ -3,19 +3,16 @@ import QtQuick.Effects
 import qs.core
 
 // An emergency stop: a mushroom head standing in a recessed collar on a dark
-// plinth, under a clear guard tinted like the head and hinged at its bottom
-// edge. `open` swings the guard down toward you and lights the head; `pressed`
+// plinth, under a clear guard tinted like the head and hinged at its top
+// edge. `open` swings the guard up toward you and lights the head; `pressed`
 // sinks it into the collar; `alarm` makes it throb. A `glyph` can be printed
-// on the head, and a sticky `note` stuck to the guard (it swings down with
-// it). Everything scales with `size`, the plinth's width.
+// on the head. Everything scales with `size`, the plinth's width.
 Item {
     id: root
 
     property real size: 42
     property color color: Theme.palette.error
     property string glyph: ""
-    property string note: ""
-    property real noteTilt: -6
     property bool open: false
     property bool pressed: false
     property bool alarm: false
@@ -185,10 +182,10 @@ Item {
         }
     }
 
-    // The hinge along the bottom of the plinth.
+    // The hinge along the top of the plinth.
     Rectangle {
         anchors.horizontalCenter: face.horizontalCenter
-        y: face.height - 5 * root.s
+        y: 1 * root.s
         width: 24 * root.s
         height: 4 * root.s
         radius: height / 2
@@ -198,20 +195,19 @@ Item {
         }
     }
 
-    // The guard: clear plastic tinted like the head, swinging down toward
-    // you, the note riding on it.
+    // The guard: clear plastic tinted like the head, swinging up toward you.
     Item {
         id: guard
 
         x: 3 * root.s
-        y: 3 * root.s
+        y: 4 * root.s
         width: face.width - 6 * root.s
         height: face.height - 7 * root.s
 
         transform: Rotation {
-            origin.y: guard.height
+            origin.y: 0
             axis { x: 1; y: 0; z: 0 }
-            angle: root.open ? -130 : 0
+            angle: root.open ? 130 : 0
 
             Behavior on angle {
                 NumberAnimation { duration: 260; easing.type: root.open ? Easing.OutBack : Easing.InQuad; easing.overshoot: 1.2 }
@@ -228,7 +224,7 @@ Item {
         // The tab you lift it by.
         Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: -2 * root.s
+            y: parent.height - 2 * root.s
             width: 12 * root.s
             height: 4 * root.s
             radius: height / 2
@@ -242,51 +238,5 @@ Item {
             roundness: 3 * root.s
         }
 
-        // The note.
-        Item {
-            x: parent.width - width * 0.8
-            y: -height * 0.15
-            width: 20 * root.s
-            height: width
-            rotation: root.noteTilt
-            visible: root.note !== ""
-
-            RectangularShadow {
-                anchors.fill: parent
-                offset.y: 1.5 * root.s
-                blur: 3 * root.s
-                color: Qt.alpha("black", 0.45)
-            }
-            Rectangle {
-                anchors.fill: parent
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "#f6e27a" }
-                    GradientStop { position: 0.2; color: "#fff08f" }
-                    GradientStop { position: 1; color: "#f3df72" }
-                }
-            }
-            // The corner, lifting off.
-            Rectangle {
-                anchors {
-                    right: parent.right
-                    bottom: parent.bottom
-                }
-                width: 4 * root.s
-                height: width
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0; color: "#d9c560" }
-                    GradientStop { position: 1; color: "#b8a648" }
-                }
-            }
-            Text {
-                anchors.centerIn: parent
-                text: root.note
-                color: "#1c2a6b"
-                font.family: Theme.font.family
-                font.pixelSize: Math.round(13 * root.s)
-                font.bold: true
-            }
-        }
     }
 }
