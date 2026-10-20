@@ -35,6 +35,7 @@ import qs.themes.hifi as HifiTheme
 ShellRoot {
     ModuleLoader { name: "wallpaper"; path: "modules/wallpaper/Wallpaper.qml" }
     ModuleLoader { name: "bar"; path: "modules/bar/Bar.qml" }
+    ModuleLoader { name: "session"; path: "modules/session/SessionScreen.qml" }
     ModuleLoader { name: "notifications"; path: "modules/notifications/Popups.qml" }
     ModuleLoader { name: "clipboard"; path: "modules/clipboard/ClipboardPanel.qml" }
     ModuleLoader { name: "osd"; path: "modules/osd/Osd.qml" }

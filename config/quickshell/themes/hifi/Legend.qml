@@ -11,11 +11,12 @@ Item {
     property string text
     property color tape: "#141416"
     property bool hovered: false
+    property real size: 9  // the letters' height, px
     readonly property var letters: text.toUpperCase().split("")
-    readonly property real pitch: 6.4
+    readonly property real pitch: size * 0.71
 
-    implicitWidth: letters.length * pitch + 9
-    implicitHeight: 14
+    implicitWidth: letters.length * pitch + size
+    implicitHeight: size + 5
 
     // The tape, its edges curling a little.
     Rectangle {
@@ -48,18 +49,18 @@ Item {
 
             required property int index
             required property string modelData
-            x: 4.5 + index * root.pitch
+            x: root.size / 2 + index * root.pitch
             width: root.pitch
             height: root.height
 
             // The stretched plastic catching light above, shade below.
             Text {
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: 0.8
+                anchors.verticalCenterOffset: root.size / 11
                 text: letter.modelData
                 color: Qt.alpha("black", 0.7)
                 font.family: Theme.font.family
-                font.pixelSize: 9
+                font.pixelSize: root.size
                 font.weight: Font.Light
             }
             Text {
@@ -67,7 +68,7 @@ Item {
                 text: letter.modelData
                 color: Qt.alpha("#f4f2ec", 0.93)
                 font.family: Theme.font.family
-                font.pixelSize: 9
+                font.pixelSize: root.size
                 font.weight: Font.Light
             }
         }

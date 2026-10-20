@@ -45,6 +45,10 @@ Singleton {
     // theme needs for its parts (its Spec's bar.height).
     readonly property int barHeight: Math.max(Config.bar.height, values.bar?.height ?? 0)
 
+    // The session menu over the whole screen (modules/session/SessionScreen)
+    // instead of as a drop from the bar (its Spec's layout.sessionScreen).
+    readonly property bool sessionScreen: values.layout?.sessionScreen ?? false
+
     function loadSpec(n: string): QtObject {
         const comp = Qt.createComponent(Qt.resolvedUrl(`../themes/${n}/Spec.qml`));
         const obj = comp.status === Component.Ready ? comp.createObject(root) : null;

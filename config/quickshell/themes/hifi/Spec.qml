@@ -72,6 +72,10 @@ QtObject {
         bar: {
             height: 50
         },
+        // The session menu shuts the whole screen behind blast doors.
+        layout: {
+            sessionScreen: true
+        },
         // What each display on the panel glows in.
         display: {
             clock: "#ff4a32",    // the clock's red segments
@@ -79,7 +83,9 @@ QtObject {
             needle: "#ff3b2f",   // the tuner's needle
             scope: "#5cff95",    // the oscilloscope's phosphor
             idle: "#4a86ff",     // the IDLE sign's blue glass
-            hazard: "#f4c21b"    // safety yellow (the emergency stop)
+            hazard: "#f4c21b",   // safety yellow (the blast doors)
+            // The session buttons' heads, by action.
+            session: { lock: "#3f7dff", shutdown: "#ff3d33", reboot: "#ff9a1f", sleep: "#9b6cff" }
         },
         shape: {
             radius: 4,           // corner rounding of plates, keycaps and wells, px

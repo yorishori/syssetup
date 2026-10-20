@@ -19,11 +19,14 @@ import "widgets"
 PanelWindow {
     id: bar
 
-    // The open bar panel, "" when none (or when a non-bar panel is open).
-    readonly property string openDrop: Panels.barPanels.includes(Panels.current) ? Panels.current : ""
+    // The open bar panel, "" when none (or when a panel the bar doesn't
+    // show is open).
+    readonly property string openDrop: panels.some(p => p.name === Panels.current) ? Panels.current : ""
 
     // Drops, in the order they're declared. `edge` pins one flush to a screen
-    // edge; `blur` darkens and blurs the rest of the screen behind it.
+    // edge; `blur` darkens and blurs the rest of the screen behind it. Themes
+    // that show the session menu full screen (SessionScreen) have no drop
+    // for it.
     readonly property var panels: [
         { name: "session", edge: "left", blur: true },
         { name: "calendar" },
@@ -36,7 +39,7 @@ PanelWindow {
         { name: "control", edge: "right", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
         { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
         { name: "keys", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } }
-    ]
+    ].filter(p => p.name !== "session" || !Theme.sessionScreen)
 
     // The bar key each drop hangs under.
     function anchorFor(name: string): Item {
