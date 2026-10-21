@@ -10,10 +10,12 @@ import qs.modules.bar as B
 // hanging straight and settles; it's lifted back briskly. A piano hinge runs
 // along its top; while it swings, its face turns from the light and darkens.
 //
-// The drawer slides out from under the panel on its runners, everything on it
-// coming out with it, and is pushed back in; a pull handle on its front edge.
+// The drawer is another device pulled out from under the panel: a console in
+// a walnut case, its faceplate black matte powder coat. It slides out on its
+// runners, everything on it coming out with it, and is pushed back in; a
+// pull handle on its wooden front rail.
 //
-// Both are steel, with screws at the bottom corners.
+// The door is steel, with screws at its bottom corners.
 Item {
     id: root
 
@@ -120,6 +122,80 @@ Item {
 
             anchors.fill: parent
             squareTop: true
+            visible: !root.drawer
+        }
+
+        // The drawer's case: walnut cheeks either side, the grain running
+        // their length, and a front rail; the faceplate set into it.
+        Item {
+            anchors.fill: parent
+            visible: root.drawer
+
+            Image {
+                anchors.fill: parent
+                source: Qt.resolvedUrl("wood.png")
+                fillMode: Image.Tile
+            }
+            Repeater {
+                model: [0, 1]
+
+                Item {
+                    required property int modelData
+
+                    x: modelData ? parent.width - width : 0
+                    width: 12
+                    height: parent.height
+                    clip: true
+
+                    Image {
+                        x: 12
+                        width: parent.height
+                        height: 96
+                        rotation: 90
+                        transformOrigin: Item.TopLeft
+                        source: Qt.resolvedUrl("wood.png")
+                        fillMode: Image.Tile
+                    }
+                }
+            }
+            Rectangle {
+                anchors.fill: parent
+                color: "transparent"
+                border.width: 1
+                border.color: "#1c0f07"
+            }
+
+            // The faceplate.
+            Rectangle {
+                id: faceplate
+
+                x: 12
+                width: parent.width - 24
+                height: parent.height - 16
+                border.width: 1
+                border.color: "#050506"
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#1b1b1e" }
+                    GradientStop { position: 1; color: "#111113" }
+                }
+
+                Image {
+                    anchors {
+                        fill: parent
+                        margins: 1
+                    }
+                    source: Qt.resolvedUrl("coat.png")
+                    fillMode: Image.Tile
+                }
+            }
+            // The rail's top edge, catching the light.
+            Rectangle {
+                x: 12
+                y: faceplate.height
+                width: faceplate.width
+                height: 1
+                color: Qt.alpha("#e0b48a", 0.35)
+            }
         }
 
         // The door's piano hinge.
@@ -186,13 +262,13 @@ Item {
         Screw {
             x: 5
             y: parent.height - height - 5
-            visible: parent.height > 40 && (Theme.values.effects?.screws ?? true)
+            visible: !root.drawer && parent.height > 40 && (Theme.values.effects?.screws ?? true)
             angle: 60
         }
         Screw {
             x: parent.width - width - 5
             y: parent.height - height - 5
-            visible: parent.height > 40 && (Theme.values.effects?.screws ?? true)
+            visible: !root.drawer && parent.height > 40 && (Theme.values.effects?.screws ?? true)
             angle: -15
         }
 

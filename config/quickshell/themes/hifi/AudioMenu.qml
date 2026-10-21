@@ -8,28 +8,42 @@ import qs.components as C
 import qs.core
 import qs.modules.audio as M
 
-// A DJ set in a drawer: a turntable and a mixer.
+// A DJ set in a drawer: a turntable and a mixer on one faceplate, their
+// sections framed in silkscreened lines.
 //
 // The record on the turntable is the player, its app's icon in the middle;
 // it turns slowly while it plays. The tonearm runs along the bottom of the
-// record from its pivot, the headshell hooking up onto the grooves. Beside
-// the platter, the turntable's blue screen shows the player, the track and
-// how far it's got (dark when there's no player), with the SOURCE switch
-// under it and the transport keys set into the plinth below. Switching
+// record from its pivot, the headshell hooking up onto the grooves, and it
+// creeps in toward the label as the track goes on (it rests mid-record when
+// the player doesn't say how far it's got). Beside the platter, the deck's
+// screen shows the track (blank with no player), with the SOURCE switch
+// under it and the transport keys set into the faceplate below. Switching
 // players lifts the arm toward you, turns the record over to the new app and
 // drops the arm back.
 //
-// The mixer: MASTER (output) and MIC (input) as rows, each with its screen,
-// a device selector, a MODE selector for the profile, a horizontal fader and
-// a mute key; then a channel per app with an upright fader. The faders are
+// The mixer: the output and the input as rows, each with its screen, a
+// device selector, a MODE selector for the profile, a horizontal fader and a
+// mute key; then a channel per app with an upright fader. The faders are
 // analog: a printed scale and a square cap.
 Item {
     id: root
 
     required property M.AudioPanel control
 
-    implicitWidth: Math.max(deck.implicitWidth, mixer.implicitWidth)
-    implicitHeight: column.implicitHeight
+    // The faceplate's silkscreen.
+    readonly property color silk: Theme.values.display?.silk ?? Theme.palette.dim
+    readonly property real margin: 12
+
+    implicitWidth: Math.max(deck.implicitWidth, mixer.implicitWidth) + 2 * margin
+    implicitHeight: column.implicitHeight + 2 * margin
+
+    // A section of the faceplate, outlined in silkscreen.
+    component Frame: Rectangle {
+        radius: 4
+        color: "transparent"
+        border.width: 1
+        border.color: Qt.alpha(root.silk, 0.55)
+    }
 
     // A click-stop rotary selector: `count` positions printed round it, the
     // pointer on `index`. Click for the next, right click for the previous,
@@ -134,6 +148,8 @@ Item {
 
         property string line1
         property string line2
+        property string line3
+        property int size: 10  // the first line's; the others a little smaller
 
         width: 96
         height: 34
@@ -159,7 +175,7 @@ Item {
                 elide: Text.ElideRight
                 color: Theme.palette.accent
                 glow: true
-                font.pixelSize: 10
+                font.pixelSize: display.size
                 font.bold: true
             }
             C.StyledText {
@@ -167,8 +183,17 @@ Item {
                 text: display.line2
                 caps: true
                 elide: Text.ElideRight
-                color: Qt.alpha(Theme.palette.accent, 0.7)
-                font.pixelSize: 9
+                color: Qt.alpha(Theme.palette.accent, 0.75)
+                font.pixelSize: display.size - 1
+            }
+            C.StyledText {
+                width: parent.width
+                text: display.line3
+                caps: true
+                elide: Text.ElideRight
+                color: Qt.alpha(Theme.palette.accent, 0.55)
+                font.pixelSize: display.size - 2
+                visible: text !== ""
             }
         }
         Gloss {
@@ -204,9 +229,9 @@ Item {
         }
     }
 
-    // MASTER or MIC: its name, then its screen, a device selector, the
-    // profile's MODE selector, a horizontal fader with its scale printed
-    // above it, and the mute key.
+    // The output or the input: its screen, a device selector, the profile's
+    // MODE selector, a horizontal fader with its scale printed above it, and
+    // the mute key.
     component Bus: Column {
         id: bus
 
@@ -214,7 +239,6 @@ Item {
         required property PwNode node
         required property var devices
         required property var profiles
-        property string name
         property string deviceLegend
 
         signal pick(var device)
@@ -223,17 +247,12 @@ Item {
 
         spacing: 6
 
-        Legend {
-            text: bus.name
-        }
         Item {
             width: row.width + 24
             height: row.height + 16
 
-            Well {
+            Frame {
                 anchors.fill: parent
-                roundness: 4
-                fill: Qt.darker(Theme.palette.bg, 1.25)
             }
             Row {
                 id: row
@@ -324,11 +343,6 @@ Item {
         implicitWidth: 80
         implicitHeight: strip.implicitHeight + 24
 
-        Well {
-            anchors.fill: parent
-            roundness: 4
-            fill: Qt.darker(Theme.palette.bg, 1.25)
-        }
         Column {
             id: strip
 
@@ -488,6 +502,14 @@ Item {
     property MprisPlayer shown: null
     property real armLift: 0  // 0 = on the record, 1 = up toward you
     property real flip: 0     // the record turning over, -90 to 90 degrees
+    // How far the arm has swung in: 18 degrees takes the needle from the
+    // outer groove to the label. Mid-record when the track's progress is
+    // unknown.
+    property real armSwing: -18 * (root.control.progress < 0 ? 0.5 : root.control.progress)
+
+    Behavior on armSwing {
+        NumberAnimation { duration: 900 }
+    }
 
     readonly property string shownIcon: shown ? root.control.iconFor(shown) : ""
 
@@ -524,8 +546,10 @@ Item {
     ColumnLayout {
         id: column
 
-        width: parent.width
-        spacing: 14
+        x: root.margin
+        y: root.margin
+        width: parent.width - 2 * root.margin
+        spacing: 16
 
         // ── The turntable ────────────────────────────────────────────────────
         Item {
@@ -541,18 +565,6 @@ Item {
             Layout.fillWidth: true
             implicitWidth: 560
             implicitHeight: 344
-
-            // The plinth.
-            Rectangle {
-                anchors.fill: parent
-                radius: 6
-                border.width: 1
-                border.color: "black"
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "#232428" }
-                    GradientStop { position: 1; color: "#141517" }
-                }
-            }
 
             // The platter, its rim lit by a ring of red LEDs.
             Rectangle {
@@ -703,6 +715,10 @@ Item {
                 width: deck.tube + 100
                 height: 150
                 opacity: 0.6 - 0.25 * root.armLift
+                transform: Rotation {
+                    origin.y: 120
+                    angle: root.armSwing
+                }
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     colorization: 1
@@ -760,6 +776,9 @@ Item {
                         angle: -28 * root.armLift
                         distanceToPlane: 420
                     },
+                    Rotation {
+                        angle: root.armSwing
+                    },
                     Scale {
                         xScale: 1 + 0.08 * root.armLift
                         yScale: 1 + 0.08 * root.armLift
@@ -814,144 +833,45 @@ Item {
                 }
             }
 
-            // The blue screen: the player, the track and how far it's got.
-            // Dark glass with nothing on it when there's no player.
-            Item {
+            // The deck's controls, a framed section beside the platter: its
+            // screen (the track; blank with no player), the SOURCE switch,
+            // and the transport keys set into the faceplate.
+            Frame {
+                x: deck.side - 12
+                y: 12
+                width: deck.width - deck.side
+                height: deck.height - 24
+            }
+            Display {
                 id: screen
-
-                readonly property bool on: root.control.player !== null
-                readonly property color ink: "#e6efff"
 
                 x: deck.side
                 y: 26
                 width: deck.width - deck.side - 24
-                height: 92
-
-                Well {
-                    id: bezel
-
-                    anchors.fill: parent
-                    roundness: 4
-                    fill: screen.on ? "#1f4fbf" : "#0b1020"
-                }
-                // The backlight, brighter in the middle.
-                Rectangle {
-                    anchors {
-                        fill: parent
-                        margins: 2
-                    }
-                    radius: 3
-                    visible: screen.on
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: "#2a63db" }
-                        GradientStop { position: 0.5; color: "#3570e6" }
-                        GradientStop { position: 1; color: "#1d4bb3" }
-                    }
-                }
-                Column {
-                    anchors {
-                        fill: parent
-                        margins: 9
-                    }
-                    spacing: 3
-                    visible: screen.on
-
-                    Row {
-                        width: parent.width
-                        spacing: 6
-
-                        Text {
-                            text: root.control.playing ? "▶" : "❙❙"
-                            color: screen.ink
-                            font.family: Theme.font.family
-                            font.pixelSize: 9
-                        }
-                        Text {
-                            width: parent.width - x
-                            text: root.control.player?.identity ?? ""
-                            elide: Text.ElideRight
-                            font.capitalization: Font.AllUppercase
-                            color: Qt.alpha(screen.ink, 0.75)
-                            font.family: Theme.font.family
-                            font.pixelSize: 9
-                            font.letterSpacing: 1
-                        }
-                    }
-                    Text {
-                        width: parent.width
-                        text: root.control.title || root.control.player?.identity || ""
-                        elide: Text.ElideRight
-                        color: screen.ink
-                        font.family: Theme.font.family
-                        font.pixelSize: 13
-                        font.bold: true
-                    }
-                    Text {
-                        width: parent.width
-                        text: root.control.artist
-                        elide: Text.ElideRight
-                        color: Qt.alpha(screen.ink, 0.8)
-                        font.family: Theme.font.family
-                        font.pixelSize: 11
-                    }
-                    // How far the track has got.
-                    Item {
-                        width: parent.width
-                        height: 10
-                        visible: root.control.progress >= 0
-
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            height: 4
-                            color: Qt.alpha(screen.ink, 0.25)
-                        }
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width * Math.max(0, root.control.progress)
-                            height: 4
-                            color: screen.ink
-                        }
-                    }
-                }
-                // The LCD's pixel grid.
-                Image {
-                    anchors {
-                        fill: parent
-                        margins: 2
-                    }
-                    source: Qt.resolvedUrl("grille.png")
-                    fillMode: Image.Tile
-                    opacity: screen.on ? 0.12 : 0
-                }
-                Gloss {
-                    anchors {
-                        fill: parent
-                        margins: 1
-                    }
-                    roundness: bezel.r
-                }
+                height: 72
+                size: 13
+                line1: root.control.player ? root.control.title || root.control.player.identity : ""
+                line2: root.control.artist
+                line3: root.control.player ? `${root.control.playing ? "\u25B6" : "\u2759\u2759"} ${root.control.player.identity}` : ""
             }
 
-            // The SOURCE switch, under the screen.
             Paddle {
                 x: screen.x + (screen.width - width) / 2
-                y: screen.y + screen.height + 16
+                y: screen.y + screen.height + 22
                 live: root.control.players.length > 1
                 onFlicked: step => root.control.cycle(step)
             }
 
-            // The transport keys, set into a recess in the plinth.
             Item {
                 x: screen.x
-                y: deck.height - height - 24
+                y: deck.height - height - 26
                 width: screen.width
                 height: 66
 
                 Well {
                     anchors.fill: parent
                     roundness: 5
-                    fill: "#0e0f11"
+                    fill: "#0b0b0c"
                 }
                 Row {
                     anchors.centerIn: parent
@@ -999,7 +919,6 @@ Item {
                 node: root.control.output
                 devices: root.control.outputs
                 profiles: root.control.outputProfiles
-                name: "master"
                 deviceLegend: "out"
                 onPick: device => root.control.setDefaultOutput(device)
             }
@@ -1008,32 +927,57 @@ Item {
                 node: root.control.input
                 devices: root.control.inputs
                 profiles: root.control.inputProfiles
-                name: "mic"
                 deviceLegend: "in"
                 onPick: device => root.control.setDefaultInput(device)
             }
 
-            // A channel per app.
-            Row {
+            // A channel per app, framed together, a line between each.
+            Item {
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 4
-                spacing: 8
+                implicitWidth: apps.width + 16
+                implicitHeight: apps.height
+                visible: root.control.apps.length > 0
 
-                Repeater {
-                    model: root.control.apps
+                Frame {
+                    anchors.fill: parent
+                }
+                Row {
+                    id: apps
 
-                    Channel {
-                        required property var modelData
+                    x: 8
 
-                        panel: root.control
-                        nodes: modelData.nodes
-                        name: modelData.name
+                    Repeater {
+                        model: root.control.apps
+
+                        Row {
+                            id: lane
+
+                            required property int index
+                            required property var modelData
+
+                            Rectangle {
+                                width: 1
+                                height: channel.height - 24
+                                anchors.verticalCenter: parent.verticalCenter
+                                color: Qt.alpha(root.silk, 0.3)
+                                visible: lane.index > 0
+                            }
+                            Channel {
+                                id: channel
+
+                                panel: root.control
+                                nodes: lane.modelData.nodes
+                                name: lane.modelData.name
+                            }
+                        }
                     }
                 }
-                C.Placeholder {
-                    text: "-- no apps playing --"
-                    visible: root.control.apps.length === 0
-                }
+            }
+            C.Placeholder {
+                Layout.alignment: Qt.AlignHCenter
+                text: "-- no apps playing --"
+                visible: root.control.apps.length === 0
             }
         }
     }

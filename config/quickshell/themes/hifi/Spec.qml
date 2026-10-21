@@ -86,6 +86,7 @@ QtObject {
             needle: "#ff3b2f",   // the tuner's needle
             scope: "#5cff95",    // the oscilloscope's phosphor
             idle: "#4a86ff",     // the IDLE sign's blue glass
+            silk: "#c7a95f",     // the audio console's silkscreen
             hazard: "#f4c21b",   // safety yellow (the blast doors)
             // The session buttons' heads, by action.
             session: { lock: "#3f7dff", shutdown: "#ff3d33", reboot: "#ff9a1f", sleep: "#9b6cff" }
