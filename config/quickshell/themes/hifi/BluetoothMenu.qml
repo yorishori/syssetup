@@ -132,6 +132,7 @@ Item {
                         spacing: 6
 
                         TuningKnob {
+                            position: Math.max(0, root.current)
                             anchors.horizontalCenter: parent.horizontalCenter
                             live: root.entries.filter(e => e.device).length > 1
                             onStepped: step => root.pick(screen.next(root.current, step))

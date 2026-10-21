@@ -4,14 +4,16 @@ import qs.core
 
 // A big tuning knob: knurled round its edge, a dimple for a fingertip. It
 // clicks round a step at a time: stepped(-1) or stepped(1). Click its left
-// or right half, or scroll. Not `live`, it stays put.
+// or right half, or scroll. Its turn follows `position` (what it's tuned
+// to, however that was picked), so it moves with the list it steps through.
+// Not `live`, it stays put.
 Item {
     id: root
 
     property bool live: true
-    // How far it's been turned, in steps; it springs to each new one.
-    property int turns: 0
-    property real angle: turns * 24
+    // Where it's tuned to, in steps; it springs round to each new one.
+    property int position: 0
+    property real angle: position * 24
 
     signal stepped(int step)
 
@@ -19,10 +21,8 @@ Item {
     implicitHeight: 72
 
     function step(by: int): void {
-        if (!live)
-            return;
-        turns += by;
-        stepped(by);
+        if (live)
+            stepped(by);
     }
 
     Behavior on angle {

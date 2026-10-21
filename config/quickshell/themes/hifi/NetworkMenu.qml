@@ -279,6 +279,7 @@ Item {
                             spacing: 6
 
                             TuningKnob {
+                                position: Math.max(0, root.current)
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 live: root.nets.length > 1
                                 onStepped: step => root.pick(Math.max(0, Math.min(root.nets.length - 1, root.current + step)))
