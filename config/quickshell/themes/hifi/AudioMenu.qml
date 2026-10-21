@@ -868,8 +868,9 @@ Item {
                         }
                         Text {
                             width: parent.width - x
-                            text: (root.control.player?.identity ?? "").toUpperCase()
+                            text: root.control.player?.identity ?? ""
                             elide: Text.ElideRight
+                            font.capitalization: Font.AllUppercase
                             color: Qt.alpha(screen.ink, 0.75)
                             font.family: Theme.font.family
                             font.pixelSize: 9
