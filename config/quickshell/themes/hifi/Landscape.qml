@@ -342,31 +342,45 @@ Item {
         }
     }
 
-    // The moon, last, over everything: its lit part, the dark part covered
-    // in sky as it waxes and wanes.
-    Item {
+    // The moon, last, over everything: only its lit part, between its edge
+    // on the lit side (the right while it waxes) and the terminator, a
+    // half-ellipse that bulges toward the light while it's a crescent and
+    // away from it once it's past half.
+    Shape {
         id: moon
 
-        readonly property real lit: (1 - Math.cos(2 * Math.PI * root.moonPhase)) / 2
+        readonly property real r: root.scene.moon.r
         readonly property bool waxing: root.moonPhase < 0.5
+        readonly property real bend: Math.cos(2 * Math.PI * root.moonPhase)  // 1 new, -1 full
+        readonly property bool crescent: bend > 0
 
-        x: root.scene.moon.x - root.scene.moon.r
-        y: root.scene.moon.y - root.scene.moon.r
-        width: 2 * root.scene.moon.r
-        height: width
-        clip: true
+        x: root.scene.moon.x
+        y: root.scene.moon.y
+        visible: r > 0
+        preferredRendererType: Shape.CurveRenderer
 
-        Rectangle {
-            anchors.fill: parent
-            radius: width / 2
-            color: root.colors.moon
-        }
-        Rectangle {
-            x: (moon.waxing ? -1 : 1) * moon.width * moon.lit
-            width: parent.width
-            height: parent.height
-            radius: width / 2
-            color: Qt.tint(root.colors.sky[0], Qt.alpha(root.colors.sky[1], 0.25))
+        ShapePath {
+            strokeColor: "transparent"
+            fillColor: root.colors.moon
+            startX: 0
+            startY: -moon.r
+
+            // The edge, round the lit side.
+            PathArc {
+                x: 0
+                y: moon.r
+                radiusX: moon.r
+                radiusY: moon.r
+                direction: moon.waxing ? PathArc.Clockwise : PathArc.Counterclockwise
+            }
+            // The terminator, back up.
+            PathArc {
+                x: 0
+                y: -moon.r
+                radiusX: Math.max(0.01, moon.r * Math.abs(moon.bend))
+                radiusY: moon.r
+                direction: moon.waxing === moon.crescent ? PathArc.Counterclockwise : PathArc.Clockwise
+            }
         }
     }
 }
