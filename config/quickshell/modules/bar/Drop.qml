@@ -63,6 +63,13 @@ Skinned {
         x = Math.max(margin, Math.min(parent.width - width - margin, center - width / 2));
     }
 
+    // Clicks nothing on the drop takes stop here, so they don't fall through
+    // to the bar's click-outside catcher underneath (Sway) and close it.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.AllButtons
+    }
+
     Item {
         anchors.fill: parent
         clip: true
