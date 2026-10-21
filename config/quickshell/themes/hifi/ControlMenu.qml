@@ -849,101 +849,170 @@ Item {
 
                 // ── USB ──────────────────────────────────────────────────────
                 Section {
+                    id: usbSection
+
                     width: column.width - updatesSection.width - 12
                     height: updatesSection.height
                     name: "usb"
 
-                    Flow {
-                        width: parent.width
+                    // A list on the display, rolled through with the
+                    // thumbwheel beside it (or scrolled).
+                    Row {
                         spacing: 10
 
-                        Repeater {
-                            model: Math.max(6, root.disks.usb.length)
+                        Item {
+                            id: usbScreen
 
+                            readonly property real row: 17
+
+                            width: usbSection.width - 2 * usbSection.pad - 10 - wheel.width
+                            height: usbSection.height - 2 * usbSection.pad - 18
+
+                            Well {
+                                id: usbGlass
+
+                                anchors.fill: parent
+                                roundness: 3
+                                fill: Qt.tint("#050807", Qt.alpha(Theme.palette.accent, 0.04))
+                            }
+                            C.StyledText {
+                                x: 8
+                                y: 6
+                                text: root.disks.usb.length === 0 ? "nothing connected"
+                                    : `${root.disks.usb.length} device${root.disks.usb.length === 1 ? "" : "s"}`
+                                caps: true
+                                color: Theme.palette.accent
+                                glow: true
+                                font.pixelSize: 10
+                                font.bold: true
+                            }
+                            ListView {
+                                id: usbList
+
+                                x: 8
+                                y: 24
+                                width: parent.width - 16
+                                // Whole rows only.
+                                height: Math.floor((parent.height - y - 4) / usbScreen.row) * usbScreen.row
+                                clip: true
+                                boundsBehavior: Flickable.StopAtBounds
+                                snapMode: ListView.SnapToItem
+                                model: root.disks.usb
+
+                                Behavior on contentY {
+                                    NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                                }
+
+                                delegate: Item {
+                                    required property var modelData
+
+                                    width: ListView.view.width
+                                    height: usbScreen.row
+
+                                    C.StyledText {
+                                        width: parent.width - deviceId.width - 10
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: parent.modelData.name
+                                        caps: true
+                                        elide: Text.ElideRight
+                                        color: Qt.alpha(Theme.palette.accent, 0.8)
+                                        font.pixelSize: 10
+                                    }
+                                    C.StyledText {
+                                        id: deviceId
+
+                                        anchors {
+                                            right: parent.right
+                                            verticalCenter: parent.verticalCenter
+                                        }
+                                        text: parent.modelData.id
+                                        color: Qt.alpha(Theme.palette.accent, 0.5)
+                                        font.pixelSize: 9
+                                    }
+                                }
+
+                                // A row at a time.
+                                function roll(step: int): void {
+                                    const max = Math.max(0, contentHeight - height);
+                                    contentY = Math.max(0, Math.min(max, Math.round(contentY / usbScreen.row + step) * usbScreen.row));
+                                }
+                            }
+                            Gloss {
+                                anchors {
+                                    fill: parent
+                                    margins: 1
+                                }
+                                roundness: usbGlass.r
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                acceptedButtons: Qt.NoButton
+                                onWheel: wheel => usbList.roll(wheel.angleDelta.y > 0 ? -1 : 1)
+                            }
+                        }
+
+                        // The thumbwheel: a knurled wheel in a slot, its
+                        // ridges turning with the list. Click above or below
+                        // its middle for a row up or down, or roll it.
+                        Item {
+                            id: wheel
+
+                            width: 22
+                            height: usbScreen.height
+
+                            Well {
+                                anchors.fill: parent
+                                roundness: 4
+                            }
                             Item {
-                                id: socket
+                                anchors {
+                                    fill: parent
+                                    margins: 3
+                                }
+                                clip: true
 
-                                required property int index
-                                readonly property var device: root.disks.usb[index] ?? null
-
-                                width: 64
-                                height: 92
-
-                                // The port.
                                 Rectangle {
-                                    id: port
-
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    y: 6
-                                    width: 30
-                                    height: 14
-                                    radius: 1
-                                    color: "#050505"
-                                    border.width: 2
-                                    border.color: "#8d9096"
-
-                                    Rectangle {
-                                        x: 5
-                                        y: 3
-                                        width: parent.width - 10
-                                        height: 4
-                                        color: "#2a64c8"
+                                    anchors.fill: parent
+                                    radius: 3
+                                    gradient: Gradient {
+                                        GradientStop { position: 0; color: "#0e0e10" }
+                                        GradientStop { position: 0.5; color: wheelArea.containsMouse ? "#5a5c62" : "#47494e" }
+                                        GradientStop { position: 1; color: "#0e0e10" }
                                     }
                                 }
-                                // A plug in it, its boot and cable going down.
-                                Item {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    width: 34
-                                    height: 58
-                                    visible: socket.device !== null
+                                // The knurling, rolling as the list moves.
+                                Repeater {
+                                    model: Math.ceil(wheel.height / 5) + 2
 
                                     Rectangle {
-                                        x: 1
-                                        y: 4
-                                        width: 32
-                                        height: 16
-                                        radius: 1
-                                        gradient: Gradient {
-                                            orientation: Gradient.Horizontal
-                                            GradientStop { position: 0; color: "#7c7f85" }
-                                            GradientStop { position: 0.5; color: "#e1e3e7" }
-                                            GradientStop { position: 1; color: "#6c6f75" }
-                                        }
-                                    }
-                                    Rectangle {
-                                        y: 18
-                                        width: 34
-                                        height: 26
-                                        radius: 3
-                                        color: "#151517"
-                                        border.width: 1
-                                        border.color: "black"
+                                        required property int index
 
-                                        Rectangle {
-                                            x: 3
-                                            y: 1
-                                            width: parent.width - 6
-                                            height: 1
-                                            color: Qt.alpha("white", 0.18)
-                                        }
-                                    }
-                                    Rectangle {
-                                        anchors.horizontalCenter: parent.horizontalCenter
-                                        y: 44
-                                        width: 8
-                                        height: 14
-                                        color: "#101012"
+                                        x: 2
+                                        y: index * 5 - (usbList.contentY * 0.6) % 5 - 5
+                                        width: parent.width - 4
+                                        height: 1.5
+                                        color: Qt.alpha("black", 0.55)
                                     }
                                 }
-                                // Someone labelled what's plugged in: its maker's
-                                // name, as much as fits on a short bit of tape.
-                                Legend {
-                                    anchors.horizontalCenter: parent.horizontalCenter
-                                    y: 68
-                                    text: socket.device ? socket.device.name.split(" ")[0].slice(0, 8) : ""
-                                    size: 7
-                                    visible: text !== ""
+                                // Shading: the wheel turns away top and bottom.
+                                Rectangle {
+                                    anchors.fill: parent
+                                    gradient: Gradient {
+                                        GradientStop { position: 0; color: Qt.alpha("black", 0.7) }
+                                        GradientStop { position: 0.3; color: "transparent" }
+                                        GradientStop { position: 0.7; color: "transparent" }
+                                        GradientStop { position: 1; color: Qt.alpha("black", 0.7) }
+                                    }
                                 }
+                            }
+                            MouseArea {
+                                id: wheelArea
+
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: mouse => usbList.roll(mouse.y < height / 2 ? -1 : 1)
+                                onWheel: wheel => usbList.roll(wheel.angleDelta.y > 0 ? -1 : 1)
                             }
                         }
                     }
