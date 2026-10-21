@@ -37,335 +37,6 @@ Item {
     implicitWidth: 780 + 2 * margin
     implicitHeight: Math.min(column.implicitHeight + 2 * margin, control.maxHeight)
 
-    // A section of the faceplate, outlined and named in silkscreen.
-    component Section: Item {
-        id: section
-
-        property string name
-        default property alias content: inner.data
-        readonly property real pad: 14
-
-        implicitWidth: inner.childrenRect.width + 2 * pad
-        implicitHeight: inner.childrenRect.height + 2 * pad + 18
-
-        Rectangle {
-            anchors.fill: parent
-            radius: 4
-            color: "transparent"
-            border.width: 1
-            border.color: Qt.alpha(root.silk, 0.55)
-        }
-        Silk {
-            x: section.pad
-            y: 9
-            text: section.name
-        }
-        Item {
-            id: inner
-
-            x: section.pad
-            y: section.pad + 18
-            width: section.width - 2 * section.pad
-        }
-    }
-
-    // Print on the faceplate.
-    component Silk: C.StyledText {
-        caps: true
-        color: root.silk
-        font.pixelSize: 10
-        font.bold: true
-        tracking: 1.5
-    }
-
-    // A latching push switch: a black cap in a chrome bezel. Pushed, it stays
-    // in, a ring lit round it, until what it started is done.
-    component PushSwitch: Item {
-        id: push
-
-        property bool latched: false
-        property string icon
-        readonly property bool down: latched || pushArea.pressed
-
-        signal pushed
-
-        width: 42
-        height: 42
-
-        RectangularShadow {
-            anchors.fill: parent
-            radius: width / 2
-            offset.y: 2
-            blur: 5
-            color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
-        }
-        Rectangle {
-            anchors.fill: parent
-            radius: width / 2
-            border.width: 1
-            border.color: "black"
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#eef0f3" }
-                GradientStop { position: 0.45; color: "#85878d" }
-                GradientStop { position: 0.7; color: "#cfd1d5" }
-                GradientStop { position: 1; color: "#4a4c51" }
-            }
-        }
-        // The ring, lit while it's held in.
-        Rectangle {
-            anchors.centerIn: parent
-            width: 32
-            height: 32
-            radius: width / 2
-            color: "#070707"
-            border.width: 2
-            border.color: push.latched ? Theme.palette.warn : Qt.alpha(Theme.palette.warn, 0.12)
-        }
-        RectangularShadow {
-            anchors.centerIn: parent
-            width: 32
-            height: 32
-            radius: width / 2
-            blur: 8
-            color: Qt.alpha(Theme.palette.warn, 0.5)
-            visible: push.latched
-            z: -1
-        }
-        Rectangle {
-            anchors.centerIn: parent
-            width: 26
-            height: 26
-            radius: width / 2
-            scale: push.down ? 0.88 : 1
-            border.width: 1
-            border.color: "black"
-            gradient: Gradient {
-                GradientStop { position: 0; color: pushArea.containsMouse && !push.latched ? "#4c4e54" : "#3a3c41" }
-                GradientStop { position: 1; color: push.down ? "#1a1b1e" : "#111214" }
-            }
-
-            Behavior on scale {
-                NumberAnimation { duration: 70 }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: push.icon
-                color: Qt.alpha(Theme.palette.fg, 0.7)
-                font.family: Theme.font.family
-                font.pixelSize: 12
-            }
-        }
-        MouseArea {
-            id: pushArea
-
-            anchors.fill: parent
-            enabled: !push.latched
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: push.pushed()
-        }
-    }
-
-    // A moving-coil panel meter: a cream face lit from behind, a printed arc
-    // with its red zone, the needle on its pivot. `value` 0-1.
-    component PanelMeter: Item {
-        id: meter
-
-        property real value: 0
-        property string name
-        property string detail
-        property string reading
-        property bool hot: false
-        readonly property point pivot: Qt.point(width / 2, height - 18)
-        readonly property real reach: 78
-        property real needle: -50 + 100 * Math.max(0, Math.min(1, value))
-
-        width: 170
-        height: 122
-
-        Behavior on needle {
-            SpringAnimation { spring: 2.2; damping: 0.18; epsilon: 0.05 }
-        }
-
-        // The case and the backlit face.
-        Rectangle {
-            anchors.fill: parent
-            radius: 5
-            color: "#0b0b0c"
-            border.width: 1
-            border.color: "black"
-        }
-        Rectangle {
-            id: face
-
-            anchors {
-                fill: parent
-                margins: 5
-            }
-            radius: 3
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#f3e7c4" }
-                GradientStop { position: 1; color: "#d9c79a" }
-            }
-            clip: true
-
-            Rectangle {
-                anchors.fill: parent
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0; color: Qt.alpha("#7a4a10", 0.18) }
-                    GradientStop { position: 0.5; color: Qt.alpha("#fff3c8", 0.25) }
-                    GradientStop { position: 1; color: Qt.alpha("#7a4a10", 0.18) }
-                }
-            }
-        }
-
-        // The scale: an arc, ticks every tenth, the last stretch in red.
-        Shape {
-            anchors.fill: parent
-            preferredRendererType: Shape.CurveRenderer
-
-            ShapePath {
-                strokeColor: root.ink
-                strokeWidth: 1.2
-                fillColor: "transparent"
-                PathAngleArc {
-                    centerX: meter.pivot.x
-                    centerY: meter.pivot.y
-                    radiusX: meter.reach - 8
-                    radiusY: meter.reach - 8
-                    startAngle: -140
-                    sweepAngle: 100 * 0.85
-                }
-            }
-            ShapePath {
-                strokeColor: "#c0281c"
-                strokeWidth: 4
-                fillColor: "transparent"
-                capStyle: ShapePath.FlatCap
-                PathAngleArc {
-                    centerX: meter.pivot.x
-                    centerY: meter.pivot.y
-                    radiusX: meter.reach - 6
-                    radiusY: meter.reach - 6
-                    startAngle: -140 + 85
-                    sweepAngle: 15
-                }
-            }
-        }
-        Repeater {
-            model: 11
-
-            Item {
-                required property int index
-
-                x: meter.pivot.x
-                y: meter.pivot.y
-                rotation: -50 + index * 10
-
-                Rectangle {
-                    x: -0.6
-                    y: -meter.reach + (parent.index % 5 === 0 ? 0 : 3)
-                    width: parent.index % 5 === 0 ? 1.6 : 1.2
-                    height: parent.index % 5 === 0 ? 10 : 6
-                    color: parent.index >= 9 ? "#c0281c" : root.ink
-                }
-            }
-        }
-        Repeater {
-            model: [0, 50, 100]
-
-            Text {
-                required property int modelData
-                readonly property real a: (-50 + modelData) * Math.PI / 180
-
-                x: meter.pivot.x + Math.sin(a) * (meter.reach + 9) - width / 2
-                y: meter.pivot.y - Math.cos(a) * (meter.reach + 9) - height / 2
-                text: modelData
-                color: root.ink
-                font.family: Theme.font.family
-                font.pixelSize: 8
-            }
-        }
-
-        // What it reads.
-        Text {
-            anchors {
-                left: parent.left
-                leftMargin: 12
-                bottom: parent.bottom
-                bottomMargin: 8
-            }
-            text: meter.name
-            color: root.ink
-            font.family: Theme.font.family
-            font.pixelSize: 13
-            font.bold: true
-            font.letterSpacing: 2
-        }
-        Text {
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: meter.pivot.y - 34
-            width: parent.width - 60
-            horizontalAlignment: Text.AlignHCenter
-            text: meter.detail
-            elide: Text.ElideRight
-            color: Qt.alpha(root.ink, 0.65)
-            font.family: Theme.font.family
-            font.pixelSize: 8
-        }
-        Text {
-            anchors {
-                right: parent.right
-                rightMargin: 12
-                bottom: parent.bottom
-                bottomMargin: 9
-            }
-            text: meter.reading
-            color: meter.hot ? "#c0281c" : root.ink
-            font.family: Theme.font.family
-            font.pixelSize: 9
-            font.bold: true
-        }
-
-        // The needle and its pivot.
-        Item {
-            x: meter.pivot.x
-            y: meter.pivot.y
-            rotation: meter.needle
-
-            Rectangle {
-                x: -1
-                y: -meter.reach + 2
-                width: 2
-                height: meter.reach + 6
-                radius: 1
-                antialiasing: true
-                color: "#1a1612"
-            }
-        }
-        Rectangle {
-            x: meter.pivot.x - 7
-            y: meter.pivot.y - 7
-            width: 14
-            height: 14
-            radius: 7
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#4a4b50" }
-                GradientStop { position: 1; color: "#111113" }
-            }
-        }
-
-        Gloss {
-            anchors {
-                fill: face
-                margins: 1
-            }
-            roundness: 3
-        }
-    }
-
     // How full a disk is: a row of LEDs, green, then amber, then red.
     component Bargraph: Row {
         id: graph
@@ -577,7 +248,7 @@ Item {
             spacing: 12
 
             // ── System ───────────────────────────────────────────────────────
-            Section {
+            Framed {
                 width: column.width
                 name: "system"
 
@@ -700,7 +371,7 @@ Item {
                 spacing: 12
 
                 // ── Updates ──────────────────────────────────────────────────
-                Section {
+                Framed {
                     id: updatesSection
 
                     name: "updates"
@@ -847,7 +518,7 @@ Item {
                 }
 
                 // ── USB ──────────────────────────────────────────────────────
-                Section {
+                Framed {
                     id: usbSection
 
                     width: column.width - updatesSection.width - 12
@@ -1019,7 +690,7 @@ Item {
             }
 
             // ── Storage ──────────────────────────────────────────────────────
-            Section {
+            Framed {
                 width: column.width
                 name: "storage"
 
@@ -1130,7 +801,7 @@ Item {
             }
 
             // ── Tools ────────────────────────────────────────────────────────
-            Section {
+            Framed {
                 width: column.width
                 name: "tools"
                 visible: root.control.tools.length > 0

@@ -77,7 +77,7 @@ QtObject {
             sessionScreen: true,
             // Drops that slide out from under the panel like a drawer; the
             // others are doors that swing down.
-            drawers: ["audio", "launcher", "control"]
+            drawers: ["audio", "launcher", "control", "network", "bluetooth"]
         },
         // What each display on the panel glows in.
         display: {

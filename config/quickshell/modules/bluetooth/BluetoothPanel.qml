@@ -1,212 +1,59 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell.Bluetooth
 import qs.components
-import qs.core
 import qs.services
 
-// Bluetooth power and scan, then devices: CONNECTED (with battery), PAIRED,
-// NEARBY (found by a scan). Click a device for its actions.
-ColumnLayout {
+// Bluetooth: power and scan, then the devices, CONNECTED (with battery),
+// PAIRED, NEARBY (found by a scan), and for one of them its actions. The
+// skin (BluetoothMenu) lays it out and keeps which device is picked.
+Skinned {
     id: root
 
-    // Address of the device whose actions are shown, "" for none.
-    property string expanded: ""
+    property bool open: false
 
-    width: 320
-    spacing: 10
+    readonly property bool powered: Bluez.enabled
+    readonly property bool discovering: Bluez.discovering
+    readonly property string adapterName: Bluez.adapter?.name ?? ""
+    readonly property var devices: Bluez.devices
+    readonly property var connected: Bluez.enabled ? Bluez.connected : []
+    readonly property var paired: Bluez.enabled ? Bluez.paired : []
+    readonly property var nearby: Bluez.enabled ? Bluez.nearby : []
+    readonly property bool busy: Bluez.busy
+    // Why the last pair or connect failed, as BlueZ put it, and on which
+    // device (its address).
+    readonly property string error: Bluez.error
+    readonly property string errorFor: Bluez.errorFor
 
-    component Section: ColumnLayout {
-        id: section
+    skin: "BluetoothMenu"
 
-        property string title
-        property var devices: []
-
-        Layout.fillWidth: true
-        spacing: 4
-        visible: devices.length > 0
-
-        SectionTitle {
-            text: section.title
-            code: String(section.devices.length).padStart(2, "0")
-        }
-        Repeater {
-            model: section.devices
-
-            DeviceRow {}
-        }
+    function glyph(device: BluetoothDevice): string {
+        return Bluez.glyph(device);
     }
-
-    component DeviceRow: ColumnLayout {
-        id: item
-
-        required property BluetoothDevice modelData
-        readonly property bool open: root.expanded === modelData.address
-        readonly property bool busy: Bluez.pending === modelData.address
-            || modelData.pairing
-            || modelData.state === BluetoothDeviceState.Connecting
-            || modelData.state === BluetoothDeviceState.Disconnecting
-        readonly property bool failed: !busy && Bluez.errorFor === modelData.address
-
-        Layout.fillWidth: true
-        spacing: 6
-
-        ListRow {
-            implicitHeight: 26
-            leftPadding: 8
-            rightPadding: 8
-            marker: false
-            highlighted: item.open
-            onClicked: root.expanded = item.open ? "" : item.modelData.address
-
-            StyledText {
-                text: Bluez.glyph(item.modelData)
-                color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
-                glow: item.modelData.connected
-            }
-            StyledText {
-                Layout.fillWidth: true
-                text: item.modelData.name
-                color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
-                glow: item.modelData.connected
-                elide: Text.ElideRight
-            }
-            Gauge {
-                visible: item.modelData.connected && item.modelData.batteryAvailable
-                value: item.modelData.battery
-                color: item.modelData.battery <= 0.2 ? Theme.palette.warn : Theme.palette.accent
-            }
-            StyledText {
-                text: item.busy ? (item.modelData.pairing ? "pairing…" : "linking…")
-                    : item.failed ? "failed"
-                    : item.modelData.connected
-                        ? (item.modelData.batteryAvailable ? String(Math.round(item.modelData.battery * 100)).padStart(3, "0") : "link")
-                    : item.modelData.paired ? "saved"
-                    : "new"
-                caps: true
-                color: item.failed ? Theme.palette.error : Theme.palette.muted
-                font.pixelSize: Theme.font.size - 3
-                font.bold: true
-                tracking: 1
-            }
-        }
-
-        // Why the last pair/connect on this device failed, as BlueZ put it.
-        StyledText {
-            Layout.fillWidth: true
-            Layout.leftMargin: 8
-            Layout.rightMargin: 8
-            text: Theme.caps("err") + " " + Bluez.error
-            color: Theme.palette.error
-            font.pixelSize: Theme.font.size - 2
-            wrapMode: Text.Wrap
-            visible: item.failed
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.leftMargin: 8
-            Layout.rightMargin: 8
-            spacing: 6
-            visible: item.open
-
-            Item {
-                Layout.fillWidth: true
-            }
-            TextButton {
-                text: "Connect"
-                visible: item.modelData.paired && !item.modelData.connected
-                enabled: !Bluez.busy
-                onClicked: Bluez.connect(item.modelData)
-            }
-            TextButton {
-                text: "Disconnect"
-                visible: item.modelData.connected
-                enabled: !item.busy
-                onClicked: item.modelData.disconnect()
-            }
-            TextButton {
-                text: "Pair"
-                visible: !item.modelData.paired
-                enabled: !Bluez.busy
-                onClicked: Bluez.pair(item.modelData)
-            }
-            TextButton {
-                text: "Forget"
-                visible: item.modelData.paired
-                enabled: !item.busy
-                onClicked: {
-                    root.expanded = "";
-                    item.modelData.forget();
-                }
-            }
-        }
+    // Pairing, connecting or disconnecting.
+    function busyWith(device: BluetoothDevice): bool {
+        return !!device && (Bluez.pending === device.address || device.pairing
+            || device.state === BluetoothDeviceState.Connecting
+            || device.state === BluetoothDeviceState.Disconnecting);
     }
-
-    // Header: power and scan
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 4
-
-        SectionTitle {
-            Layout.fillWidth: true
-            text: "Bluetooth"
-            code: (Bluez.adapter?.name ?? "")
-        }
-        // Only the glyph spins; the key is disabled (no hover) while scanning.
-        IconButton {
-            icon: "\u{F0450}"
-            visible: Bluez.enabled
-            enabled: !Bluez.discovering
-            iconColor: Bluez.discovering ? Theme.palette.accent : Theme.palette.fg
-            onClicked: Bluez.scan()
-
-            NumberAnimation on iconRotation {
-                running: Bluez.discovering
-                loops: Animation.Infinite
-                from: 0
-                to: 360
-                duration: 900
-                alwaysRunToEnd: true
-            }
-        }
-        IconButton {
-            icon: Bluez.enabled ? "\u{F00AF}" : "\u{F00B2}"
-            lit: Bluez.enabled
-            iconColor: Theme.palette.off
-            onClicked: Bluez.setEnabled(!Bluez.enabled)
-        }
+    function failed(device: BluetoothDevice): bool {
+        return !!device && !busyWith(device) && Bluez.errorFor === device.address;
     }
-
-    StyledText {
-        Layout.leftMargin: 8
-        text: "-- radio off --"
-        color: Theme.palette.muted
-        visible: !Bluez.enabled
+    function scan(): void {
+        Bluez.scan();
     }
-    StyledText {
-        Layout.leftMargin: 8
-        text: "-- no devices, scan to find some --"
-        color: Theme.palette.muted
-        visible: Bluez.enabled && Bluez.devices.length === 0 && !Bluez.discovering
+    function setEnabled(on: bool): void {
+        Bluez.setEnabled(on);
     }
-
-    Section {
-        title: "Connected"
-        devices: Bluez.enabled ? Bluez.connected : []
+    function connect(device: BluetoothDevice): void {
+        Bluez.connect(device);
     }
-    Section {
-        title: "Paired"
-        devices: Bluez.enabled ? Bluez.paired : []
+    function pair(device: BluetoothDevice): void {
+        Bluez.pair(device);
     }
-    Section {
-        title: "Nearby"
-        devices: Bluez.enabled ? Bluez.nearby : []
+    function disconnect(device: BluetoothDevice): void {
+        device.disconnect();
     }
-    StyledText {
-        Layout.leftMargin: 8
-        text: "scanning…"
-        color: Theme.palette.muted
-        visible: Bluez.discovering && Bluez.nearby.length === 0
+    function forget(device: BluetoothDevice): void {
+        device.forget();
     }
 }
