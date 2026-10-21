@@ -2,7 +2,7 @@ import QtQuick
 import qs.core
 import qs.modules.bar.widgets as W
 
-// An illuminated rocker labelled BT: flip it to power the radio. Its lens
+// An illuminated rocker, labelled BT on its left: flip it to power the radio. Its lens
 // glows while a device is connected and blinks while scanning; without an
 // adapter it's dead. The label opens the Bluetooth drop.
 Row {
@@ -14,6 +14,11 @@ Row {
 
     spacing: 5
 
+    Legend {
+        anchors.verticalCenter: parent.verticalCenter
+        text: "bt"
+        hovered: root.control.hovered && !root.control.overToggle
+    }
     Rocker {
         id: toggle
 
@@ -22,10 +27,5 @@ Row {
         hovered: root.control.overToggle
         lit: root.control.connected
         blink: root.control.discovering
-    }
-    Legend {
-        anchors.verticalCenter: parent.verticalCenter
-        text: "bt"
-        hovered: root.control.hovered && !root.control.overToggle
     }
 }
