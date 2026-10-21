@@ -475,10 +475,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 300
                 height: parent.height - 8
-                size: 9
+                size: 12
                 line1: caddy.label
-                line2: caddy.detail
-                line3: caddy.reading
+                line2: [caddy.detail, caddy.reading].filter(t => t).join(" · ")
             }
             Bargraph {
                 anchors {
