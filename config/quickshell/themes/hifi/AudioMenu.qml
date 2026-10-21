@@ -10,26 +10,27 @@ import qs.modules.audio as M
 
 // A DJ set in a drawer: a turntable and a mixer.
 //
-// The record on the turntable is the player: its app's icon is the record's
-// label, and it turns slowly while it plays. The tonearm lies across it with
-// the track typed on label tape along it. Switching players lifts the arm and
-// swings it off, flips the record over to the new app, and brings the arm
-// back down with the new label. Beside it, the transport keys, and the
-// source keys to step through the players (dead with only one).
+// The record on the turntable is the player, its app's icon in the middle;
+// it turns slowly while it plays. The tonearm runs along the bottom of the
+// record from its pivot, the headshell hooking up onto the grooves, the
+// track on label tape along its tube. Switching players lifts the arm up
+// off the record toward you until the label is edge-on, turns the record
+// over to the new app, and drops the arm back with the new label. The
+// turntable carries its own keys: START·STOP, back and forward, and a
+// spring-return SOURCE switch to step through the players (dead with only
+// one).
 //
 // The mixer has a channel for the output (MASTER), the input (MIC) and each
-// app: a display, an analog fader with a printed scale and a square cap, and
-// a mute key with its LED. MASTER and MIC pick their device with a
-// click-stop selector (click or scroll), and their profile with a MODE
-// selector when there's a choice; the display shows both.
+// app. Every channel ends the same way, so they line up: its name on tape,
+// an analog fader (printed scale, square cap) and a mute key with its LED.
+// MASTER and MIC carry a display above, with their device and profile, and
+// click-stop selectors for both.
 Item {
     id: root
 
     required property M.AudioPanel control
 
-    readonly property color labelColor: "#c8683f"
-
-    implicitWidth: 600
+    implicitWidth: Math.max(deck.implicitWidth, mixer.implicitWidth)
     implicitHeight: column.implicitHeight
 
     // A click-stop rotary selector: `count` positions printed round it, the
@@ -129,14 +130,14 @@ Item {
         }
     }
 
-    // A small two-line display at the top of a channel.
+    // A small two-line display.
     component Display: Item {
         id: display
 
         property string line1
         property string line2
 
-        width: 84
+        width: 96
         height: 34
 
         Well {
@@ -181,23 +182,22 @@ Item {
         }
     }
 
-    // One channel of the mixer: its display, what sits above its fader
-    // (`head`), the fader with its scale, the mute key and LED, its name.
+    // One channel of the mixer. Whatever it carries above (`head`), then the
+    // same as every other: its name, the fader with its scale, the mute key
+    // and its LED.
     component Channel: Item {
         id: channel
 
         required property M.AudioPanel panel
         property var nodes: []
         property string name
-        property string line1
-        property string line2
         default property alias head: headSlot.data
         readonly property PwNode node: nodes[0] ?? null
         readonly property bool muted: node?.audio?.muted ?? false
         readonly property real volume: node?.audio?.volume ?? 0
 
-        width: 100
-        height: 360
+        implicitWidth: Math.max(76, headSlot.width + 16)
+        implicitHeight: strip.implicitHeight + 24
 
         Well {
             anchors.fill: parent
@@ -205,30 +205,29 @@ Item {
             fill: Qt.darker(Theme.palette.bg, 1.25)
         }
         Column {
-            anchors {
-                top: parent.top
-                topMargin: 10
-                horizontalCenter: parent.horizontalCenter
-            }
-            spacing: 10
+            id: strip
 
-            Display {
-                anchors.horizontalCenter: parent.horizontalCenter
-                line1: channel.line1
-                line2: channel.line2
-            }
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 12
+            spacing: 12
+
             Item {
                 id: headSlot
 
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: childrenRect.width
-                height: 62
+                height: childrenRect.height
+                visible: children.length > 0
+            }
+            Legend {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: channel.name.slice(0, 9)
             }
 
             // The fader, with its scale printed beside it.
             Item {
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: 64
+                width: 60
                 height: 150
 
                 Repeater {
@@ -238,7 +237,6 @@ Item {
                         required property int index
                         readonly property bool major: index % 2 === 0
 
-                        x: 0
                         y: 6 + (10 - index) * (138 / 10) - height / 2
                         width: 22
                         height: 10
@@ -291,24 +289,13 @@ Item {
                 }
             }
         }
-        Legend {
-            anchors {
-                horizontalCenter: parent.horizontalCenter
-                bottom: parent.bottom
-                bottomMargin: 8
-            }
-            text: channel.name.slice(0, 10)
-        }
     }
 
-    // The record, the arm and what's playing on them. `shown` is the player
-    // on the turntable; it follows the current one, swapping records when it
-    // changes.
+    // What's on the turntable: `shown` is its player; it follows the current
+    // one, swapping records when that changes.
     property MprisPlayer shown: null
-    readonly property real parked: 35  // the arm's angle on its rest
-    property real armAngle: parked    // 0 = on the record
-    property real armLift: 0     // 0 = down, 1 = lifted
-    property real flip: 0        // the record turning over, -90 to 90 degrees
+    property real armLift: 0  // 0 = on the record, 1 = up toward you
+    property real flip: 0     // the record turning over, -90 to 90 degrees
 
     readonly property string shownIcon: shown ? root.control.iconFor(shown) : ""
     readonly property string shownLabel: {
@@ -318,10 +305,7 @@ Item {
         return parts.join(" · ");
     }
 
-    Component.onCompleted: {
-        shown = control.player;
-        armAngle = shown ? 0 : parked;
-    }
+    Component.onCompleted: shown = control.player
     Connections {
         target: root.control
 
@@ -330,42 +314,25 @@ Item {
                 return;
             if (!root.shown) {
                 root.shown = root.control.player;
-                settle.start();
-            } else {
-                settle.stop();
-                swap.start();
+                return;
             }
+            swap.restart();
         }
     }
-    // Arm up and off, the record over to the next.
+    // The arm up toward you, the record over to the next, the arm back down.
     SequentialAnimation {
         id: swap
 
-        NumberAnimation { target: root; property: "armLift"; to: 1; duration: 120; easing.type: Easing.OutQuad }
-        NumberAnimation { target: root; property: "armAngle"; to: root.parked; duration: 320; easing.type: Easing.InOutCubic }
-        NumberAnimation { target: root; property: "flip"; to: 90; duration: 220; easing.type: Easing.InCubic }
+        NumberAnimation { target: root; property: "armLift"; to: 1; duration: 320; easing.type: Easing.InOutCubic }
+        NumberAnimation { target: root; property: "flip"; to: 90; duration: 180; easing.type: Easing.InCubic }
         ScriptAction {
             script: {
                 root.shown = root.control.player;
                 root.flip = -90;
-                settle.start();
             }
         }
-    }
-    // The record down, the arm back on and dropped.
-    SequentialAnimation {
-        id: settle
-
-        NumberAnimation { target: root; property: "flip"; to: 0; duration: 260; easing.type: Easing.OutCubic }
-        ScriptAction {
-            script: {
-                if (!root.shown)
-                    settle.stop();
-            }
-        }
-        NumberAnimation { target: root; property: "armLift"; to: 1; duration: 80 }
-        NumberAnimation { target: root; property: "armAngle"; to: 0; duration: 360; easing.type: Easing.InOutCubic }
-        NumberAnimation { target: root; property: "armLift"; to: 0; duration: 160; easing.type: Easing.InQuad }
+        NumberAnimation { target: root; property: "flip"; to: 0; duration: 220; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "armLift"; to: 0; duration: 380; easing.type: Easing.OutBounce }
     }
 
     ColumnLayout {
@@ -374,350 +341,371 @@ Item {
         width: parent.width
         spacing: 14
 
-        // ── The deck ─────────────────────────────────────────────────────────
-        RowLayout {
+        // ── The turntable ────────────────────────────────────────────────────
+        Item {
+            id: deck
+
+            readonly property real cx: 180
+            readonly property real cy: 150
+            // The arm: its pivot, how far its tube runs, where the needle lands.
+            readonly property point pivot: Qt.point(52, 296)
+            readonly property real tube: 156
+
             Layout.fillWidth: true
-            spacing: 16
+            implicitWidth: 560
+            implicitHeight: 344
 
+            // The plinth.
+            Rectangle {
+                anchors.fill: parent
+                radius: 6
+                border.width: 1
+                border.color: "black"
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#232428" }
+                    GradientStop { position: 1; color: "#141517" }
+                }
+            }
+
+            // The platter, its rim lit by a ring of red LEDs.
+            Rectangle {
+                x: deck.cx - width / 2
+                y: deck.cy - height / 2
+                width: 270
+                height: 270
+                radius: width / 2
+                border.width: 1
+                border.color: "black"
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#3c3d42" }
+                    GradientStop { position: 1; color: "#1d1e21" }
+                }
+            }
+            Repeater {
+                model: 60
+
+                Rectangle {
+                    required property int index
+                    readonly property real a: index * 6 * Math.PI / 180
+
+                    x: deck.cx + Math.cos(a) * 128 - 2
+                    y: deck.cy + Math.sin(a) * 128 - 2
+                    width: 4
+                    height: 4
+                    radius: 2
+                    color: Theme.palette.error
+                    opacity: 0.85
+                }
+            }
+
+            // The record.
             Item {
-                id: deck
+                id: record
 
-                readonly property real cx: 140
-                readonly property real cy: 135
-                readonly property point pivot: Qt.point(cx + 72 + 190, cy)
+                x: deck.cx - width / 2
+                y: deck.cy - height / 2
+                width: 236
+                height: 236
+                visible: root.shown !== null
 
-                implicitWidth: 440
-                implicitHeight: 270
+                transform: Rotation {
+                    origin.x: record.width / 2
+                    origin.y: record.height / 2
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: root.flip
+                }
 
-                // The turntable's plinth.
                 Rectangle {
                     anchors.fill: parent
-                    radius: 6
-                    border.width: 1
-                    border.color: "black"
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: "#232428" }
-                        GradientStop { position: 1; color: "#141517" }
-                    }
-                }
-
-                // The platter: a heavy rim with strobe dots, under the record.
-                Rectangle {
-                    x: deck.cx - width / 2
-                    y: deck.cy - height / 2
-                    width: 248
-                    height: 248
                     radius: width / 2
+                    color: "#0c0c0e"
                     border.width: 1
                     border.color: "black"
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: "#5a5c62" }
-                        GradientStop { position: 1; color: "#2a2b2f" }
-                    }
                 }
+                // The grooves.
                 Repeater {
-                    model: 72
+                    model: 17
 
                     Rectangle {
                         required property int index
-                        readonly property real a: index * 5 * Math.PI / 180
+                        readonly property real size: 100 + index * 8
 
-                        x: deck.cx + Math.cos(a) * 119 - 1.5
-                        y: deck.cy + Math.sin(a) * 119 - 1.5
-                        width: 3
-                        height: 3
-                        radius: 1.5
-                        color: Qt.alpha("#e9e6dc", 0.55)
-                    }
-                }
-                Rectangle {
-                    x: deck.cx - width / 2
-                    y: deck.cy - height / 2
-                    width: 230
-                    height: 230
-                    radius: width / 2
-                    color: "#18191b"
-                }
-
-                // The record.
-                Item {
-                    id: record
-
-                    x: deck.cx - width / 2
-                    y: deck.cy - height / 2
-                    width: 224
-                    height: 224
-                    visible: root.shown !== null
-
-                    transform: Rotation {
-                        origin.x: record.width / 2
-                        origin.y: record.height / 2
-                        axis { x: 0; y: 1; z: 0 }
-                        angle: root.flip
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: width / 2
-                        color: "#0c0c0e"
+                        x: (record.width - size) / 2
+                        y: (record.height - size) / 2
+                        width: size
+                        height: size
+                        radius: size / 2
+                        color: "transparent"
                         border.width: 1
-                        border.color: "black"
-                    }
-                    // The grooves.
-                    Repeater {
-                        model: 16
-
-                        Rectangle {
-                            required property int index
-                            readonly property real size: 96 + index * 8
-
-                            x: (record.width - size) / 2
-                            y: (record.height - size) / 2
-                            width: size
-                            height: size
-                            radius: size / 2
-                            color: "transparent"
-                            border.width: 1
-                            border.color: Qt.alpha("white", index % 4 === 3 ? 0.03 : 0.07)
-                        }
-                    }
-                    // The label, turning with the record while it plays.
-                    Item {
-                        anchors.centerIn: parent
-                        width: 84
-                        height: 84
-
-                        RotationAnimation on rotation {
-                            running: root.control.open
-                            paused: running && (!(root.shown?.isPlaying ?? false) || swap.running || settle.running)
-                            from: 0
-                            to: 360
-                            duration: 5000
-                            loops: Animation.Infinite
-                        }
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: Qt.lighter(root.labelColor, 1.1) }
-                                GradientStop { position: 1; color: Qt.darker(root.labelColor, 1.15) }
-                            }
-                        }
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 70
-                            height: 70
-                            radius: 35
-                            color: "transparent"
-                            border.width: 1
-                            border.color: Qt.alpha("black", 0.2)
-                        }
-                        IconImage {
-                            anchors.centerIn: parent
-                            implicitSize: 44
-                            source: root.shownIcon
-                        }
-                    }
-                    // The spindle.
-                    Rectangle {
-                        anchors.centerIn: parent
-                        width: 8
-                        height: 8
-                        radius: 4
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "#f2f2f2" }
-                            GradientStop { position: 1; color: "#8a8a8a" }
-                        }
-                    }
-                    // Light lying across the vinyl; it stays put as it turns.
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: width / 2
-                        rotation: 35
-                        gradient: Gradient {
-                            GradientStop { position: 0.15; color: "transparent" }
-                            GradientStop { position: 0.3; color: Qt.alpha("white", 0.07) }
-                            GradientStop { position: 0.42; color: "transparent" }
-                            GradientStop { position: 0.6; color: "transparent" }
-                            GradientStop { position: 0.72; color: Qt.alpha("white", 0.05) }
-                            GradientStop { position: 0.85; color: "transparent" }
-                        }
+                        border.color: Qt.alpha("white", index % 4 === 3 ? 0.03 : 0.07)
                     }
                 }
+                // The app's icon, as big as the label, turning with the record
+                // while it plays.
+                IconImage {
+                    anchors.centerIn: parent
+                    implicitSize: 88
+                    source: root.shownIcon
 
-                // The arm's rest.
+                    RotationAnimation on rotation {
+                        running: root.control.open
+                        paused: running && (!(root.shown?.isPlaying ?? false) || swap.running)
+                        from: 0
+                        to: 360
+                        duration: 5000
+                        loops: Animation.Infinite
+                    }
+                }
+                // The spindle.
                 Rectangle {
-                    readonly property real a: root.parked * Math.PI / 180
-
-                    x: deck.pivot.x - Math.cos(a) * 150 - width / 2
-                    y: deck.pivot.y - Math.sin(a) * 150 - height / 2
-                    width: 14
-                    height: 18
-                    radius: 3
+                    anchors.centerIn: parent
+                    width: 8
+                    height: 8
+                    radius: 4
                     gradient: Gradient {
-                        GradientStop { position: 0; color: Qt.lighter(Theme.palette.border, 1.4) }
-                        GradientStop { position: 1; color: Qt.darker(Theme.palette.border, 1.6) }
+                        GradientStop { position: 0; color: "#f2f2f2" }
+                        GradientStop { position: 1; color: "#8a8a8a" }
                     }
                 }
-
-                // The tonearm, from its pivot to the needle, lying across the
-                // record, the track on tape along it.
-                Item {
-                    id: arm
-
-                    x: deck.pivot.x
-                    y: deck.pivot.y
-                    rotation: root.armAngle
-                    scale: 1 + 0.05 * root.armLift
-
-                    // Its shadow on the record, further off when lifted.
-                    Rectangle {
-                        x: -190
-                        y: -3 + 6 + 8 * root.armLift
-                        width: 200
-                        height: 7
-                        radius: 3.5
-                        color: Qt.alpha("black", 0.45)
-                    }
-                    // The tube.
-                    Rectangle {
-                        x: -178
-                        y: -3.5
-                        width: 178
-                        height: 7
-                        radius: 3.5
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "#f4f4f2" }
-                            GradientStop { position: 0.5; color: "#a9aaac" }
-                            GradientStop { position: 1; color: "#5d5e62" }
-                        }
-                    }
-                    // The headshell and cartridge, the needle under it.
-                    Rectangle {
-                        x: -198
-                        y: -8
-                        width: 26
-                        height: 16
-                        radius: 2
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "#3a3b40" }
-                            GradientStop { position: 1; color: "#18191b" }
-                        }
-                        border.width: 1
-                        border.color: "black"
-
-                        Rectangle {
-                            x: 4
-                            y: 4
-                            width: 8
-                            height: 8
-                            radius: 1
-                            color: root.labelColor
-                        }
-                    }
-                    // The label.
-                    Legend {
-                        readonly property int fits: Math.floor((136 - size) / pitch)
-
-                        x: -168
-                        y: -height / 2
-                        size: 9
-                        text: root.shownLabel.length > fits ? root.shownLabel.slice(0, fits - 1) + "…" : root.shownLabel
-                        visible: root.shownLabel !== ""
-                    }
-                    // The pivot and the counterweight.
-                    Rectangle {
-                        x: -4
-                        y: -12
-                        width: 34
-                        height: 24
-                        radius: 4
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "#cfd0d2" }
-                            GradientStop { position: 1; color: "#55565a" }
-                        }
-                        border.width: 1
-                        border.color: "black"
-                    }
-                    Rectangle {
-                        x: -16
-                        y: -16
-                        width: 32
-                        height: 32
-                        radius: 16
-                        border.width: 1
-                        border.color: "black"
-                        gradient: Gradient {
-                            GradientStop { position: 0; color: "#8d8e92" }
-                            GradientStop { position: 1; color: "#2c2d31" }
-                        }
+                // Light lying across the vinyl; it stays put as it turns.
+                Rectangle {
+                    anchors.fill: parent
+                    radius: width / 2
+                    rotation: 35
+                    gradient: Gradient {
+                        GradientStop { position: 0.15; color: "transparent" }
+                        GradientStop { position: 0.3; color: Qt.alpha("white", 0.07) }
+                        GradientStop { position: 0.42; color: "transparent" }
+                        GradientStop { position: 0.6; color: "transparent" }
+                        GradientStop { position: 0.72; color: Qt.alpha("white", 0.05) }
+                        GradientStop { position: 0.85; color: "transparent" }
                     }
                 }
             }
 
-            // The transport and the source keys.
-            ColumnLayout {
-                Layout.alignment: Qt.AlignVCenter
-                spacing: 10
-
-                Legend {
-                    text: "deck"
+            // The arm's base: a block under the pivot, the counterweight
+            // behind it.
+            Rectangle {
+                x: deck.pivot.x - 30
+                y: deck.pivot.y - 28
+                width: 56
+                height: 56
+                radius: 6
+                border.width: 1
+                border.color: "black"
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#2c2d31" }
+                    GradientStop { position: 1; color: "#151618" }
                 }
-                Row {
-                    spacing: 6
+            }
+            Rectangle {
+                x: deck.pivot.x - 46
+                y: deck.pivot.y - 13
+                width: 26
+                height: 26
+                radius: 5
+                border.width: 1
+                border.color: "black"
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "#4a4b50" }
+                    GradientStop { position: 1; color: "#1e1f22" }
+                }
+            }
+
+            // The arm's shadow on the platter, gone as it lifts.
+            Rectangle {
+                x: deck.pivot.x
+                y: deck.pivot.y + 3
+                width: deck.tube
+                height: 7
+                radius: 3.5
+                color: Qt.alpha("black", 0.5)
+                opacity: 1 - root.armLift
+            }
+
+            // The tonearm: the tube from the pivot, the headshell hooking up
+            // onto the record, the track on tape along the tube. It lifts on
+            // its pivot toward you.
+            Item {
+                id: arm
+
+                x: deck.pivot.x
+                y: deck.pivot.y
+
+                // Up to edge-on, so the label is out of sight while the
+                // record changes; a short distance to the eye makes it come
+                // at you.
+                transform: Rotation {
+                    axis { x: 0; y: 1; z: 0 }
+                    angle: -90 * root.armLift
+                    distanceToPlane: 420
+                }
+
+                Rectangle {
+                    y: -3.5
+                    width: deck.tube
+                    height: 7
+                    radius: 3.5
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: "#f4f4f2" }
+                        GradientStop { position: 0.5; color: "#a9aaac" }
+                        GradientStop { position: 1; color: "#5d5e62" }
+                    }
+                }
+                // The headshell, angled up onto the grooves.
+                Item {
+                    x: deck.tube - 4
+                    rotation: -52
+
+                    Rectangle {
+                        y: -3.5
+                        width: 48
+                        height: 7
+                        radius: 3.5
+                        gradient: Gradient {
+                            GradientStop { position: 0; color: "#f4f4f2" }
+                            GradientStop { position: 1; color: "#5d5e62" }
+                        }
+                    }
+                    Rectangle {
+                        x: 42
+                        y: -9
+                        width: 26
+                        height: 18
+                        radius: 3
+                        border.width: 1
+                        border.color: "black"
+                        gradient: Gradient {
+                            GradientStop { position: 0; color: "#3a3b40" }
+                            GradientStop { position: 1; color: "#18191b" }
+                        }
+
+                        Rectangle {
+                            x: 15
+                            y: 5
+                            width: 8
+                            height: 8
+                            radius: 1
+                            color: Theme.palette.error
+                        }
+                    }
+                    // The finger lift.
+                    Rectangle {
+                        x: 64
+                        y: -14
+                        width: 4
+                        height: 14
+                        radius: 2
+                        color: "#b9babd"
+                    }
+                }
+                // The label.
+                Legend {
+                    readonly property int fits: Math.floor((deck.tube - 34 - size) / pitch)
+
+                    x: 22
+                    y: -height / 2
+                    text: root.shownLabel.length > fits ? root.shownLabel.slice(0, fits - 1) + "…" : root.shownLabel
+                    visible: root.shownLabel !== ""
+                }
+                // The bearing over the pivot.
+                Rectangle {
+                    x: -16
+                    y: -16
+                    width: 32
+                    height: 32
+                    radius: 16
+                    border.width: 1
+                    border.color: "black"
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: "#9d9ea2" }
+                        GradientStop { position: 1; color: "#2c2d31" }
+                    }
+                }
+            }
+
+            // The turntable's own keys and the source switch.
+            Item {
+                x: 386
+                width: parent.width - x - 24
+                height: parent.height
+
+                Column {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 28
+                    spacing: 8
+
+                    Legend {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "source"
+                    }
+                    Paddle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        live: root.control.players.length > 1
+                        onFlicked: step => root.control.cycle(step)
+                    }
+                }
+
+                Column {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: 10
+                    spacing: 8
+
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: 10
+
+                        C.IconButton {
+                            size: 36
+                            icon: "\u{F04AE}"
+                            enabled: root.control.player !== null
+                            opacity: enabled ? 1 : 0.4
+                            onClicked: root.control.previous()
+                        }
+                        C.IconButton {
+                            size: 36
+                            icon: "\u{F04AD}"
+                            enabled: root.control.player !== null
+                            opacity: enabled ? 1 : 0.4
+                            onClicked: root.control.next()
+                        }
+                    }
+                    Legend {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "track"
+                    }
+                }
+
+                Column {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 24
+                    spacing: 8
 
                     C.IconButton {
-                        size: 42
-                        icon: "\u{F04AE}"
-                        enabled: root.control.player !== null
-                        opacity: enabled ? 1 : 0.4
-                        onClicked: root.control.previous()
-                    }
-                    C.IconButton {
-                        size: 42
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        implicitWidth: 76
+                        size: 50
                         lit: root.control.playing
                         icon: root.control.playing ? "\u{F03E4}" : "\u{F040A}"
                         enabled: root.control.player !== null
                         opacity: enabled ? 1 : 0.4
                         onClicked: root.control.togglePlaying()
                     }
-                    C.IconButton {
-                        size: 42
-                        icon: "\u{F04AD}"
-                        enabled: root.control.player !== null
-                        opacity: enabled ? 1 : 0.4
-                        onClicked: root.control.next()
-                    }
-                }
-                Legend {
-                    Layout.topMargin: 8
-                    text: "source"
-                }
-                Row {
-                    spacing: 6
-
-                    C.IconButton {
-                        size: 34
-                        icon: "\u{F0141}"
-                        enabled: root.control.players.length > 1
-                        opacity: enabled ? 1 : 0.4
-                        onClicked: root.control.cycle(-1)
-                    }
-                    C.IconButton {
-                        size: 34
-                        icon: "\u{F0142}"
-                        enabled: root.control.players.length > 1
-                        opacity: enabled ? 1 : 0.4
-                        onClicked: root.control.cycle(1)
+                    Legend {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "start · stop"
                     }
                 }
             }
         }
 
         // ── The mixer ────────────────────────────────────────────────────────
-        Flow {
-            Layout.fillWidth: true
+        RowLayout {
+            id: mixer
+
+            Layout.alignment: Qt.AlignHCenter
             spacing: 8
 
             // The output and the input: a device selector, and a MODE
@@ -727,25 +715,35 @@ Item {
 
                 readonly property var profiles: root.control.outputProfiles
 
+                Layout.alignment: Qt.AlignBottom
                 panel: root.control
                 nodes: [root.control.output]
                 name: "master"
-                line1: root.control.nodeName(root.control.output)
-                line2: profiles.switching ? "switching..." : profiles.current?.label ?? ""
 
-                Row {
-                    Selector {
-                        legend: "out"
-                        count: root.control.outputs.length
-                        index: root.control.outputs.indexOf(root.control.output)
-                        onStepped: step => root.control.setDefaultOutput(root.control.outputs[(index + step + count) % count])
+                Column {
+                    spacing: 8
+
+                    Display {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        line1: root.control.nodeName(root.control.output)
+                        line2: master.profiles.switching ? "switching..." : master.profiles.current?.label ?? ""
                     }
-                    Selector {
-                        legend: "mode"
-                        count: master.profiles.list.length
-                        index: master.profiles.list.findIndex(p => p.current)
-                        visible: count > 1
-                        onStepped: step => master.profiles.set(master.profiles.list[(index + step + count) % count].index)
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        Selector {
+                            legend: "out"
+                            count: root.control.outputs.length
+                            index: root.control.outputs.indexOf(root.control.output)
+                            onStepped: step => root.control.setDefaultOutput(root.control.outputs[(index + step + count) % count])
+                        }
+                        Selector {
+                            legend: "mode"
+                            count: master.profiles.list.length
+                            index: master.profiles.list.findIndex(p => p.current)
+                            visible: count > 1
+                            onStepped: step => master.profiles.set(master.profiles.list[(index + step + count) % count].index)
+                        }
                     }
                 }
             }
@@ -754,49 +752,57 @@ Item {
 
                 readonly property var profiles: root.control.inputProfiles
 
+                Layout.alignment: Qt.AlignBottom
                 panel: root.control
                 nodes: [root.control.input]
                 name: "mic"
-                line1: root.control.nodeName(root.control.input)
-                line2: profiles.switching ? "switching..." : profiles.current?.label ?? ""
 
-                Row {
-                    Selector {
-                        legend: "in"
-                        count: root.control.inputs.length
-                        index: root.control.inputs.indexOf(root.control.input)
-                        onStepped: step => root.control.setDefaultInput(root.control.inputs[(index + step + count) % count])
+                Column {
+                    spacing: 8
+
+                    Display {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        line1: root.control.nodeName(root.control.input)
+                        line2: mic.profiles.switching ? "switching..." : mic.profiles.current?.label ?? ""
                     }
-                    Selector {
-                        legend: "mode"
-                        count: mic.profiles.list.length
-                        index: mic.profiles.list.findIndex(p => p.current)
-                        visible: count > 1
-                        onStepped: step => mic.profiles.set(mic.profiles.list[(index + step + count) % count].index)
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+
+                        Selector {
+                            legend: "in"
+                            count: root.control.inputs.length
+                            index: root.control.inputs.indexOf(root.control.input)
+                            onStepped: step => root.control.setDefaultInput(root.control.inputs[(index + step + count) % count])
+                        }
+                        Selector {
+                            legend: "mode"
+                            count: mic.profiles.list.length
+                            index: mic.profiles.list.findIndex(p => p.current)
+                            visible: count > 1
+                            onStepped: step => mic.profiles.set(mic.profiles.list[(index + step + count) % count].index)
+                        }
                     }
                 }
             }
+
+            // The apps: just their name above the fader.
             Repeater {
                 model: root.control.apps
 
                 Channel {
-                    required property int index
                     required property var modelData
 
+                    Layout.alignment: Qt.AlignBottom
                     panel: root.control
                     nodes: modelData.nodes
                     name: modelData.name
-                    line1: modelData.name
-                    line2: modelData.nodes.length > 1 ? `${modelData.nodes.length} streams` : ""
-
-                    Sticker {
-                        width: 34
-                        height: 34
-                        y: 14
-                        source: root.control.nodeIcon(modelData.nodes[0])
-                        seed: index + 3
-                    }
                 }
+            }
+
+            C.Placeholder {
+                Layout.alignment: Qt.AlignVCenter
+                text: "-- no apps playing --"
+                visible: root.control.apps.length === 0
             }
         }
     }
