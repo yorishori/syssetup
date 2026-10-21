@@ -9,6 +9,7 @@ import qs.core
 // (in red when `alarm`).
 //
 // Rows: { text, glyph, tail, lit, heading }. A heading isn't pickable.
+// Not `lit` (its set is off), the display goes dark and blank.
 Item {
     id: root
 
@@ -17,7 +18,14 @@ Item {
     property int current: -1
     property string status
     property bool alarm: false
+    property bool lit: true
     readonly property real row: 18
+    // How lit it is; it dies away when switched off.
+    property real glow: lit ? 1 : 0
+
+    Behavior on glow {
+        NumberAnimation { duration: 250; easing.type: Easing.OutQuad }
+    }
     // Whether any row has a glyph (they get a column).
     readonly property bool glyphs: rows.some(r => r.glyph)
 
@@ -38,11 +46,12 @@ Item {
 
         anchors.fill: parent
         roundness: 3
-        fill: Qt.tint("#050807", Qt.alpha(Theme.palette.accent, 0.04))
+        fill: Qt.tint("#050807", Qt.alpha(Theme.palette.accent, 0.04 * root.glow))
     }
     C.StyledText {
         x: 10
         y: 7
+        opacity: root.glow
         width: parent.width - 20
         text: root.title
         caps: true
@@ -54,6 +63,8 @@ Item {
     }
     ListView {
         id: list
+
+        opacity: root.glow
 
         x: 10
         y: 27
@@ -127,6 +138,7 @@ Item {
     C.StyledText {
         x: 10
         y: parent.height - 18
+        opacity: root.glow
         width: parent.width - 20
         text: root.status
         caps: true

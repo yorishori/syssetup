@@ -205,6 +205,7 @@ Item {
                     spacing: 10
 
                     ListDisplay {
+                        lit: root.control.wifiEnabled
                         width: 380
                         height: 222
                         title: !root.control.wifiEnabled ? "radio off"
@@ -266,6 +267,7 @@ Item {
                     spacing: 14
 
                     PanelMeter {
+                        lit: root.control.wifiEnabled
                         name: "SIG"
                         detail: root.station?.name ?? ""
                         value: (root.station?.strength ?? 0) / 100

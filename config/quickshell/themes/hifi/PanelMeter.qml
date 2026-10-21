@@ -4,7 +4,8 @@ import QtQuick.Shapes
 import qs.core
 
 // A moving-coil panel meter: a cream face lit from behind, a printed arc
-// with its red zone, the needle on its pivot. `value` 0-1.
+// with its red zone, the needle on its pivot. `value` 0-1. Not `lit` (its
+// set is off), the face goes dark and the needle falls back to rest.
 Item {
     id: root
 
@@ -15,9 +16,10 @@ Item {
     property string detail
     property string reading
     property bool hot: false
+    property bool lit: true
     readonly property point pivot: Qt.point(width / 2, height - 18)
     readonly property real reach: 78
-    property real needle: -50 + 100 * Math.max(0, Math.min(1, value))
+    property real needle: lit ? -50 + 100 * Math.max(0, Math.min(1, value)) : -50
 
     width: 170
     height: 122
@@ -192,6 +194,21 @@ Item {
         gradient: Gradient {
             GradientStop { position: 0; color: "#4a4b50" }
             GradientStop { position: 1; color: "#111113" }
+        }
+    }
+
+    // The lamp behind the face, off.
+    Rectangle {
+        anchors {
+            fill: parent
+            margins: 5
+        }
+        radius: 3
+        color: "#0b0906"
+        opacity: root.lit ? 0 : 0.68
+
+        Behavior on opacity {
+            NumberAnimation { duration: 400; easing.type: Easing.OutQuad }
         }
     }
 

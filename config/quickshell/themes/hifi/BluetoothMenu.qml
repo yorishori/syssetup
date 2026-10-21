@@ -61,6 +61,7 @@ Item {
                 ListDisplay {
                     id: screen
 
+                    lit: root.control.powered
                     width: 380
                     height: 266
                     title: !root.control.powered ? "radio off"
@@ -118,6 +119,7 @@ Item {
                 PanelMeter {
                     readonly property bool reads: root.device?.batteryAvailable ?? false
 
+                    lit: root.control.powered
                     name: "BATT"
                     detail: root.device?.name ?? ""
                     value: reads ? root.device.battery : 0
