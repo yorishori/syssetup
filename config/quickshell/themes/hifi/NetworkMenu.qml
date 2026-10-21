@@ -13,9 +13,9 @@ import qs.modules.network as M
 // how strong they come in; the one picked has the pointer. The TUNING knob
 // steps through them (or scroll, or click one), the SIGNAL meter reads the
 // one picked. A rocker powers the radio; the SCAN switch stays in while it
-// scans. Under the display, the passphrase (typed into the glass, for a new
-// secured station) and CONNECT, DISCONNECT and FORGET, there whether they
-// apply or not.
+// scans. Under the display, the passphrase field (it takes typing for a new
+// secured station) and CONNECT, DISCONNECT and FORGET, all there whether
+// they apply or not.
 Item {
     id: root
 
@@ -206,7 +206,7 @@ Item {
 
                     ListDisplay {
                         width: 380
-                        height: 266
+                        height: 222
                         title: !root.control.wifiEnabled ? "radio off"
                             : root.nets.length === 0 ? (root.control.scanning ? "scanning" : "no stations")
                             : `${root.nets.length} station${root.nets.length === 1 ? "" : "s"}`
@@ -231,9 +231,12 @@ Item {
 
                         width: 380
                         prompt: ""
-                        placeholder: "passphrase"
+                        placeholder: root.asking ? "passphrase" : ""
                         echoMode: TextInput.Password
-                        visible: root.asking
+                        // Always there; it only takes typing when the
+                        // station picked needs a passphrase.
+                        enabled: root.asking
+                        opacity: root.asking ? 1 : 0.45
                         onAccepted: root.join()
                     }
                     Row {
