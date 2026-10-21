@@ -37,7 +37,7 @@ Item {
     implicitWidth: 780 + 2 * margin
     implicitHeight: Math.min(column.implicitHeight + 2 * margin, control.maxHeight)
 
-    // A section of the faceplate, outlined in silkscreen and tagged.
+    // A section of the faceplate, outlined and named in silkscreen.
     component Section: Item {
         id: section
 
@@ -46,27 +46,124 @@ Item {
         readonly property real pad: 14
 
         implicitWidth: inner.childrenRect.width + 2 * pad
-        implicitHeight: inner.childrenRect.height + 2 * pad + 6
+        implicitHeight: inner.childrenRect.height + 2 * pad + 18
 
         Rectangle {
             anchors.fill: parent
-            anchors.topMargin: 6
             radius: 4
             color: "transparent"
             border.width: 1
             border.color: Qt.alpha(root.silk, 0.55)
         }
-        Legend {
-            x: 12
+        Silk {
+            x: section.pad
+            y: 9
             text: section.name
-            size: 8
         }
         Item {
             id: inner
 
             x: section.pad
-            y: section.pad + 6
+            y: section.pad + 18
             width: section.width - 2 * section.pad
+        }
+    }
+
+    // Print on the faceplate.
+    component Silk: C.StyledText {
+        caps: true
+        color: root.silk
+        font.pixelSize: 10
+        font.bold: true
+        tracking: 1.5
+    }
+
+    // A latching push switch: a black cap in a chrome bezel. Pushed, it stays
+    // in, a ring lit round it, until what it started is done.
+    component PushSwitch: Item {
+        id: push
+
+        property bool latched: false
+        property string icon
+        readonly property bool down: latched || pushArea.pressed
+
+        signal pushed
+
+        width: 42
+        height: 42
+
+        RectangularShadow {
+            anchors.fill: parent
+            radius: width / 2
+            offset.y: 2
+            blur: 5
+            color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
+        }
+        Rectangle {
+            anchors.fill: parent
+            radius: width / 2
+            border.width: 1
+            border.color: "black"
+            gradient: Gradient {
+                GradientStop { position: 0; color: "#eef0f3" }
+                GradientStop { position: 0.45; color: "#85878d" }
+                GradientStop { position: 0.7; color: "#cfd1d5" }
+                GradientStop { position: 1; color: "#4a4c51" }
+            }
+        }
+        // The ring, lit while it's held in.
+        Rectangle {
+            anchors.centerIn: parent
+            width: 32
+            height: 32
+            radius: width / 2
+            color: "#070707"
+            border.width: 2
+            border.color: push.latched ? Theme.palette.warn : Qt.alpha(Theme.palette.warn, 0.12)
+        }
+        RectangularShadow {
+            anchors.centerIn: parent
+            width: 32
+            height: 32
+            radius: width / 2
+            blur: 8
+            color: Qt.alpha(Theme.palette.warn, 0.5)
+            visible: push.latched
+            z: -1
+        }
+        Rectangle {
+            anchors.centerIn: parent
+            width: 26
+            height: 26
+            radius: width / 2
+            scale: push.down ? 0.88 : 1
+            border.width: 1
+            border.color: "black"
+            gradient: Gradient {
+                GradientStop { position: 0; color: pushArea.containsMouse && !push.latched ? "#4c4e54" : "#3a3c41" }
+                GradientStop { position: 1; color: push.down ? "#1a1b1e" : "#111214" }
+            }
+
+            Behavior on scale {
+                NumberAnimation { duration: 70 }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: push.icon
+                color: Qt.alpha(Theme.palette.fg, 0.7)
+                font.family: Theme.font.family
+                font.pixelSize: 12
+            }
+        }
+        MouseArea {
+            id: pushArea
+
+            anchors.fill: parent
+            enabled: !push.latched
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: push.pushed()
         }
     }
 
@@ -318,7 +415,7 @@ Item {
         default property alias keys: keyRow.data
 
         width: parent?.width ?? 0
-        height: 46
+        height: 58
 
         // The bay.
         Rectangle {
@@ -373,43 +470,24 @@ Item {
                 color: caddy.link.a > 0 ? caddy.link : Theme.palette.ok
                 visible: caddy.link.a > 0 || caddy.usage < 0
             }
-            Column {
+            Readout {
                 x: 60
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: 3
-
-                Legend {
-                    text: caddy.label
-                    size: 8
-                }
-                Text {
-                    text: caddy.detail
-                    color: Theme.palette.dim
-                    font.family: Theme.font.family
-                    font.pixelSize: 9
-                }
+                width: 300
+                height: parent.height - 8
+                size: 9
+                line1: caddy.label
+                line2: caddy.detail
+                line3: caddy.reading
             }
-            Row {
+            Bargraph {
                 anchors {
                     right: keyRow.left
                     rightMargin: 14
                     verticalCenter: parent.verticalCenter
                 }
-                spacing: 10
-
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: caddy.reading
-                    color: caddy.usage >= 0.85 ? Theme.palette.warn : Theme.palette.fg
-                    font.family: Theme.font.family
-                    font.pixelSize: 10
-                    font.bold: true
-                }
-                Bargraph {
-                    anchors.verticalCenter: parent.verticalCenter
-                    value: caddy.usage
-                    visible: caddy.usage >= 0
-                }
+                value: caddy.usage
+                visible: caddy.usage >= 0
             }
             Row {
                 id: keyRow
@@ -495,7 +573,8 @@ Item {
         Column {
             id: column
 
-            width: flick.width
+            // Clear of the scroll lamp when it scrolls.
+            width: flick.width - (flick.interactive ? 10 : 0)
             spacing: 12
 
             // ── System ───────────────────────────────────────────────────────
@@ -527,126 +606,91 @@ Item {
                         reading: root.sys.gpuMemTotal > 0 ? `VRAM ${(root.sys.gpuMemUsed / 1024).toFixed(1)}/${(root.sys.gpuMemTotal / 1024).toFixed(0)}` : ""
                     }
 
-                    // The nameplate, riveted on, and under it the REBOOT
-                    // lamp and the settings key.
-                    Column {
-                        spacing: 12
+                    // The nameplate, riveted on.
+                    Item {
+                        width: 214
+                        height: 122
 
-                        Item {
-                            width: 214
-                            height: 84
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 3
+                            border.width: 1
+                            border.color: "black"
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: "#d6d8dc" }
+                                GradientStop { position: 1; color: "#9b9ea4" }
+                            }
+                        }
+                        Image {
+                            anchors {
+                                fill: parent
+                                margins: 1
+                            }
+                            source: Qt.resolvedUrl("brushed.png")
+                            fillMode: Image.Tile
+                            opacity: 0.35
+                        }
+                        Repeater {
+                            model: [[0, 0], [1, 0], [0, 1], [1, 1]]
 
                             Rectangle {
-                                anchors.fill: parent
-                                radius: 3
-                                border.width: 1
-                                border.color: "black"
+                                required property var modelData
+
+                                x: modelData[0] ? parent.width - 9 : 4
+                                y: modelData[1] ? parent.height - 9 : 4
+                                width: 5
+                                height: 5
+                                radius: 2.5
                                 gradient: Gradient {
-                                    GradientStop { position: 0; color: "#d6d8dc" }
-                                    GradientStop { position: 1; color: "#9b9ea4" }
-                                }
-                            }
-                            Image {
-                                anchors {
-                                    fill: parent
-                                    margins: 1
-                                }
-                                source: Qt.resolvedUrl("brushed.png")
-                                fillMode: Image.Tile
-                                opacity: 0.35
-                            }
-                            Repeater {
-                                model: [[0, 0], [1, 0], [0, 1], [1, 1]]
-
-                                Rectangle {
-                                    required property var modelData
-
-                                    x: modelData[0] ? parent.width - 9 : 4
-                                    y: modelData[1] ? parent.height - 9 : 4
-                                    width: 5
-                                    height: 5
-                                    radius: 2.5
-                                    gradient: Gradient {
-                                        GradientStop { position: 0; color: "#f4f5f7" }
-                                        GradientStop { position: 1; color: "#5d6066" }
-                                    }
-                                }
-                            }
-                            Column {
-                                x: 14
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 3
-
-                                Repeater {
-                                    model: [
-                                        ["host", root.control.session.hostname],
-                                        ["up", root.control.session.uptimeText],
-                                        ["board", root.sys.board],
-                                        ["kernel", root.sys.kernel]
-                                    ]
-
-                                    Item {
-                                        id: line
-
-                                        required property var modelData
-
-                                        width: 186
-                                        height: 14
-
-                                        Text {
-                                            text: line.modelData[0].toUpperCase()
-                                            color: Qt.alpha("#16171a", 0.6)
-                                            font.family: Theme.font.family
-                                            font.pixelSize: 8
-                                            font.bold: true
-                                            font.letterSpacing: 1
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                        Text {
-                                            x: 44
-                                            width: parent.width - x
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: line.modelData[1] || "--"
-                                            elide: Text.ElideRight
-                                            color: "#16171a"
-                                            style: Text.Raised
-                                            styleColor: Qt.alpha("white", 0.5)
-                                            font.family: Theme.font.family
-                                            font.pixelSize: 10
-                                        }
-                                    }
+                                    GradientStop { position: 0; color: "#f4f5f7" }
+                                    GradientStop { position: 1; color: "#5d6066" }
                                 }
                             }
                         }
-                        Item {
-                            width: 214
-                            height: 30
+                        Column {
+                            x: 14
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 6
 
-                            Row {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 6
+                            Repeater {
+                                model: [
+                                    ["host", root.control.session.hostname],
+                                    ["os", root.sys.os],
+                                    ["up", root.control.session.uptimeText],
+                                    ["board", root.sys.board],
+                                    ["kernel", root.sys.kernel]
+                                ]
 
-                                Led {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    size: 10
-                                    on: root.sys.rebootPending
-                                    pulse: root.sys.rebootPending
-                                    color: Theme.palette.warn
+                                Item {
+                                    id: line
+
+                                    required property var modelData
+
+                                    width: 186
+                                    height: 14
+
+                                    Text {
+                                        text: line.modelData[0].toUpperCase()
+                                        color: Qt.alpha("#16171a", 0.6)
+                                        font.family: Theme.font.family
+                                        font.pixelSize: 8
+                                        font.bold: true
+                                        font.letterSpacing: 1
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                    Text {
+                                        x: 44
+                                        width: parent.width - x
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        text: line.modelData[1] || "--"
+                                        elide: Text.ElideRight
+                                        color: "#16171a"
+                                        style: Text.Raised
+                                        styleColor: Qt.alpha("white", 0.5)
+                                        font.family: Theme.font.family
+                                        font.pixelSize: 10
+                                    }
                                 }
-                                Legend {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: "reboot"
-                                    size: 8
-                                }
-                            }
-                            C.IconButton {
-                                anchors {
-                                    right: parent.right
-                                    verticalCenter: parent.verticalCenter
-                                }
-                                size: 30
-                                icon: "\u{F0493}"
-                                onClicked: root.control.openSettings()
                             }
                         }
                     }
@@ -682,7 +726,7 @@ Item {
                             readonly property var repos: Object.keys(root.upd.counts)
 
                             width: Math.max(1, repos.length) * 62 + 16
-                            height: 58
+                            height: 74
 
                             Well {
                                 id: glass
@@ -690,9 +734,10 @@ Item {
                                 anchors.fill: parent
                                 fill: Qt.tint(Theme.palette.bgAlt, Qt.alpha(root.red, 0.05))
                             }
-                            Row {
+                            Column {
                                 x: 8
-                                anchors.verticalCenter: parent.verticalCenter
+                                y: 8
+                                spacing: 6
                                 layer.enabled: (Theme.glow.opacity ?? 0) > 0
                                 layer.effect: MultiEffect {
                                     shadowEnabled: true
@@ -704,6 +749,7 @@ Item {
                                     shadowVerticalOffset: 0
                                 }
 
+                                Row {
                                 Repeater {
                                     model: counts.repos
 
@@ -750,6 +796,20 @@ Item {
                                         }
                                     }
                                 }
+                                }
+                                // How it went, in small segments under the counts.
+                                Text {
+                                    width: counts.width - 16
+                                    horizontalAlignment: Text.AlignHCenter
+                                    text: (root.upd.checking ? "checking"
+                                        : root.upd.failed ? "check failed"
+                                        : root.upd.count === 0 ? "up to date"
+                                        : `last upgrade ${root.control.ago(root.upd.lastUpgrade)}`).toUpperCase()
+                                    color: root.red
+                                    font.family: Theme.font.family
+                                    font.pixelSize: 9
+                                    font.bold: true
+                                }
                             }
                             Gloss {
                                 anchors {
@@ -760,37 +820,29 @@ Item {
                             }
                         }
                         Row {
-                            spacing: 8
+                            spacing: 14
 
-                            C.IconButton {
+                            Row {
                                 anchors.verticalCenter: parent.verticalCenter
-                                size: 30
-                                icon: "\u{F0450}"
-                                enabled: !root.upd.checking
-                                onClicked: root.control.checkUpdates()
+                                spacing: 8
 
-                                NumberAnimation on iconRotation {
-                                    running: root.upd.checking
-                                    loops: Animation.Infinite
-                                    from: 0
-                                    to: 360
-                                    duration: 900
-                                    alwaysRunToEnd: true
+                                PushSwitch {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    icon: "\u{F0450}"
+                                    latched: root.upd.checking
+                                    onPushed: root.control.checkUpdates()
+                                }
+                                Silk {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "check"
                                 }
                             }
                             C.TextButton {
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: `update${root.upd.aurHelper ? " · " + root.upd.aurHelper : ""}`
-                                visible: root.upd.count > 0 && !root.upd.checking
+                                enabled: root.upd.count > 0 && !root.upd.checking
                                 onClicked: root.control.upgrade()
                             }
-                        }
-                        Legend {
-                            text: root.upd.checking ? "checking"
-                                : root.upd.failed ? "check failed"
-                                : root.upd.count === 0 ? "up to date"
-                                : `last upgrade ${root.control.ago(root.upd.lastUpgrade)}`
-                            size: 7
                         }
                     }
                 }
@@ -814,7 +866,7 @@ Item {
                                 required property int index
                                 readonly property var device: root.disks.usb[index] ?? null
 
-                                width: 54
+                                width: 64
                                 height: 92
 
                                 // The port.
@@ -883,18 +935,14 @@ Item {
                                         color: "#101012"
                                     }
                                 }
-                                Text {
+                                // Someone labelled what's plugged in: its maker's
+                                // name, as much as fits on a short bit of tape.
+                                Legend {
                                     anchors.horizontalCenter: parent.horizontalCenter
-                                    y: 66
-                                    width: parent.width
-                                    horizontalAlignment: Text.AlignHCenter
-                                    text: socket.device ? socket.device.name : ""
-                                    wrapMode: Text.Wrap
-                                    maximumLineCount: 2
-                                    elide: Text.ElideRight
-                                    color: Theme.palette.dim
-                                    font.family: Theme.font.family
-                                    font.pixelSize: 8
+                                    y: 68
+                                    text: socket.device ? socket.device.name.split(" ")[0].slice(0, 8) : ""
+                                    size: 7
+                                    visible: text !== ""
                                 }
                             }
                         }

@@ -23,7 +23,7 @@ import qs.modules.launcher as M
 //
 // Beside the rack, the selector keys, ivory caps in chrome: the extras
 // (capture, clipboard, settings) and the big SELECT key, which goes in and
-// lights when a strip is run (its NEW lamp lights for a new instance).
+// lights when a strip is run.
 Item {
     id: root
 
@@ -41,9 +41,8 @@ Item {
     readonly property color ink: "#2a2119"
     readonly property color rule: "#b5382c"
 
-    // How the last run went: SELECT down, NEW lit for a new instance.
+    // A strip was run: SELECT stays down as the drawer goes in.
     property bool selecting: false
-    property bool fresh: false
 
     // The tape: `turn` runs 0-1 as it runs on to the next mode, `way` the
     // way it runs (1 to the left, -1 to the right). What it ran away from is
@@ -96,12 +95,10 @@ Item {
         }
         function onRan(modifiers: int): void {
             root.selecting = true;
-            root.fresh = (modifiers & Qt.ShiftModifier) !== 0;
         }
         function onOpenChanged(): void {
             if (root.control.open) {
                 root.selecting = false;
-                root.fresh = false;
                 root.lastMode = root.control.modes.indexOf(root.control.mode);
             }
         }
@@ -824,7 +821,7 @@ Item {
 
             // ── The keys ─────────────────────────────────────────────────────
             // The extras (capture, clipboard, settings) up the side, and the
-            // big SELECT key under them, its NEW lamp over it.
+            // big SELECT key under them.
             Item {
                 Layout.fillHeight: true
                 implicitWidth: 84
@@ -859,22 +856,6 @@ Item {
                     }
                     spacing: 7
 
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 5
-
-                        Led {
-                            anchors.verticalCenter: parent.verticalCenter
-                            size: 7
-                            on: root.fresh
-                            color: Theme.palette.accent
-                        }
-                        Legend {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "new"
-                            size: 7
-                        }
-                    }
                     JukeKey {
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: 64
@@ -885,10 +866,14 @@ Item {
                         lit: root.selecting
                         onClicked: modifiers => root.control.run(root.control.selected, modifiers)
                     }
-                    Legend {
+                    C.StyledText {
                         anchors.horizontalCenter: parent.horizontalCenter
                         text: "select"
-                        size: 8
+                        caps: true
+                        color: root.silk
+                        font.pixelSize: 10
+                        font.bold: true
+                        tracking: 1.5
                     }
                 }
             }

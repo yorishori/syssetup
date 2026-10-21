@@ -2,8 +2,8 @@ import QtQuick
 import qs.core
 
 // A label punched on a label maker and stuck on the panel beside a part:
-// glossy black plastic tape, the letters pressed into it standing out thin and
-// white where the plastic was stretched. `tape` for
+// glossy black plastic tape, the letters pressed into it standing out white
+// where the plastic was stretched. `tape` for
 // another color of tape; `hovered` when the label itself is a button.
 Item {
     id: root
@@ -11,12 +11,15 @@ Item {
     property string text
     property color tape: "#141416"
     property bool hovered: false
-    property real size: 9  // the letters' height, px
+    property real size: 9  // the letters' nominal height, px
+    // Printed a little larger than nominal, and not thin, so they stay
+    // readable at a desk's distance.
+    readonly property real px: size + 1.5
     readonly property var letters: text.toUpperCase().split("")
-    readonly property real pitch: size * 0.71
+    readonly property real pitch: px * 0.71
 
-    implicitWidth: letters.length * pitch + size
-    implicitHeight: size + 5
+    implicitWidth: letters.length * pitch + px
+    implicitHeight: px + 5
 
     // The tape, its edges curling a little.
     Rectangle {
@@ -49,27 +52,27 @@ Item {
 
             required property int index
             required property string modelData
-            x: root.size / 2 + index * root.pitch
+            x: root.px / 2 + index * root.pitch
             width: root.pitch
             height: root.height
 
             // The stretched plastic catching light above, shade below.
             Text {
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: root.size / 11
+                anchors.verticalCenterOffset: root.px / 11
                 text: letter.modelData
                 color: Qt.alpha("black", 0.7)
                 font.family: Theme.font.family
-                font.pixelSize: root.size
-                font.weight: Font.Light
+                font.pixelSize: root.px
+                font.weight: Font.Normal
             }
             Text {
                 anchors.centerIn: parent
                 text: letter.modelData
                 color: Qt.alpha("#f4f2ec", 0.93)
                 font.family: Theme.font.family
-                font.pixelSize: root.size
-                font.weight: Font.Light
+                font.pixelSize: root.px
+                font.weight: Font.Normal
             }
         }
     }

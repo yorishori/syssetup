@@ -142,69 +142,6 @@ Item {
         }
     }
 
-    // A small two-line display.
-    component Display: Item {
-        id: display
-
-        property string line1
-        property string line2
-        property string line3
-        property int size: 10  // the first line's; the others a little smaller
-
-        width: 96
-        height: 34
-
-        Well {
-            id: glass
-
-            anchors.fill: parent
-            roundness: 3
-            fill: Qt.tint("#050807", Qt.alpha(Theme.palette.accent, 0.04))
-        }
-        Column {
-            anchors {
-                fill: parent
-                margins: 5
-            }
-            spacing: 1
-
-            C.StyledText {
-                width: parent.width
-                text: display.line1
-                caps: true
-                elide: Text.ElideRight
-                color: Theme.palette.accent
-                glow: true
-                font.pixelSize: display.size
-                font.bold: true
-            }
-            C.StyledText {
-                width: parent.width
-                text: display.line2
-                caps: true
-                elide: Text.ElideRight
-                color: Qt.alpha(Theme.palette.accent, 0.75)
-                font.pixelSize: display.size - 1
-            }
-            C.StyledText {
-                width: parent.width
-                text: display.line3
-                caps: true
-                elide: Text.ElideRight
-                color: Qt.alpha(Theme.palette.accent, 0.55)
-                font.pixelSize: display.size - 2
-                visible: text !== ""
-            }
-        }
-        Gloss {
-            anchors {
-                fill: parent
-                margins: 1
-            }
-            roundness: glass.r
-        }
-    }
-
     // The mute key and its LED.
     component Mute: Row {
         id: mute
@@ -261,7 +198,7 @@ Item {
                 y: 8
                 spacing: 12
 
-                Display {
+                Readout {
                     anchors.verticalCenter: parent.verticalCenter
                     line1: bus.panel.nodeName(bus.node)
                     line2: bus.profiles.switching ? "switching..." : bus.profiles.current?.label ?? ""
@@ -843,7 +780,7 @@ Item {
                 width: deck.width - deck.side
                 height: deck.height - 24
             }
-            Display {
+            Readout {
                 id: screen
 
                 x: deck.side
