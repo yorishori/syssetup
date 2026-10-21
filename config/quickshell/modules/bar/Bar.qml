@@ -149,10 +149,12 @@ PanelWindow {
     }
 
     // Closes the drop when clicking anywhere outside it (Sway). The click
-    // doesn't reach the window underneath.
+    // doesn't reach the window underneath. Under everything, drops that
+    // hang behind the bar included.
     MouseArea {
         id: outsideClick
 
+        z: -2
         anchors.fill: parent
         enabled: bar.catchOutside
         acceptedButtons: Qt.AllButtons
@@ -170,6 +172,7 @@ PanelWindow {
     // layer_effects on "qs-bar", see README). Transparent otherwise, so
     // nothing is blurred.
     Backdrop {
+        z: -2
         anchors.fill: parent
         shown: bar.panels.some(p => p.blur && p.name === bar.openDrop)
     }

@@ -18,9 +18,9 @@ import qs.modules.bar as B
 // The door is steel, with screws at its bottom corners.
 //
 // What the Spec lists as hanging (layout.hangers) isn't fixed to the panel
-// at all: the drop is bare room for what hangs there, which brings itself in
-// and out (the calendar on its nail); it stays a moment after closing while
-// that goes.
+// at all: the drop is bare room, behind the panel, for what hangs there,
+// which brings itself in and out (the calendar, swinging down on a nail
+// behind the panel); it stays a moment after closing while that goes.
 Item {
     id: root
 
@@ -29,6 +29,7 @@ Item {
     readonly property bool drawer: (Theme.values.layout?.drawers ?? []).includes(control.name)
     readonly property bool hanging: (Theme.values.layout?.hangers ?? []).includes(control.name)
     readonly property bool clipContent: !hanging
+    readonly property bool behindBar: hanging
 
     readonly property real overhang: 0
     readonly property real inset: 0
@@ -89,7 +90,7 @@ Item {
     PauseAnimation {
         id: hangingOn
 
-        duration: root.control.open ? 0 : 900
+        duration: root.control.open ? 0 : 1500
     }
     // Out on its runners, stopping against the end stop with a little give.
     NumberAnimation {

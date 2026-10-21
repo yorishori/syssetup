@@ -13,8 +13,9 @@ import qs.core
 // drawer's content slides out with it), `popScale` the drop's scale, `swing`
 // turns it on a hinge along its top edge (degrees; 0 = hanging flat),
 // `overhang` how far it draws past its sides (kept clear of the screen edge
-// when placing it), `inset` how far a flush drop stays off the screen edge
-// and `clipContent` false lets its content draw past its edges.
+// when placing it), `inset` how far a flush drop stays off the screen edge,
+// `clipContent` false lets its content draw past its edges and `behindBar`
+// puts it behind the bar (for what comes out from behind it).
 Skinned {
     id: root
 
@@ -31,6 +32,7 @@ Skinned {
     readonly property bool flushRight: edge === "right"
 
     skin: "Drop"
+    z: view?.behindBar ? -1 : 0
     width: body.childrenRect.width + 2 * padding
     height: view?.shownHeight ?? 0
     visible: height > 0

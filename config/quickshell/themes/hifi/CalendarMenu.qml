@@ -4,9 +4,10 @@ import QtQuick.Shapes
 import qs.core
 import qs.modules.calendar as M
 
-// A kitchen wall calendar, hung on a nail under the clock. It swings in on
-// the nail and rocks to a stop as its month unfolds down from behind the
-// picture; going, it folds up and swings off.
+// A kitchen wall calendar, hung on a nail behind the panel, under the clock.
+// It comes folded, blank but for its binding, swinging down from behind the
+// panel on its wire hanger, rocks to a stop and unfolds its month down from
+// over the picture; going, it folds up and swings back up behind the panel.
 //
 // Each leaf is a picture (made up for the month; its moon is the real one,
 // as it is on the day picked, today until another is) over
@@ -16,9 +17,10 @@ import qs.modules.calendar as M
 // day leaves a stroke of its color in that day's square.
 //
 // Turning the month: the corner of the leaf is dog-eared; take it (or scroll
-// down) and the leaf flips up over the binding onto the leaves already
-// turned, bunched up behind it. Take those (or scroll up) and the last one
-// drops back down. The red ribbon riffles back to this month.
+// down) and the leaf rolls up from the bottom, its blank back outward, and
+// goes over the binding onto the leaves already turned, bunched up behind
+// it. Take those (or scroll up) and the last one unrolls down over the one
+// showing. The red ribbon riffles back to this month.
 //
 // With a calendar server, the leaf folds out a third time: a ruled page
 // with the picked day's events in their calendars' ink, as long as it needs
@@ -31,8 +33,12 @@ Item {
 
     readonly property real sheet: 460          // the paper's width
     readonly property real side: 36            // room to swing
-    readonly property real hook: 34            // the nail, down to the paper's top
-    readonly property real pictureHeight: 268
+    readonly property real hook: 34            // the drop's top, down to the paper's
+    // The nail, behind the middle of the panel (the drop's padding above us).
+    readonly property real nail: -(Theme.barHeight / 2 + 14)
+    // The picture is as tall as the month, so the month folded up over it
+    // covers it.
+    readonly property real pictureHeight: 352
     readonly property real monthHeight: 352
     readonly property color paper: "#f6f1e5"
     readonly property color ink: "#2a2522"
@@ -41,25 +47,29 @@ Item {
     readonly property real cellWidth: (sheet - 40 - 16) / 7
     readonly property real cellHeight: 44
 
-    // Hanging: `sway` rocks it on its nail, `fold` folds the month up behind
-    // the picture (180) or hangs it down (0), `agendaFold` the same for the
-    // agenda under it.
-    property real sway: -26
+    // Hanging: `sway` turns it on its nail (-180, up behind the panel, to 0,
+    // hanging), `fold` folds the month up over the picture (180) or hangs it
+    // down (0), `agendaFold` the same for the agenda under it.
+    property real sway: -180
     property real fold: 180
     property real agendaFold: 180
-    property real shown: 0
     // The day on the agenda page, and whether it's wanted out.
     property date agendaDay: control.selected
     property bool agendaWanted: false
     readonly property var agenda: control.eventsOn(agendaDay)
     readonly property real agendaHeight: 44 + Math.max(1, agenda.length) * 28 + 16
-    // A leaf turning: `turn` 0-1, `turnWay` 1 on (up and over), -1 back.
-    property real turn: 1
+    // A leaf turning: `turn` 0-1, `turnWay` 1 on (rolling up), -1 back
+    // (unrolling down). The roll: where its line is down the leaf, and how
+    // thick it is with the paper on it.
+    property real turn: 0
     property int turnWay: 1
-    readonly property bool turning: turnUp.running || turnDown.running
+    readonly property bool turning: leafTurns.running
+    readonly property real leafHeight: pictureHeight + monthHeight
+    readonly property real rollLine: leafHeight * (turnWay > 0 ? 1 - turn : turn)
+    readonly property real rollRadius: 7 + 11 * (1 - rollLine / leafHeight)
 
     implicitWidth: sheet + 2 * side
-    implicitHeight: hook + pictureHeight + monthHeight + (agendaFold < 179 ? agendaHeight : 0) + 40
+    implicitHeight: hook + leafHeight + (agendaFold < 179 ? agendaHeight : 0) + 40
 
     function hash(n: real): real {
         const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
@@ -92,7 +102,7 @@ Item {
         target: root.control
 
         function onOpenChanged(): void {
-            for (const a of [hangUp, takeDown, agendaIn, agendaOut, agendaFlip])
+            for (const a of [hangUp, takeDown, agendaIn, agendaOut, agendaFlip, leafTurns])
                 a.stop();
             if (root.control.open) {
                 root.agendaDay = root.control.selected;
@@ -103,37 +113,38 @@ Item {
             }
         }
         function onTurned(months: int): void {
+            root.turn = 0;
             root.turnWay = months > 0 ? 1 : -1;
             leafTurns.count = Math.min(4, Math.abs(months));
             leafTurns.restart();
         }
     }
 
-    // Hung up: in on the nail, rocking to a stop, the month unfolding down
-    // and then the agenda.
-    ParallelAnimation {
+    // Hung up: down from behind the panel, swinging past and rocking to a
+    // stop, the month unfolding as it settles, then the agenda.
+    SequentialAnimation {
         id: hangUp
 
-        NumberAnimation { target: root; property: "shown"; from: 0; to: 1; duration: 140 }
-        NumberAnimation { target: root; property: "sway"; from: -26; to: 0; duration: 1300; easing.type: Easing.OutElastic; easing.amplitude: 1.1; easing.period: 0.42 }
-        SequentialAnimation {
-            PauseAnimation { duration: 160 }
-            NumberAnimation { target: root; property: "fold"; from: 180; to: 0; duration: 460; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
-            ScriptAction {
-                script: if (root.agendaWanted) agendaOut.restart()
+        NumberAnimation { target: root; property: "sway"; from: -180; to: 0; duration: 620; easing.type: Easing.InQuad }
+        NumberAnimation { target: root; property: "sway"; to: 14; duration: 170; easing.type: Easing.OutQuad }
+        ParallelAnimation {
+            NumberAnimation { target: root; property: "sway"; to: 0; duration: 1100; easing.type: Easing.OutElastic; easing.amplitude: 1; easing.period: 0.45 }
+            SequentialAnimation {
+                PauseAnimation { duration: 260 }
+                NumberAnimation { target: root; property: "fold"; to: 0; duration: 460; easing.type: Easing.OutBack; easing.overshoot: 1.3 }
+                ScriptAction {
+                    script: if (root.agendaWanted) agendaOut.restart()
+                }
             }
         }
     }
-    // Taken down: folded up and swung off.
+    // Taken down: folded up and swung back up behind the panel.
     SequentialAnimation {
         id: takeDown
 
         NumberAnimation { target: root; property: "agendaFold"; to: 180; duration: root.agendaFold < 179 ? 180 : 0; easing.type: Easing.InCubic }
         NumberAnimation { target: root; property: "fold"; to: 180; duration: 260; easing.type: Easing.InCubic }
-        ParallelAnimation {
-            NumberAnimation { target: root; property: "sway"; to: 24; duration: 240; easing.type: Easing.InCubic }
-            NumberAnimation { target: root; property: "shown"; to: 0; duration: 240; easing.type: Easing.InQuad }
-        }
+        NumberAnimation { target: root; property: "sway"; to: -180; duration: 640; easing.type: Easing.OutQuad }
     }
     NumberAnimation {
         id: agendaOut
@@ -169,38 +180,36 @@ Item {
     }
 
     // Leaves turning, one after another for a jump of months (a riffle).
+    // The agenda folds away first, and comes back after.
     SequentialAnimation {
         id: leafTurns
 
         property int count: 1
+        property bool tucked: false
 
-        loops: count
         ScriptAction {
-            script: (root.turnWay > 0 ? turnUp : turnDown).restart()
+            script: leafTurns.tucked = root.agendaFold < 179
         }
-        PauseAnimation { duration: leafTurns.count > 1 ? 170 : 520 }
-    }
-    // On: the old leaf (a picture of it) goes up and over the binding.
-    NumberAnimation {
-        id: turnUp
+        NumberAnimation { target: root; property: "agendaFold"; to: 180; duration: leafTurns.tucked ? 150 : 0; easing.type: Easing.InCubic }
+        SequentialAnimation {
+            loops: leafTurns.count
 
-        target: root
-        property: "turn"
-        from: 0
-        to: 1
-        duration: leafTurns.count > 1 ? 240 : 520
-        easing.type: Easing.InOutCubic
-    }
-    // Back: the leaf before drops down over the one showing.
-    NumberAnimation {
-        id: turnDown
-
-        target: root
-        property: "turn"
-        from: 0
-        to: 1
-        duration: leafTurns.count > 1 ? 240 : 520
-        easing.type: Easing.OutCubic
+            NumberAnimation {
+                target: root
+                property: "turn"
+                from: 0
+                to: 1
+                duration: leafTurns.count > 1 ? 260 : 620
+                easing.type: Easing.InOutQuad
+            }
+        }
+        ScriptAction {
+            script: {
+                root.turn = 0;
+                if (leafTurns.tucked && root.agendaWanted)
+                    agendaOut.restart();
+            }
+        }
     }
 
     // A ring drawn round something by hand, in `ink`: not quite round, the
@@ -261,10 +270,12 @@ Item {
         x: root.side
         width: root.sheet
         height: root.height
-        opacity: root.shown
-        // It hangs on the nail, and rocks there.
-        transformOrigin: Item.Top
-        rotation: root.sway
+        // It hangs on the nail, and swings there.
+        transform: Rotation {
+            origin.x: root.sheet / 2
+            origin.y: root.nail
+            angle: root.sway
+        }
 
         // The nail, and the wire hanger from it to the binding.
         Shape {
@@ -278,13 +289,13 @@ Item {
                 startX: root.sheet / 2 - 40
                 startY: root.hook + 4
 
-                PathLine { x: root.sheet / 2; y: 6 }
+                PathLine { x: root.sheet / 2; y: root.nail }
                 PathLine { x: root.sheet / 2 + 40; y: root.hook + 4 }
             }
         }
         Rectangle {
             x: root.sheet / 2 - 4
-            y: 2
+            y: root.nail - 4
             width: 8
             height: 8
             radius: 4
@@ -303,6 +314,7 @@ Item {
             y: root.hook - 12
             width: root.sheet - 20
             height: 14
+            visible: root.fold < 90
 
             Repeater {
                 model: 3
@@ -334,13 +346,7 @@ Item {
 
             y: root.hook
             width: root.sheet
-            height: root.pictureHeight + root.monthHeight
-            // A leaf coming back drops in from over the binding.
-            transform: Rotation {
-                origin.y: 0
-                axis { x: 1; y: 0; z: 0 }
-                angle: turnDown.running ? 180 * (1 - root.turn) : 0
-            }
+            height: root.leafHeight
 
             Paper {
                 width: parent.width
@@ -715,27 +721,94 @@ Item {
             }
         }
 
-        // The leaf just turned, a picture of it, going up and over the
-        // binding; or, turning back, the one it drops onto. Drawn all the
-        // time (clipped away to a line) so the picture is current.
+        // A leaf turning. The leaf as it was (a picture of it, kept current
+        // until the turn) and as it is now (a live picture; the leaf itself
+        // is hidden meanwhile): rolling on, the old one rolls up off the new;
+        // rolling back, the new one unrolls down over the old. The roll
+        // between them shows the paper's blank back, with its shadow under
+        // it.
+        // (Drawn all the time, clipped away to its top line under the
+        // binding, so that it's current.)
         Item {
             y: root.hook
             width: root.sheet
-            height: root.turning ? leaf.height : 1
-            clip: !root.turning
-            z: turnUp.running ? 1 : -1
+            height: 1
+            clip: true
 
             ShaderEffectSource {
-                width: leaf.width
-                height: root.pictureHeight + root.monthHeight
+                id: before
+
+                width: root.sheet
+                height: root.leafHeight
                 sourceItem: leaf
-                sourceRect: Qt.rect(0, 0, leaf.width, root.pictureHeight + root.monthHeight)
                 live: !root.turning
-                visible: !turnUp.running || root.turn < 0.5
-                transform: Rotation {
-                    origin.y: 0
-                    axis { x: 1; y: 0; z: 0 }
-                    angle: turnUp.running ? 180 * root.turn : 0
+            }
+        }
+        ShaderEffectSource {
+            id: after
+
+            width: root.sheet
+            height: root.leafHeight
+            sourceItem: root.turning ? leaf : null
+            sourceRect: Qt.rect(0, 0, root.sheet, root.leafHeight)
+            hideSource: root.turning
+            visible: false
+        }
+        Item {
+            y: root.hook
+            width: root.sheet
+            height: root.leafHeight
+            visible: root.turning
+
+            // Above the roll: the leaf that's rolling (on), or coming down
+            // (back).
+            Item {
+                width: parent.width
+                height: Math.max(0, root.rollLine)
+                clip: true
+
+                ShaderEffect {
+                    width: root.sheet
+                    height: root.leafHeight
+                    property var source: root.turnWay > 0 ? before : after
+                }
+            }
+            // Under it: the leaf it uncovers (on), or the one it covers
+            // (back).
+            Item {
+                y: Math.min(parent.height, root.rollLine + root.rollRadius)
+                width: parent.width
+                height: parent.height - y
+                clip: true
+
+                ShaderEffect {
+                    y: -parent.y
+                    width: root.sheet
+                    height: root.leafHeight
+                    property var source: root.turnWay > 0 ? after : before
+                }
+                // The roll's shadow.
+                Rectangle {
+                    width: parent.width
+                    height: 14
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: Qt.alpha("black", 0.3) }
+                        GradientStop { position: 1; color: "transparent" }
+                    }
+                }
+            }
+            // The roll: the paper's back, round.
+            Rectangle {
+                y: root.rollLine - root.rollRadius
+                width: parent.width
+                height: 2 * root.rollRadius
+                opacity: Math.min(1, root.rollLine / (2 * root.rollRadius) + 0.2)
+                radius: root.rollRadius
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.darker(root.paper, 1.14) }
+                    GradientStop { position: 0.3; color: Qt.lighter(root.paper, 1.01) }
+                    GradientStop { position: 0.65; color: Qt.darker(root.paper, 1.03) }
+                    GradientStop { position: 1; color: Qt.darker(root.paper, 1.2) }
                 }
             }
         }
@@ -772,7 +845,8 @@ Item {
             x: 2
             y: root.hook - 4
             width: 9
-            height: root.pictureHeight + root.monthHeight * Math.max(0, 1 - root.fold / 90) + 24 + tug
+            visible: root.fold < 90
+            height: root.leafHeight + 24 + tug
             z: 3
 
             SequentialAnimation {
