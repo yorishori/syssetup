@@ -6,11 +6,15 @@ import qs.core
 // window. `edge: "left"` / `"right"` pins it flush to that side of the screen
 // instead, as if it grew out of the screen edge and the bar together.
 //
+// `name` is the panel it holds, for skins that open some differently.
+//
 // The skin draws and animates it: its `shownHeight` is the drop's height,
-// `contentOpacity` the content's, `popScale` the drop's scale, `swing` turns
-// it on a hinge along its top edge (degrees; 0 = hanging flat), `overhang`
-// how far it draws past its sides (kept clear of the screen edge when
-// placing it) and `inset` how far a flush drop stays off the screen edge.
+// `contentOpacity` the content's, `contentShift` moves the content down (a
+// drawer's content slides out with it), `popScale` the drop's scale, `swing`
+// turns it on a hinge along its top edge (degrees; 0 = hanging flat),
+// `overhang` how far it draws past its sides (kept clear of the screen edge
+// when placing it) and `inset` how far a flush drop stays off the screen
+// edge.
 Skinned {
     id: root
 
@@ -18,6 +22,7 @@ Skinned {
     property bool open: false
     property int padding: 14
     property string edge: ""
+    property string name: ""
 
     default property alias content: body.data
 
@@ -66,7 +71,7 @@ Skinned {
             id: body
 
             x: root.padding
-            y: root.padding
+            y: root.padding + (root.view?.contentShift ?? 0)
             opacity: root.view?.contentOpacity ?? 1
         }
     }

@@ -5,7 +5,9 @@ import qs.core
 
 // As a control, a fader: a slot cut into the plate, lit up to the level, with
 // a ribbed cap riding in it. As a readout, an LED ladder behind glass, one
-// segment per step. Upright (`vertical`), it fills from the bottom.
+// segment per step. Upright (`vertical`), it's a mixer's channel fader: it
+// fills from the bottom, under a square cap. A clear color leaves the slot
+// unlit, a plain analog fader.
 Item {
     id: root
 
@@ -94,7 +96,7 @@ Item {
         y: area.y
         width: area.width
         height: area.height
-        visible: root.control.interactive && root.control.lit > 0
+        visible: root.control.interactive && root.control.lit > 0 && root.control.color.a > 0
 
         Behavior on reach {
             NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
@@ -116,9 +118,9 @@ Item {
     Item {
         id: cap
 
-        readonly property real thick: 12
+        readonly property real thick: root.upright ? 18 : 12
         property real at: Math.max(0, Math.min(root.length - thick, root.length * root.level - thick / 2))
-        readonly property rect area: root.box(at, thick, root.breadth + 8)
+        readonly property rect area: root.box(at, thick, root.breadth + (root.upright ? 16 : 8))
 
         x: area.x
         y: area.y
@@ -163,7 +165,9 @@ Item {
 
                     width: root.upright ? cap.width - 4 : 1
                     height: root.upright ? 1 : cap.height - 4
-                    color: index === 1 ? Qt.darker(root.control.color, 1.6) : Qt.alpha(Theme.palette.shadow, 0.45)
+                    // The middle one marks the level.
+                    color: index !== 1 ? Qt.alpha(Theme.palette.shadow, 0.45)
+                        : root.control.color.a > 0 ? Qt.darker(root.control.color, 1.6) : "#f4f2ec"
                 }
             }
         }

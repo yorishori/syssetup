@@ -3,39 +3,58 @@ import QtQuick.Effects
 import qs.core
 import qs.modules.bar as B
 
-// A hinged door below the panel, its controls on the inside. Opening, it
-// swings down from where it's folded up under the panel, comes past
-// hanging straight and settles; closing, it swings back up. Steel, with the
-// piano hinge along its top and screws at its bottom corners; while it
-// swings, its face turns from the light and darkens.
+// What opens below the panel: a hinged door with its controls on the inside,
+// or, for the drops the Spec lists as drawers (layout.drawers), a drawer.
+//
+// The door swings down from where it's folded up under the panel, comes past
+// hanging straight and settles; it's lifted back briskly. A piano hinge runs
+// along its top; while it swings, its face turns from the light and darkens.
+//
+// The drawer slides out from under the panel on its runners, everything on it
+// coming out with it, and is pushed back in; a pull handle on its front edge.
+//
+// Both are steel, with screws at the bottom corners.
 Item {
     id: root
 
     required property B.Drop control
 
+    readonly property bool drawer: (Theme.values.layout?.drawers ?? []).includes(control.name)
+
     readonly property real overhang: 0
     readonly property real inset: 0
     readonly property real popScale: 1
-    // The face, and what's on it, turning from the light as it swings.
-    readonly property real contentOpacity: 1 - 0.6 * swing / 90
-    // Folded up (90) to hanging (0).
-    property real swing: 90
-    // Full height while it shows at all; nothing once folded away.
-    readonly property real shownHeight: swing < 89.5 ? control.openHeight : 0
 
-    // It drops, swings past hanging and settles; it's lifted back briskly.
-    Component.onCompleted: swing = control.open ? 0 : 90
+    // The door: folded up (90) to hanging (0).
+    property real swing: drawer ? 0 : 90
+    // The drawer: how far out it is, 0-1.
+    property real out: 0
+
+    readonly property real shownHeight: drawer ? control.openHeight * out : swing < 89.5 ? control.openHeight : 0
+    readonly property real contentShift: drawer ? shownHeight - control.openHeight : 0
+    // The door's face, and what's on it, turning from the light as it swings.
+    readonly property real contentOpacity: 1 - 0.6 * swing / 90
+
+    clip: drawer
+
+    Component.onCompleted: {
+        swing = drawer || control.open ? 0 : 90;
+        out = drawer && control.open ? 1 : 0;
+    }
     Connections {
         target: root.control
 
         function onOpenChanged(): void {
-            fold.stop();
-            drop.stop();
-            (root.control.open ? drop : fold).start();
+            for (const a of [dropDoor, liftDoor, pullOut, pushIn])
+                a.stop();
+            if (root.drawer)
+                (root.control.open ? pullOut : pushIn).start();
+            else
+                (root.control.open ? dropDoor : liftDoor).start();
         }
     }
     NumberAnimation {
-        id: drop
+        id: dropDoor
 
         target: root
         property: "swing"
@@ -45,7 +64,7 @@ Item {
         easing.overshoot: 1.4
     }
     NumberAnimation {
-        id: fold
+        id: liftDoor
 
         target: root
         property: "swing"
@@ -53,13 +72,34 @@ Item {
         duration: 230
         easing.type: Easing.InCubic
     }
+    // Out on its runners, stopping against the end stop with a little give.
+    NumberAnimation {
+        id: pullOut
 
-    // Its shadow on what's below, while it hangs.
+        target: root
+        property: "out"
+        to: 1
+        duration: 380
+        easing.type: Easing.OutBack
+        easing.overshoot: 0.6
+    }
+    NumberAnimation {
+        id: pushIn
+
+        target: root
+        property: "out"
+        to: 0
+        duration: 240
+        easing.type: Easing.InCubic
+    }
+
+    // Its shadow on what's below.
     RectangularShadow {
         anchors {
             fill: parent
             topMargin: 14
         }
+        visible: !root.drawer
         radius: plate.radius
         offset.y: 6
         blur: 18
@@ -67,62 +107,110 @@ Item {
         opacity: 1 - root.swing / 90
     }
 
-    Metal {
-        id: plate
-
-        anchors.fill: parent
-        squareTop: true
-    }
-
-    // The piano hinge.
+    // The plate; a drawer's slides with it.
     Item {
-        width: parent.width
-        height: 8
+        id: body
 
-        Rectangle {
+        y: root.contentShift
+        width: root.width
+        height: root.control.openHeight
+
+        Metal {
+            id: plate
+
             anchors.fill: parent
-            gradient: Gradient {
-                GradientStop { position: 0; color: Qt.lighter(Theme.palette.border, 1.7) }
-                GradientStop { position: 0.5; color: Theme.palette.border }
-                GradientStop { position: 1; color: Qt.darker(Theme.palette.border, 1.8) }
-            }
+            squareTop: true
         }
-        // The knuckles.
-        Row {
-            anchors.fill: parent
 
-            Repeater {
-                model: Math.max(0, Math.ceil(parent.width / 24))
+        // The door's piano hinge.
+        Item {
+            width: parent.width
+            height: 8
+            visible: !root.drawer
 
-                Rectangle {
-                    required property int index
+            Rectangle {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.lighter(Theme.palette.border, 1.7) }
+                    GradientStop { position: 0.5; color: Theme.palette.border }
+                    GradientStop { position: 1; color: Qt.darker(Theme.palette.border, 1.8) }
+                }
+            }
+            Row {
+                anchors.fill: parent
 
-                    width: 24
-                    height: 8
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Qt.alpha("black", index % 2 ? 0.5 : 0.25)
+                Repeater {
+                    model: Math.max(0, Math.ceil(parent.width / 24))
+
+                    Rectangle {
+                        required property int index
+
+                        width: 24
+                        height: 8
+                        color: "transparent"
+                        border.width: 1
+                        border.color: Qt.alpha("black", index % 2 ? 0.5 : 0.25)
+                    }
                 }
             }
         }
+
+        // The drawer's pull handle, along its front edge.
+        Item {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: parent.height - 13
+            width: 90
+            height: 9
+            visible: root.drawer
+
+            RectangularShadow {
+                anchors.fill: parent
+                radius: 4.5
+                offset.y: 3
+                blur: 4
+                color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
+            }
+            Rectangle {
+                anchors.fill: parent
+                radius: 4.5
+                border.width: 1
+                border.color: Theme.palette.shadow
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.lighter(Theme.palette.fg, 1.1) }
+                    GradientStop { position: 0.45; color: Theme.palette.dim }
+                    GradientStop { position: 1; color: Qt.darker(Theme.palette.dim, 1.8) }
+                }
+            }
+        }
+
+        Screw {
+            x: 5
+            y: parent.height - height - 5
+            visible: parent.height > 40 && (Theme.values.effects?.screws ?? true)
+            angle: 60
+        }
+        Screw {
+            x: parent.width - width - 5
+            y: parent.height - height - 5
+            visible: parent.height > 40 && (Theme.values.effects?.screws ?? true)
+            angle: -15
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            color: "black"
+            opacity: 0.6 * root.swing / 90
+        }
     }
 
-    Screw {
-        x: 5
-        y: root.height - height - 5
-        visible: root.height > 40 && (Theme.values.effects?.screws ?? true)
-        angle: 60
-    }
-    Screw {
-        x: root.width - width - 5
-        y: root.height - height - 5
-        visible: root.height > 40 && (Theme.values.effects?.screws ?? true)
-        angle: -15
-    }
-
+    // The panel's lip throws its shadow onto the drawer as it comes out.
     Rectangle {
-        anchors.fill: parent
-        color: "black"
-        opacity: 0.6 * root.swing / 90
+        width: parent.width
+        height: Math.min(10, parent.height)
+        visible: root.drawer
+        gradient: Gradient {
+            GradientStop { position: 0; color: Qt.alpha(Theme.palette.shadow, 0.65) }
+            GradientStop { position: 1; color: "transparent" }
+        }
     }
 }

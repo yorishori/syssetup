@@ -74,7 +74,10 @@ QtObject {
         },
         // The session menu shuts the whole screen behind blast doors.
         layout: {
-            sessionScreen: true
+            sessionScreen: true,
+            // Drops that slide out from under the panel like a drawer; the
+            // others are doors that swing down.
+            drawers: ["audio"]
         },
         // What each display on the panel glows in.
         display: {

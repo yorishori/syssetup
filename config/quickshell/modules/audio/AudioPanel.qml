@@ -40,6 +40,12 @@ Skinned {
     function select(p: MprisPlayer): void {
         Media.select(p);
     }
+    // The previous (-1) or next (1) player, round the list.
+    function cycle(step: int): void {
+        const n = players.length;
+        if (n > 1)
+            Media.select(players[(players.indexOf(player) + step + n) % n]);
+    }
     function togglePlaying(): void {
         Media.togglePlaying();
     }

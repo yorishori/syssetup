@@ -302,6 +302,7 @@ PanelWindow {
 
             y: Theme.barHeight - background.seam
             anchorItem: bar.anchorFor(modelData.name)
+            name: modelData.name
             edge: modelData.edge ?? ""
             open: bar.openDrop === modelData.name
 
