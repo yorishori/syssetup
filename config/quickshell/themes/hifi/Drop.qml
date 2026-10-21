@@ -16,12 +16,19 @@ import qs.modules.bar as B
 // pull handle on its wooden front rail.
 //
 // The door is steel, with screws at its bottom corners.
+//
+// What the Spec lists as hanging (layout.hangers) isn't fixed to the panel
+// at all: the drop is bare room for what hangs there, which brings itself in
+// and out (the calendar on its nail); it stays a moment after closing while
+// that goes.
 Item {
     id: root
 
     required property B.Drop control
 
     readonly property bool drawer: (Theme.values.layout?.drawers ?? []).includes(control.name)
+    readonly property bool hanging: (Theme.values.layout?.hangers ?? []).includes(control.name)
+    readonly property bool clipContent: !hanging
 
     readonly property real overhang: 0
     readonly property real inset: 0
@@ -32,15 +39,17 @@ Item {
     // The drawer: how far out it is, 0-1.
     property real out: 0
 
-    readonly property real shownHeight: drawer ? control.openHeight * out : swing < 89.5 ? control.openHeight : 0
+    readonly property real shownHeight: hanging ? (control.open || hangingOn.running ? control.openHeight : 0)
+        : drawer ? control.openHeight * out : swing < 89.5 ? control.openHeight : 0
     readonly property real contentShift: drawer ? shownHeight - control.openHeight : 0
     // The door's face, and what's on it, turning from the light as it swings.
-    readonly property real contentOpacity: 1 - 0.6 * swing / 90
+    readonly property real contentOpacity: hanging ? 1 : 1 - 0.6 * swing / 90
 
     clip: drawer
+    visible: !hanging || shownHeight > 0
 
     Component.onCompleted: {
-        swing = drawer || control.open ? 0 : 90;
+        swing = drawer || hanging || control.open ? 0 : 90;
         out = drawer && control.open ? 1 : 0;
     }
     Connections {
@@ -49,7 +58,9 @@ Item {
         function onOpenChanged(): void {
             for (const a of [dropDoor, liftDoor, pullOut, pushIn])
                 a.stop();
-            if (root.drawer)
+            if (root.hanging)
+                hangingOn.restart();
+            else if (root.drawer)
                 (root.control.open ? pullOut : pushIn).start();
             else
                 (root.control.open ? dropDoor : liftDoor).start();
@@ -73,6 +84,12 @@ Item {
         to: 90
         duration: 230
         easing.type: Easing.InCubic
+    }
+    // What hangs there taking itself away.
+    PauseAnimation {
+        id: hangingOn
+
+        duration: root.control.open ? 0 : 900
     }
     // Out on its runners, stopping against the end stop with a little give.
     NumberAnimation {
@@ -101,7 +118,7 @@ Item {
             fill: parent
             topMargin: 14
         }
-        visible: !root.drawer
+        visible: !root.drawer && !root.hanging
         radius: plate.radius
         offset.y: 6
         blur: 18
@@ -113,6 +130,7 @@ Item {
     Item {
         id: body
 
+        visible: !root.hanging
         y: root.contentShift
         width: root.width
         height: root.control.openHeight

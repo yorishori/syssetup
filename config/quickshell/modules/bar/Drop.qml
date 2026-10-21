@@ -13,8 +13,8 @@ import qs.core
 // drawer's content slides out with it), `popScale` the drop's scale, `swing`
 // turns it on a hinge along its top edge (degrees; 0 = hanging flat),
 // `overhang` how far it draws past its sides (kept clear of the screen edge
-// when placing it) and `inset` how far a flush drop stays off the screen
-// edge.
+// when placing it), `inset` how far a flush drop stays off the screen edge
+// and `clipContent` false lets its content draw past its edges.
 Skinned {
     id: root
 
@@ -72,7 +72,7 @@ Skinned {
 
     Item {
         anchors.fill: parent
-        clip: true
+        clip: root.view?.clipContent ?? true
 
         Item {
             id: body
