@@ -28,8 +28,9 @@ Skinned {
     // Levels and devices.
     readonly property PwNode output: Audio.output
     readonly property PwNode input: Audio.input
-    readonly property var outputs: Audio.outputs
-    readonly property var inputs: Audio.inputs
+    // One per device (a device's profile can give it several nodes).
+    readonly property var outputs: Audio.outputDevices
+    readonly property var inputs: Audio.inputDevices
     readonly property var apps: Audio.apps  // [{ name, nodes }]
     readonly property var outputProfiles: Audio.outputProfiles
     readonly property var inputProfiles: Audio.inputProfiles

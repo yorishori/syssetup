@@ -14,8 +14,8 @@ import qs.modules.audio as M
 // The record on the turntable is the player, its app's icon in the middle;
 // it turns slowly while it plays. The tonearm runs along the bottom of the
 // record from its pivot, the headshell hooking up onto the grooves, and it
-// creeps in toward the label as the track goes on (it rests mid-record when
-// the player doesn't say how far it's got). Beside the platter, the deck's
+// creeps in from the record's edge toward its middle as the track goes on
+// (it rests halfway when the player doesn't say how far it's got). Beside the platter, the deck's
 // screen shows the track (blank with no player), with the SOURCE switch
 // under it and the transport keys set into the faceplate below. Switching
 // players lifts the arm toward you, turns the record over to the new app and
@@ -502,10 +502,10 @@ Item {
     property MprisPlayer shown: null
     property real armLift: 0  // 0 = on the record, 1 = up toward you
     property real flip: 0     // the record turning over, -90 to 90 degrees
-    // How far the arm has swung in: 18 degrees takes the needle from the
-    // outer groove to the label. Mid-record when the track's progress is
-    // unknown.
-    property real armSwing: -18 * (root.control.progress < 0 ? 0.5 : root.control.progress)
+    // How far the arm has swung in: 36 degrees takes the needle from the
+    // record's edge, at the start of the track, to the middle at its end.
+    // Halfway when the track's progress is unknown.
+    property real armSwing: -36 * (root.control.progress < 0 ? 0.5 : root.control.progress)
 
     Behavior on armSwing {
         NumberAnimation { duration: 900 }
