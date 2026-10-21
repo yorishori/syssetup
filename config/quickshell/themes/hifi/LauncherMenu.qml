@@ -9,8 +9,7 @@ import qs.modules.launcher as M
 // A jukebox selector in a drawer.
 //
 // On top, a three-way MODE dial (search, windows, apps) beside the glass
-// display you type into, and the extras (capture, clipboard, settings) on a
-// plate screwed on beside it. Under them, the title rack: the results are
+// display you type into. Under them, the title rack: the results are
 // title strips, cream cards with red rules printed with the app's icon and
 // name, each in its own holder in a dark cabinet behind glass. Two hidden
 // bulbs in the selected holder light its strip from either end, warming up
@@ -22,7 +21,8 @@ import qs.modules.launcher as M
 // you type, a strip that changes flips over in its holder, one after the
 // other down the rack; the ones that stay put don't move.
 //
-// Beside the rack, the jukebox's SELECT button, a red dome that goes down and
+// Beside the rack, the selector keys, ivory caps in chrome: the extras
+// (capture, clipboard, settings) and the big SELECT key, which goes in and
 // lights when a strip is run (its NEW lamp lights for a new instance).
 Item {
     id: root
@@ -266,6 +266,95 @@ Item {
         }
     }
 
+    // A jukebox selector key: an ivory cap, the same stock as the strips,
+    // in a chrome bezel. It goes in when pressed; `lit`, it's held in and
+    // the bulbs behind it light its edges. Dead when not `live`.
+    component JukeKey: Item {
+        id: key
+
+        property string icon
+        property real glyphSize: 15
+        property bool live: true
+        property bool lit: false
+        readonly property bool down: lit || keyArea.pressed
+
+        signal clicked(int modifiers)
+
+        opacity: live || lit ? 1 : 0.45
+
+        // The bezel.
+        Rectangle {
+            anchors.fill: parent
+            radius: 4
+            border.width: 1
+            border.color: "black"
+            gradient: Gradient {
+                GradientStop { position: 0; color: "#eceef1" }
+                GradientStop { position: 0.4; color: "#86888e" }
+                GradientStop { position: 0.65; color: "#c6c8cd" }
+                GradientStop { position: 1; color: "#4c4e53" }
+            }
+        }
+        Rectangle {
+            id: pit
+
+            anchors {
+                fill: parent
+                margins: 3
+            }
+            radius: 2
+            color: "#0c0b0a"
+        }
+        RectangularShadow {
+            anchors.fill: cap
+            radius: 2
+            blur: 8
+            spread: 1
+            color: Qt.alpha("#ffb85c", 0.8)
+            visible: key.lit
+        }
+        // The cap, standing proud of the bezel until it's pushed in.
+        Rectangle {
+            id: cap
+
+            x: pit.x + 2
+            y: pit.y + 1 + (key.down ? 2 : 0)
+            width: pit.width - 4
+            height: pit.height - 4
+            radius: 2
+            border.width: 1
+            border.color: Qt.darker(root.card, 1.9)
+            gradient: Gradient {
+                GradientStop { position: 0; color: key.lit ? "#fff1cf" : keyArea.containsMouse && key.live ? Qt.lighter(root.card, 1.06) : root.card }
+                GradientStop { position: 0.8; color: key.lit ? "#ffd48a" : Qt.darker(root.card, key.down ? 1.12 : 1.05) }
+                GradientStop { position: 1; color: Qt.darker(root.card, key.down ? 1.25 : 1.4) }
+            }
+
+            Behavior on y {
+                NumberAnimation { duration: 60 }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                anchors.verticalCenterOffset: -1
+                text: key.icon
+                color: root.ink
+                font.family: Theme.font.family
+                font.pixelSize: key.glyphSize
+            }
+        }
+
+        MouseArea {
+            id: keyArea
+
+            anchors.fill: parent
+            enabled: key.live
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: mouse => key.clicked(mouse.modifiers)
+        }
+    }
+
     // One title strip: the result's icon and name, what it is, and what
     // SELECT does to it in red.
     component Strip: Item {
@@ -452,64 +541,12 @@ Item {
 
                 x: 186
                 anchors.verticalCenter: parent.verticalCenter
-                width: extras.x - x - 14
+                width: parent.width - x - 14
                 // The dial says what it's for.
                 prompt: ""
                 placeholder: root.control.placeholder
                 onTextChanged: root.control.setQuery(text)
                 onAccepted: modifiers => root.control.run(root.control.selected, modifiers)
-            }
-
-            // The extras, on a plate screwed on after: capture, clipboard,
-            // settings.
-            Item {
-                id: extras
-
-                anchors {
-                    right: parent.right
-                    rightMargin: 12
-                    verticalCenter: parent.verticalCenter
-                }
-                width: extraKeys.width + 30
-                height: 50
-
-                Metal {
-                    anchors.fill: parent
-                    raised: true
-                    roundness: 3
-                }
-                Repeater {
-                    model: [[5, 5, 30], [1, 5, -40], [5, 1, 70], [1, 1, 10]]
-
-                    Screw {
-                        required property var modelData
-
-                        x: modelData[0] === 5 ? 4 : extras.width - width - 4
-                        y: modelData[1] === 5 ? 4 : extras.height - height - 4
-                        size: 5
-                        angle: modelData[2]
-                    }
-                }
-                Row {
-                    id: extraKeys
-
-                    anchors.centerIn: parent
-                    spacing: 6
-
-                    Repeater {
-                        model: root.control.actions
-
-                        C.IconButton {
-                            required property var modelData
-
-                            size: 28
-                            icon: modelData.icon
-                            enabled: !(modelData.busy && root.control.capturing)
-                            opacity: enabled ? 1 : 0.4
-                            onClicked: modelData.run()
-                        }
-                    }
-                }
             }
         }
 
@@ -785,19 +822,42 @@ Item {
                 }
             }
 
-            // ── SELECT ───────────────────────────────────────────────────────
-            // The jukebox's own button: a red bakelite dome in a chrome ring,
-            // lit while it plays a selection; the NEW lamp over it.
+            // ── The keys ─────────────────────────────────────────────────────
+            // The extras (capture, clipboard, settings) up the side, and the
+            // big SELECT key under them, its NEW lamp over it.
             Item {
                 Layout.fillHeight: true
-                implicitWidth: 92
+                implicitWidth: 84
 
                 Frame {
                     anchors.fill: parent
                 }
                 Column {
-                    anchors.centerIn: parent
-                    spacing: 10
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 12
+                    spacing: 8
+
+                    Repeater {
+                        model: root.control.actions
+
+                        JukeKey {
+                            required property var modelData
+
+                            width: 46
+                            height: 30
+                            icon: modelData.icon
+                            live: !(modelData.busy && root.control.capturing)
+                            onClicked: modelData.run()
+                        }
+                    }
+                }
+                Column {
+                    anchors {
+                        horizontalCenter: parent.horizontalCenter
+                        bottom: parent.bottom
+                        bottomMargin: 12
+                    }
+                    spacing: 7
 
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -815,94 +875,15 @@ Item {
                             size: 7
                         }
                     }
-                    Item {
-                        id: select
-
-                        readonly property bool live: list.count > 0
-                        readonly property bool down: root.selecting || selectArea.pressed
-
+                    JukeKey {
                         anchors.horizontalCenter: parent.horizontalCenter
-                        width: 66
-                        height: 66
-
-                        RectangularShadow {
-                            anchors.fill: parent
-                            radius: width / 2
-                            offset.y: 3
-                            blur: 6
-                            color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
-                        }
-                        // The chrome ring.
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            border.width: 1
-                            border.color: "black"
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: "#f4f5f7" }
-                                GradientStop { position: 0.35; color: "#8e9096" }
-                                GradientStop { position: 0.6; color: "#d9dbdf" }
-                                GradientStop { position: 1; color: "#55575c" }
-                            }
-                        }
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 52
-                            height: 52
-                            radius: width / 2
-                            color: "#141416"
-                        }
-                        // The bakelite dome; it glows lit.
-                        RectangularShadow {
-                            anchors.fill: dome
-                            radius: width / 2
-                            blur: 14
-                            spread: 2
-                            color: Qt.alpha("#ff4a3a", 0.8)
-                            visible: root.selecting
-                        }
-                        Rectangle {
-                            id: dome
-
-                            anchors.centerIn: parent
-                            width: 46
-                            height: 46
-                            radius: width / 2
-                            scale: select.down ? 0.93 : 1
-                            border.width: 1
-                            border.color: "#3a0905"
-                            opacity: select.live || root.selecting ? 1 : 0.45
-                            gradient: Gradient {
-                                GradientStop { position: 0; color: root.selecting ? "#ff8a70" : selectArea.containsMouse && select.live ? "#ec5a4b" : "#d4402f" }
-                                GradientStop { position: 0.55; color: root.selecting ? "#ff4a32" : "#a8231a" }
-                                GradientStop { position: 1; color: root.selecting ? "#c8281a" : "#5e0f0a" }
-                            }
-
-                            Behavior on scale {
-                                NumberAnimation { duration: 70 }
-                            }
-
-                            // The shine on the dome.
-                            Rectangle {
-                                x: 10
-                                y: 6
-                                width: 18
-                                height: 10
-                                radius: 5
-                                rotation: -25
-                                color: Qt.alpha("white", select.down ? 0.18 : 0.35)
-                            }
-                        }
-
-                        MouseArea {
-                            id: selectArea
-
-                            anchors.fill: parent
-                            enabled: select.live
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: mouse => root.control.run(root.control.selected, mouse.modifiers)
-                        }
+                        width: 64
+                        height: 58
+                        icon: "\u{F0311}"
+                        glyphSize: 24
+                        live: list.count > 0
+                        lit: root.selecting
+                        onClicked: modifiers => root.control.run(root.control.selected, modifiers)
                     }
                     Legend {
                         anchors.horizontalCenter: parent.horizontalCenter
