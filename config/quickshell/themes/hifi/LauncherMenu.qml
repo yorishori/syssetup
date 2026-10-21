@@ -9,19 +9,21 @@ import qs.modules.launcher as M
 // A jukebox selector in a drawer.
 //
 // On top, a three-way MODE dial (search, windows, apps) beside the glass
-// display you type into. Under them, the title rack: the results are title
-// strips, cream cards with red rules printed with the app's icon and name,
-// standing behind a pane of glass in a chrome frame, backlit warm. Two hidden
-// bulbs light the selected strip from either end, warming up and cooling down
-// as the selection moves; the rack scrolls along when it runs past what's
-// shown, and strips with nothing printed fill the slots that are empty.
+// display you type into, and the extras (capture, clipboard, settings) on a
+// plate screwed on beside it. Under them, the title rack: the results are
+// title strips, cream cards with red rules printed with the app's icon and
+// name, each in its own holder in a dark cabinet behind glass. Two hidden
+// bulbs in the selected holder light its strip from either end, warming up
+// and cooling down as the selection moves; the rack scrolls along when it runs
+// past what's shown, and strips with nothing printed fill the empty holders.
 //
-// The strips are held on a drum: turning the MODE dial turns it to the next
-// page. While you type, a strip that changes flips over in its holder, one
-// after the other down the rack; the ones that stay put don't move.
+// The strips are printed on a tape running behind the holders: turning the
+// MODE dial runs it sideways onto the next mode's strips, all together. While
+// you type, a strip that changes flips over in its holder, one after the
+// other down the rack; the ones that stay put don't move.
 //
-// Beside the rack, the quick-action keys and the big SELECT key, which goes
-// down when a strip is run (its NEW lamp lights for a new instance).
+// Beside the rack, the jukebox's SELECT button, a red dome that goes down and
+// lights when a strip is run (its NEW lamp lights for a new instance).
 Item {
     id: root
 
@@ -43,12 +45,13 @@ Item {
     property bool selecting: false
     property bool fresh: false
 
-    // The drum: `turn` runs 0-1 as it turns a page over, `way` up (1) or
-    // down (-1). The old page is a snapshot (page shot).
+    // The tape: `turn` runs 0-1 as it runs on to the next mode, `way` the
+    // way it runs (1 to the left, -1 to the right). What it ran away from is
+    // a snapshot.
     property real turn: 1
     property int way: 1
     property int lastMode: 0
-    readonly property bool turning: drum.running
+    readonly property bool turning: tapeRun.running
     // What each slot showed before the results last changed, and when, so
     // strips that change flip over.
     property var printed: []
@@ -84,7 +87,7 @@ Item {
                 return;
             // Round the dial from the last mode to the first is still onwards.
             root.way = Math.abs(step) === 2 ? -Math.sign(step) : Math.sign(step);
-            drum.restart();
+            tapeRun.restart();
         }
         function onResultsChanged(): void {
             root.before = root.printed;
@@ -104,17 +107,16 @@ Item {
         }
     }
 
-    // The drum turning over to the next page, clicking into place.
+    // The tape running on to the next mode's strips, all of them together.
     NumberAnimation {
-        id: drum
+        id: tapeRun
 
         target: root
         property: "turn"
         from: 0
         to: 1
-        duration: 420
-        easing.type: Easing.OutBack
-        easing.overshoot: 0.8
+        duration: 440
+        easing.type: Easing.InOutCubic
     }
 
     // A section of the faceplate, outlined in silkscreen.
@@ -450,12 +452,64 @@ Item {
 
                 x: 186
                 anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - x - 14
+                width: extras.x - x - 14
                 // The dial says what it's for.
                 prompt: ""
                 placeholder: root.control.placeholder
                 onTextChanged: root.control.setQuery(text)
                 onAccepted: modifiers => root.control.run(root.control.selected, modifiers)
+            }
+
+            // The extras, on a plate screwed on after: capture, clipboard,
+            // settings.
+            Item {
+                id: extras
+
+                anchors {
+                    right: parent.right
+                    rightMargin: 12
+                    verticalCenter: parent.verticalCenter
+                }
+                width: extraKeys.width + 30
+                height: 50
+
+                Metal {
+                    anchors.fill: parent
+                    raised: true
+                    roundness: 3
+                }
+                Repeater {
+                    model: [[5, 5, 30], [1, 5, -40], [5, 1, 70], [1, 1, 10]]
+
+                    Screw {
+                        required property var modelData
+
+                        x: modelData[0] === 5 ? 4 : extras.width - width - 4
+                        y: modelData[1] === 5 ? 4 : extras.height - height - 4
+                        size: 5
+                        angle: modelData[2]
+                    }
+                }
+                Row {
+                    id: extraKeys
+
+                    anchors.centerIn: parent
+                    spacing: 6
+
+                    Repeater {
+                        model: root.control.actions
+
+                        C.IconButton {
+                            required property var modelData
+
+                            size: 28
+                            icon: modelData.icon
+                            enabled: !(modelData.busy && root.control.capturing)
+                            opacity: enabled ? 1 : 0.4
+                            onClicked: modelData.run()
+                        }
+                    }
+                }
             }
         }
 
@@ -467,157 +521,257 @@ Item {
             Item {
                 id: rack
 
-                Layout.fillWidth: true
-                implicitHeight: root.slots * (root.strip + root.gap) - root.gap + 2 * 14
+                readonly property real pitch: root.strip + root.gap
+                // The first strip showing.
+                readonly property int first: Math.round((list.contentY - list.originY) / pitch)
 
-                // The chrome frame.
+                Layout.fillWidth: true
+                implicitHeight: root.slots * pitch - root.gap + 2 * 15
+
+                // The cabinet: a cast frame round a dark plate, each strip in
+                // its own holder.
                 Rectangle {
                     anchors.fill: parent
                     radius: 6
                     border.width: 1
                     border.color: "black"
                     gradient: Gradient {
-                        GradientStop { position: 0; color: "#e9eaee" }
-                        GradientStop { position: 0.15; color: "#9a9ca3" }
-                        GradientStop { position: 0.5; color: "#d4d6db" }
-                        GradientStop { position: 0.85; color: "#7c7e85" }
-                        GradientStop { position: 1; color: "#babcc2" }
+                        GradientStop { position: 0; color: "#55575d" }
+                        GradientStop { position: 0.08; color: "#34363b" }
+                        GradientStop { position: 1; color: "#1a1b1e" }
                     }
                 }
-                // The inside, backlit warm.
                 Rectangle {
                     id: inside
 
                     anchors {
                         fill: parent
-                        margins: 4
+                        margins: 5
                     }
                     radius: 3
-                    color: "#17110b"
                     border.width: 1
                     border.color: "black"
+                    gradient: Gradient {
+                        GradientStop { position: 0; color: "#16130f" }
+                        GradientStop { position: 1; color: "#0d0b09" }
+                    }
                     clip: true
 
-                    Rectangle {
-                        anchors.fill: parent
-                        gradient: Gradient {
-                            orientation: Gradient.Horizontal
-                            GradientStop { position: 0; color: Qt.alpha("#ffb25e", 0.05) }
-                            GradientStop { position: 0.5; color: Qt.alpha("#ffb25e", 0.2) }
-                            GradientStop { position: 1; color: Qt.alpha("#ffb25e", 0.05) }
+                    // The bulbs' light leaking out round the selected holder,
+                    // onto the plate.
+                    Repeater {
+                        model: root.slots
+
+                        RectangularShadow {
+                            id: leak
+
+                            required property int index
+                            property real lit: list.count > 0 && rack.first + index === root.control.selected ? 1 : 0
+
+                            x: 15
+                            y: 9 + index * rack.pitch
+                            width: inside.width - 30
+                            height: root.strip + 2
+                            radius: 3
+                            blur: 12
+                            spread: 1
+                            color: Qt.alpha("#ffb85c", 0.45)
+                            opacity: lit
+                            visible: lit > 0
+
+                            Behavior on lit {
+                                NumberAnimation { duration: leak.lit < 0.5 ? 90 : 260; easing.type: Easing.OutQuad }
+                            }
                         }
                     }
 
-                    // The drum's face: blank strips in every slot, the
-                    // results standing over them. The bulbs' light spills
-                    // past the strips, so it's the rack that clips them.
+                    // The tape: blank strips in every slot, the results over
+                    // them, showing only through the holders' windows.
                     Item {
-                        id: page
+                        id: tape
 
-                        width: inside.width
-                        height: inside.height
-                        opacity: Math.cos(face.angle * Math.PI / 180)
-                        transform: [
-                            Rotation {
-                                id: face
+                        anchors.fill: parent
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            maskEnabled: true
+                            maskSource: windows
+                            maskThresholdMin: 0.5
+                            maskSpreadAtMin: 0.2
+                        }
 
-                                origin.y: page.height / 2
-                                axis { x: 1; y: 0; z: 0 }
-                                angle: -90 * root.way * (1 - root.turn)
-                            },
-                            Translate {
-                                y: page.height / 2 * Math.sin(face.angle * Math.PI / 180)
+                        Item {
+                            id: page
+
+                            width: inside.width
+                            height: inside.height
+                            transform: Translate {
+                                x: root.way * (1 - root.turn) * page.width
                             }
-                        ]
 
-                        // Blank strips in every slot; the results stand over them.
-                        Column {
-                            x: 16
-                            y: 10
-                            spacing: root.gap
+                            Column {
+                                x: 16
+                                y: 10
+                                spacing: root.gap
 
-                            Repeater {
-                                model: root.slots
+                                Repeater {
+                                    model: root.slots
 
-                                Card {
-                                    required property int index
+                                    Card {
+                                        required property int index
 
-                                    width: inside.width - 32
-                                    height: root.strip
-                                    opacity: 0.85
+                                        width: inside.width - 32
+                                        height: root.strip
 
-                                    Text {
-                                        anchors.centerIn: parent
-                                        text: root.control.query.trim() !== "" ? "NO SELECTION"
-                                            : root.control.listed ? `NO ${root.control.mode.toUpperCase()}` : ""
-                                        color: root.rule
-                                        font.family: Theme.font.family
-                                        font.pixelSize: 11
-                                        font.bold: true
-                                        font.letterSpacing: 3
-                                        visible: parent.index === 0 && list.count === 0
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: root.control.query.trim() !== "" ? "NO SELECTION"
+                                                : root.control.listed ? `NO ${root.control.mode.toUpperCase()}` : ""
+                                            color: root.rule
+                                            font.family: Theme.font.family
+                                            font.pixelSize: 11
+                                            font.bold: true
+                                            font.letterSpacing: 3
+                                            visible: parent.index === 0 && list.count === 0
+                                        }
                                     }
                                 }
                             }
+
+                            ListView {
+                                id: list
+
+                                x: 16
+                                y: 10
+                                width: inside.width - 32
+                                height: root.slots * rack.pitch - root.gap
+                                spacing: root.gap
+                                boundsBehavior: Flickable.StopAtBounds
+                                snapMode: ListView.SnapToItem
+                                model: root.control.results
+                                delegate: Strip {}
+                                // The rack runs along to keep the selection in
+                                // view. (A new model resets currentIndex, so
+                                // it's set again.)
+                                function follow(): void {
+                                    currentIndex = root.control.selected;
+                                }
+                                Component.onCompleted: follow()
+                                onCountChanged: Qt.callLater(follow)
+                                highlight: Item {}
+                                highlightMoveDuration: 160
+                                highlightRangeMode: ListView.ApplyRange
+                                preferredHighlightBegin: 0
+                                preferredHighlightEnd: height
+                            }
                         }
 
-                        ListView {
-                            id: list
+                        // What was on the tape before it ran: a picture of
+                        // it, kept current (it's drawn all the time, clipped
+                        // away to a line, so it doesn't go stale).
+                        Item {
+                            width: page.width
+                            height: root.turning ? page.height : 1
+                            clip: true
 
-                            x: 16
-                            y: 10
-                            width: inside.width - 32
-                            height: root.slots * (root.strip + root.gap) - root.gap
-                            spacing: root.gap
-                            boundsBehavior: Flickable.StopAtBounds
-                            model: root.control.results
-                            delegate: Strip {}
-                            // The rack flips along to keep the selection in view.
-                            // (A new model resets currentIndex, so it's set again.)
-                            function follow(): void {
-                                currentIndex = root.control.selected;
+                            ShaderEffectSource {
+                                y: root.turning ? 0 : -page.height
+                                width: page.width
+                                height: page.height
+                                sourceItem: page
+                                live: !root.turning
+                                transform: Translate {
+                                    x: root.turning ? -root.way * root.turn * page.width : 0
+                                }
                             }
-                            Component.onCompleted: follow()
-                            onCountChanged: Qt.callLater(follow)
-                            highlight: Item {}
-                            highlightMoveDuration: 160
-                            highlightRangeMode: ListView.ApplyRange
-                            preferredHighlightBegin: 0
-                            preferredHighlightEnd: height
                         }
                     }
 
-                    // The page it turned away from: a picture of the face,
-                    // kept current (it's drawn all the time, clipped away to
-                    // a line, so it doesn't go stale), until the drum turns.
+                    // The holders' windows, for the tape's mask.
                     Item {
-                        width: page.width
-                        height: root.turning ? page.height : 1
-                        clip: true
-                        z: 1
+                        id: windows
 
-                        ShaderEffectSource {
-                            id: shot
+                        anchors.fill: parent
+                        visible: false
+                        layer.enabled: true
 
-                            y: root.turning ? 0 : -page.height
-                            width: page.width
-                            height: page.height
-                            sourceItem: page
-                            live: !root.turning
-                            opacity: Math.cos(away.angle * Math.PI / 180)
-                            transform: [
-                                Rotation {
-                                    id: away
+                        Repeater {
+                            model: root.slots
 
-                                    origin.y: shot.height / 2
-                                    axis { x: 1; y: 0; z: 0 }
-                                    // Flat while it waits, so it's still drawn (kept current).
-                                    angle: root.turning ? 90 * root.way * root.turn : 0
-                                },
-                                Translate {
-                                    y: shot.height / 2 * Math.sin(away.angle * Math.PI / 180)
+                            Rectangle {
+                                required property int index
+
+                                x: 18
+                                y: 12 + index * rack.pitch
+                                width: inside.width - 36
+                                height: root.strip - 4
+                                radius: 2
+                            }
+                        }
+                    }
+
+                    // The holders: a bezel round each window, shading the
+                    // top of the strip in it. The bulbs inside the selected
+                    // one light its edges.
+                    Repeater {
+                        model: root.slots
+
+                        Item {
+                            id: holder
+
+                            required property int index
+                            property real lit: list.count > 0 && rack.first + index === root.control.selected ? 1 : 0
+
+                            x: 15
+                            y: 9 + index * rack.pitch
+                            width: inside.width - 30
+                            height: root.strip + 2
+
+                            Behavior on lit {
+                                NumberAnimation { duration: holder.lit < 0.5 ? 90 : 260; easing.type: Easing.OutQuad }
+                            }
+
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 3
+                                color: "transparent"
+                                border.width: 3
+                                border.color: Qt.tint("#3f4146", Qt.alpha("#ffc070", 0.35 * holder.lit))
+                            }
+                            // Light catching the bezel's top and bottom edges.
+                            Rectangle {
+                                x: 3
+                                width: parent.width - 6
+                                height: 1
+                                color: Qt.alpha("white", 0.22)
+                            }
+                            Rectangle {
+                                x: 3
+                                y: parent.height - 1
+                                width: parent.width - 6
+                                height: 1
+                                color: Qt.alpha("black", 0.6)
+                            }
+                            // The window's edge, and the bezel's shadow on the strip.
+                            Rectangle {
+                                anchors {
+                                    fill: parent
+                                    margins: 3
                                 }
-                            ]
+                                radius: 2
+                                color: "transparent"
+                                border.width: 1
+                                border.color: "black"
+                            }
+                            Rectangle {
+                                x: 4
+                                y: 4
+                                width: parent.width - 8
+                                height: 5
+                                gradient: Gradient {
+                                    GradientStop { position: 0; color: Qt.alpha("black", 0.45) }
+                                    GradientStop { position: 1; color: "transparent" }
+                                }
+                            }
                         }
                     }
                 }
@@ -631,43 +785,19 @@ Item {
                 }
             }
 
-            // ── The keys ─────────────────────────────────────────────────────
+            // ── SELECT ───────────────────────────────────────────────────────
+            // The jukebox's own button: a red bakelite dome in a chrome ring,
+            // lit while it plays a selection; the NEW lamp over it.
             Item {
                 Layout.fillHeight: true
-                implicitWidth: 76
+                implicitWidth: 92
 
                 Frame {
                     anchors.fill: parent
                 }
                 Column {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: 12
+                    anchors.centerIn: parent
                     spacing: 10
-
-                    Repeater {
-                        model: root.control.actions
-
-                        C.IconButton {
-                            required property var modelData
-
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            size: 34
-                            icon: modelData.icon
-                            enabled: !(modelData.busy && root.control.capturing)
-                            opacity: enabled ? 1 : 0.4
-                            onClicked: modelData.run()
-                        }
-                    }
-                }
-
-                // SELECT, with the NEW lamp over it.
-                Column {
-                    anchors {
-                        horizontalCenter: parent.horizontalCenter
-                        bottom: parent.bottom
-                        bottomMargin: 12
-                    }
-                    spacing: 6
 
                     Row {
                         anchors.horizontalCenter: parent.horizontalCenter
@@ -685,15 +815,94 @@ Item {
                             size: 7
                         }
                     }
-                    C.IconButton {
+                    Item {
+                        id: select
+
+                        readonly property bool live: list.count > 0
+                        readonly property bool down: root.selecting || selectArea.pressed
+
                         anchors.horizontalCenter: parent.horizontalCenter
-                        implicitWidth: 56
-                        size: 48
-                        icon: "\u{F0311}"
-                        lit: root.selecting
-                        enabled: list.count > 0
-                        opacity: enabled || root.selecting ? 1 : 0.4
-                        onClicked: root.control.run(root.control.selected, 0)
+                        width: 66
+                        height: 66
+
+                        RectangularShadow {
+                            anchors.fill: parent
+                            radius: width / 2
+                            offset.y: 3
+                            blur: 6
+                            color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
+                        }
+                        // The chrome ring.
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            border.width: 1
+                            border.color: "black"
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: "#f4f5f7" }
+                                GradientStop { position: 0.35; color: "#8e9096" }
+                                GradientStop { position: 0.6; color: "#d9dbdf" }
+                                GradientStop { position: 1; color: "#55575c" }
+                            }
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 52
+                            height: 52
+                            radius: width / 2
+                            color: "#141416"
+                        }
+                        // The bakelite dome; it glows lit.
+                        RectangularShadow {
+                            anchors.fill: dome
+                            radius: width / 2
+                            blur: 14
+                            spread: 2
+                            color: Qt.alpha("#ff4a3a", 0.8)
+                            visible: root.selecting
+                        }
+                        Rectangle {
+                            id: dome
+
+                            anchors.centerIn: parent
+                            width: 46
+                            height: 46
+                            radius: width / 2
+                            scale: select.down ? 0.93 : 1
+                            border.width: 1
+                            border.color: "#3a0905"
+                            opacity: select.live || root.selecting ? 1 : 0.45
+                            gradient: Gradient {
+                                GradientStop { position: 0; color: root.selecting ? "#ff8a70" : selectArea.containsMouse && select.live ? "#ec5a4b" : "#d4402f" }
+                                GradientStop { position: 0.55; color: root.selecting ? "#ff4a32" : "#a8231a" }
+                                GradientStop { position: 1; color: root.selecting ? "#c8281a" : "#5e0f0a" }
+                            }
+
+                            Behavior on scale {
+                                NumberAnimation { duration: 70 }
+                            }
+
+                            // The shine on the dome.
+                            Rectangle {
+                                x: 10
+                                y: 6
+                                width: 18
+                                height: 10
+                                radius: 5
+                                rotation: -25
+                                color: Qt.alpha("white", select.down ? 0.18 : 0.35)
+                            }
+                        }
+
+                        MouseArea {
+                            id: selectArea
+
+                            anchors.fill: parent
+                            enabled: select.live
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: mouse => root.control.run(root.control.selected, mouse.modifiers)
+                        }
                     }
                     Legend {
                         anchors.horizontalCenter: parent.horizontalCenter
