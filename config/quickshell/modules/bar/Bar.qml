@@ -283,6 +283,12 @@ PanelWindow {
                 active: bar.openDrop === "notifications"
                 onClicked: Panels.toggle("notifications")
             }
+            // Tell the popups where it is.
+            Binding {
+                target: Notifs
+                property: "slotX"
+                value: background.x + rightGroup.x + notifButton.x + notifButton.width / 2
+            }
             HealthIndicator {}
             ControlButton {
                 id: controlButton
