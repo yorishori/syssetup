@@ -4,12 +4,12 @@ import qs.core
 import qs.modules.notifications as M
 
 // A lamp just past the top right corner of the screen, out of sight: what
-// shows is its light on the desktop. It comes up when something comes in,
-// tinted by how urgent the most urgent waiting one is (cool for low, amber
-// for normal, red for critical), and dies down over the time those take to
-// go; a critical one keeps it breathing until it's dealt with. Over a
-// fullscreen window it's dimmer. It's only light: nothing to click; what came
-// in is read in the drawer.
+// shows is its light on the corner of the desktop and the panel. Something
+// coming in swells it up and down again (two seconds), tinted by how urgent
+// it is (cool for low, amber for normal); while anything critical waits, it
+// breathes red until that's dealt with. Over a fullscreen window it's
+// dimmer. It's only light: nothing to click; what came in is read in the
+// drawer.
 Item {
     id: root
 
@@ -18,32 +18,23 @@ Item {
     // Nothing takes input.
     readonly property Item inputArea: null
     readonly property var waiting: control.popups
-    readonly property int urgency: waiting.reduce((most, n) => Math.max(most, n?.urgency ?? 1), -1)
     readonly property bool critical: waiting.some(n => control.critical(n))
-    readonly property color tint: urgency >= 2 ? "#ff3b2a" : urgency === 1 ? "#ffb04a" : "#cfe2ff"
-    // Now, kept current while it glows, for how far each has died down.
-    property real now: Date.now()
-    // How bright: the brightest of what's waiting, each dying down over its
-    // time.
-    readonly property real level: {
-        let most = 0;
-        for (const n of waiting) {
-            const t = control.timeout(n);
-            const at = control.receivedAt(n);
-            const left = t > 0 && at ? 1 - (now - at) / (t * 1000) : 1;
-            most = Math.max(most, Math.max(0.25, Math.min(1, left)));
-        }
-        return most;
-    }
-    property real breath: 1
+    // A swell for something new (0-1), in its tint.
+    property real swell: 0
+    property color swellTint: "#ffb04a"
+    property var seen: []
+    property real breath: 0
+    readonly property color tint: critical ? "#ff3b2a" : swellTint
 
-    Timer {
-        interval: 120
-        running: root.waiting.length > 0
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: root.now = Date.now()
+    onWaitingChanged: {
+        const fresh = waiting.filter(n => !seen.includes(n) && !control.critical(n));
+        if (fresh.length > 0) {
+            swellTint = (fresh[0]?.urgency ?? 1) === 0 ? "#cfe2ff" : "#ffb04a";
+            swelling.restart();
+        }
+        seen = waiting.slice();
     }
+
     // Each goes after its time.
     Repeater {
         model: root.waiting
@@ -58,14 +49,24 @@ Item {
             }
         }
     }
+    SequentialAnimation {
+        id: swelling
+
+        NumberAnimation { target: root; property: "swell"; to: 1; duration: 600; easing.type: Easing.OutQuad }
+        NumberAnimation { target: root; property: "swell"; to: 0; duration: 1400; easing.type: Easing.InOutQuad }
+    }
     SequentialAnimation on breath {
         running: root.critical
         loops: Animation.Infinite
-        alwaysRunToEnd: true
 
-        NumberAnimation { to: 0.55; duration: 1400; easing.type: Easing.InOutSine }
         NumberAnimation { to: 1; duration: 1400; easing.type: Easing.InOutSine }
+        NumberAnimation { to: 0.35; duration: 1400; easing.type: Easing.InOutSine }
     }
+    Behavior on breath {
+        enabled: !root.critical
+        NumberAnimation { duration: 600 }
+    }
+    onCriticalChanged: if (!critical) breath = 0
 
     // The light, from past the corner.
     Shape {
@@ -74,12 +75,9 @@ Item {
         readonly property real reach: 520
 
         anchors.fill: parent
-        opacity: root.waiting.length > 0 ? root.level * (root.critical ? root.breath : 1) * (root.control.fullscreen ? 0.6 : 1) : 0
+        opacity: Math.max(root.swell, root.critical ? root.breath : 0) * (root.control.fullscreen ? 0.6 : 1)
+        visible: opacity > 0.01
         preferredRendererType: Shape.CurveRenderer
-
-        Behavior on opacity {
-            NumberAnimation { duration: 600; easing.type: Easing.OutQuad }
-        }
 
         ShapePath {
             strokeColor: "transparent"

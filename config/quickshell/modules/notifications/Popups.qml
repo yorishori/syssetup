@@ -13,8 +13,9 @@ PanelWindow {
         right: true
         bottom: true
     }
-    // Stay below the bar (and other panels) without reserving space ourselves.
-    exclusionMode: ExclusionMode.Normal
+    // Over the whole screen, the bar too (skins keep clear of it if they
+    // want to, by the stack's barHeight), without reserving space ourselves.
+    exclusionMode: ExclusionMode.Ignore
     exclusiveZone: 0
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "qs-notifications"

@@ -31,7 +31,8 @@ Item {
         anchors {
             top: parent.top
             right: parent.right
-            topMargin: 6
+            // Just under the bar.
+            topMargin: root.control.barHeight + 6
             rightMargin: Config.bar.padding
         }
         width: 360
