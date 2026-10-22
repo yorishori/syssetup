@@ -157,6 +157,20 @@ Item {
                         }
                         clip: true
 
+                        // A stub of paper always out of the platen, its end
+                        // serrated where it was last cut: where the next
+                        // message will come out.
+                        Rectangle {
+                            y: feed.height - height
+                            width: feed.width
+                            height: 12
+                            color: root.paper
+
+                            Serration {
+                                y: -height + 0.5
+                            }
+                        }
+
                         // The paper: as long as what's printed on it, up from
                         // the platen, its end cut finely serrated. Cut off,
                         // it's thrown off to the right.
