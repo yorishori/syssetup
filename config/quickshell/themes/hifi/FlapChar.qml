@@ -4,7 +4,8 @@ import qs.core
 // One split-flap character, showing `value` (a single character; anything
 // not on its cards shows as a blank). Like the real thing it only turns
 // forward, flipping through every card in between to get to a new one, the
-// top half falling to show the next. `ink` is the lettering.
+// top half falling to show the next; however far it has to go, it gets
+// there in under half a second. `ink` is the lettering.
 Item {
     id: root
 
@@ -16,16 +17,26 @@ Item {
     property int current: 0
     property int next: 0
     property real phase: 0  // one flip: the top half falls (0-0.5), the bottom lands (0.5-1)
+    // On the way to the current target: how many cards each flip moves on (a
+    // long way, it skips some), and how long a flip takes.
+    property int stride: 1
+    property int stepTime: 34
 
     function step(): void {
         if (current === target || flip.running)
             return;
-        next = (current + 1) % cards.length;
+        const left = (target - current + cards.length) % cards.length;
+        next = (current + Math.min(stride, left)) % cards.length;
         flip.start();
     }
 
     Component.onCompleted: current = next = target
-    onTargetChanged: step()
+    onTargetChanged: {
+        const distance = (target - current + cards.length) % cards.length;
+        stride = Math.max(1, Math.ceil(distance / 22));
+        stepTime = Math.max(17, Math.min(34, Math.round(380 / Math.max(1, Math.ceil(distance / stride)))));
+        step();
+    }
 
     NumberAnimation {
         id: flip
@@ -34,7 +45,7 @@ Item {
         property: "phase"
         from: 0
         to: 1
-        duration: 34
+        duration: root.stepTime
         onFinished: {
             root.current = root.next;
             root.phase = 0;
