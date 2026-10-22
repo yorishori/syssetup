@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 import qs.components as C
 import qs.core
 import qs.modules.notifications as M
@@ -8,14 +9,17 @@ import qs.modules.notifications as M
 // roll, continuous form with sprocket holes down both edges, behind a
 // window: each one a block (when, from whom, the summary in bold, the body
 // under it) with a perforation under it, the newest at the platen at the
-// bottom; critical ones print in red. Scroll to feed the paper up and down;
-// click a message to act on it; its tear tab (or a right click) tears it off
-// along its perforation. One that comes in while it's open types out
-// letter by letter as the paper feeds.
+// bottom; critical ones print in red. There's only as much paper as there
+// is printed, its end cut finely serrated; once it's longer than the window,
+// the overflow latch drops onto it at the top and holds it, and scrolling
+// feeds it through under the latch. Click a message to act on it; its tear
+// tab (or a right click) tears it off along its perforation. One that comes
+// in while it's open types out letter by letter as the paper feeds.
 //
 // Beside the window: DO NOT DISTURB, a three-way rotary (OFF, ON, 1H) with
 // its STANDBY lamp and, for the hour, the minutes left on a red display;
-// the TEAR OFF lever, which tears off everything printed. Under it all, a
+// the TEAR OFF lever: the cutter cuts the paper at the platen and it's
+// thrown off to the right. Under it all, a
 // switch per source, labelled by hand: up prints, down mutes.
 Item {
     id: root
@@ -32,8 +36,10 @@ Item {
     // The one typing out, and how far it's got (0-1).
     property var typing: null
     property real typed: 1
-    // Everything torn off at once: 0-1 as it goes.
-    property real tearAll: 0
+    // Everything printed cut off at once: the cutter's flash, then the paper
+    // thrown off to the right (0-1).
+    property real cutFlash: 0
+    property real cutAway: 0
     property int seen: 0
 
     implicitWidth: unit.implicitWidth + 2 * margin
@@ -47,6 +53,34 @@ Item {
             control.setDnd(false, 0);
         else
             control.setDnd(true, mode === 2 ? 60 : 0);
+    }
+
+    // A cut end of the paper: fine teeth along it, pointing up (or `down`).
+    component Serration: Shape {
+        id: teeth
+
+        property bool down: false
+
+        width: parent?.width ?? 0
+        height: 2
+
+        ShapePath {
+            strokeColor: "transparent"
+            fillColor: root.paper
+            startX: 0
+            startY: teeth.down ? 0 : teeth.height
+
+            PathPolyline {
+                path: {
+                    const pts = [];
+                    const base = teeth.down ? 0 : teeth.height, tip = teeth.down ? teeth.height : 0;
+                    for (let x = 0; x <= teeth.width; x += 2.4)
+                        pts.push(Qt.point(x, base), Qt.point(x + 1.2, tip));
+                    pts.push(Qt.point(teeth.width, base));
+                    return pts;
+                }
+            }
+        }
     }
 
     Connections {
@@ -78,11 +112,13 @@ Item {
     SequentialAnimation {
         id: tearOff
 
-        NumberAnimation { target: root; property: "tearAll"; from: 0; to: 1; duration: 420; easing.type: Easing.InCubic }
+        NumberAnimation { target: root; property: "cutFlash"; from: 0; to: 1; duration: 60 }
+        NumberAnimation { target: root; property: "cutFlash"; to: 0; duration: 120 }
+        NumberAnimation { target: root; property: "cutAway"; from: 0; to: 1; duration: 460; easing.type: Easing.InCubic }
         ScriptAction {
             script: {
                 root.control.clear();
-                root.tearAll = 0;
+                root.cutAway = 0;
             }
         }
     }
@@ -103,7 +139,7 @@ Item {
                 Item {
                     id: window
 
-                    width: 430
+                    width: 340
                     height: 420
 
                     Well {
@@ -121,196 +157,297 @@ Item {
                         }
                         clip: true
 
-                        // The roll, with its sprocket holes.
-                        Rectangle {
-                            anchors.fill: parent
-                            color: root.paper
-                        }
-                        Repeater {
-                            model: 2
+                        // The paper: as long as what's printed on it, up from
+                        // the platen, its end cut finely serrated. Cut off,
+                        // it's thrown off to the right.
+                        Item {
+                            id: strip
 
-                            Column {
-                                required property int index
+                            readonly property real printedLength: list.contentHeight + 16
+                            readonly property bool overflowing: printedLength > feed.height
+                            property real length: Math.min(feed.height, printedLength)
 
-                                x: index ? feed.width - 13 : 5
-                                y: 6 - ((list.contentY % 16) + 16) % 16
-                                spacing: 9
+                            x: root.cutAway * feed.width * 1.4
+                            y: feed.height - length - root.cutAway * 50
+                            width: feed.width
+                            height: length
+                            rotation: root.cutAway * 22
+                            transformOrigin: Item.BottomLeft
+                            visible: root.printed.length > 0
 
-                                Repeater {
-                                    model: Math.ceil(feed.height / 16) + 2
-
-                                    Rectangle {
-                                        width: 7
-                                        height: 7
-                                        radius: 3.5
-                                        color: "#2a2a2c"
-                                    }
-                                }
-                            }
-                        }
-                        Repeater {
-                            model: [18, feed.width - 19]
-
-                            Rectangle {
-                                required property real modelData
-
-                                x: modelData
-                                width: 1
-                                height: feed.height
-                                color: Qt.alpha(root.ink, 0.12)
-                            }
-                        }
-
-                        ListView {
-                            id: list
-
-                            x: 26
-                            width: feed.width - 52
-                            height: feed.height
-                            y: -root.tearAll * feed.height
-                            opacity: 1 - root.tearAll
-                            boundsBehavior: Flickable.StopAtBounds
-                            // Printed from the platen up: the newest at the
-                            // bottom, older ones fed up above it.
-                            verticalLayoutDirection: ListView.BottomToTop
-                            model: root.printed
-                            onCountChanged: Qt.callLater(() => positionViewAtBeginning())
-
-                            Behavior on contentY {
-                                enabled: !list.moving
+                            Behavior on length {
+                                enabled: !strip.overflowing
                                 NumberAnimation { duration: 260; easing.type: Easing.OutQuad }
                             }
 
-                            delegate: Item {
-                                id: block
+                            Rectangle {
+                                anchors.fill: parent
+                                color: root.paper
+                            }
+                            // The sprocket holes, moving with the paper.
+                            Item {
+                                anchors.fill: parent
+                                clip: true
 
-                                required property var modelData
-                                readonly property bool critical: root.control.critical(modelData)
-                                readonly property real progress: modelData === root.typing ? root.typed : 1
-                                readonly property string head: {
-                                    const at = root.control.receivedAt(modelData);
-                                    return `${at ? Qt.formatTime(at, "HH:mm") : "--:--"}  ${(modelData?.appName ?? "").toUpperCase()}`;
-                                }
-                                readonly property string summary: modelData?.summary ?? ""
-                                readonly property string body: root.control.plain(modelData)
-                                // How much has been typed of head, summary, body.
-                                readonly property int chars: Math.round(progress * (head.length + summary.length + body.length))
-                                property real tear: 0
-
-                                width: ListView.view.width
-                                height: lines.implicitHeight + 26
-
-                                SequentialAnimation {
-                                    id: tearing
-
-                                    NumberAnimation { target: block; property: "tear"; to: 1; duration: 280; easing.type: Easing.InCubic }
-                                    ScriptAction { script: root.control.dismiss(block.modelData) }
-                                }
-
-                                Item {
-                                    width: parent.width
-                                    height: parent.height
-                                    x: block.tear * 60
-                                    y: -block.tear * 14
-                                    rotation: block.tear * 5
-                                    opacity: 1 - block.tear
+                                Repeater {
+                                    model: 2
 
                                     Column {
-                                        id: lines
+                                        required property int index
 
-                                        x: 4
-                                        y: 10
-                                        width: parent.width - 8
-                                        spacing: 3
-
-                                        Text {
-                                            width: parent.width
-                                            text: block.head.slice(0, block.chars)
-                                            color: Qt.alpha(block.critical ? root.redInk : root.ink, 0.6)
-                                            font.family: Theme.font.family
-                                            font.pixelSize: 10
-                                            font.letterSpacing: 1
-                                        }
-                                        Text {
-                                            width: parent.width
-                                            text: block.summary.slice(0, Math.max(0, block.chars - block.head.length))
-                                            wrapMode: Text.Wrap
-                                            maximumLineCount: 2
-                                            elide: Text.ElideRight
-                                            color: block.critical ? root.redInk : root.ink
-                                            font.family: Theme.font.family
-                                            font.pixelSize: 13
-                                            font.bold: true
-                                        }
-                                        Text {
-                                            width: parent.width
-                                            text: block.body.slice(0, Math.max(0, block.chars - block.head.length - block.summary.length))
-                                            wrapMode: Text.Wrap
-                                            maximumLineCount: 3
-                                            elide: Text.ElideRight
-                                            color: Qt.alpha(block.critical ? root.redInk : root.ink, 0.85)
-                                            font.family: Theme.font.family
-                                            font.pixelSize: 11
-                                            visible: block.body !== ""
-                                        }
-                                    }
-                                    // The perforation it tears along.
-                                    Row {
-                                        y: parent.height - 2
-                                        spacing: 4
+                                        x: index ? strip.width - 13 : 5
+                                        y: 6 - ((list.contentY % 16) + 16) % 16
+                                        spacing: 9
 
                                         Repeater {
-                                            model: Math.floor(block.width / 7)
+                                            model: Math.ceil(feed.height / 16) + 2
 
                                             Rectangle {
-                                                width: 3
-                                                height: 1
-                                                color: Qt.alpha(root.ink, 0.35)
+                                                width: 7
+                                                height: 7
+                                                radius: 3.5
+                                                color: "#141416"
                                             }
                                         }
                                     }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                                        hoverEnabled: true
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: mouse => {
-                                            if (mouse.button === Qt.RightButton)
-                                                tearing.start();
-                                            else
-                                                root.control.invoke(block.modelData);
-                                        }
+                                }
+                                Repeater {
+                                    model: [18, strip.width - 19]
 
-                                        // The tear tab, in the margin by the perforation.
-                                        Rectangle {
-                                            x: parent.width - width + 2
-                                            y: parent.height - height - 3
-                                            width: 18
-                                            height: 14
-                                            radius: 2
-                                            color: tabArea.containsMouse ? "#e6dcc4" : "#efe8d6"
-                                            border.width: 1
-                                            border.color: Qt.alpha(root.ink, 0.3)
-                                            visible: parent.containsMouse || tabArea.containsMouse
+                                    Rectangle {
+                                        required property real modelData
+
+                                        x: modelData
+                                        width: 1
+                                        height: strip.height
+                                        color: Qt.alpha(root.ink, 0.12)
+                                    }
+                                }
+                            }
+                            // The ends, cut: serrated, the top one while it's
+                            // short of the latch, the bottom one once it's cut.
+                            Serration {
+                                y: -height + 0.5
+                                visible: !strip.overflowing
+                            }
+                            Serration {
+                                y: strip.height - 0.5
+                                down: true
+                                visible: root.cutAway > 0
+                            }
+
+                            // The print, clipped to the paper; the list itself
+                            // is the window's height, so how long it is doesn't
+                            // hang on how long the paper is.
+                            Item {
+                                anchors.fill: parent
+                                clip: true
+
+                            ListView {
+                                id: list
+
+                                x: 26
+                                y: parent.height - height
+                                width: strip.width - 52
+                                height: feed.height
+                                interactive: strip.overflowing
+                                boundsBehavior: Flickable.StopAtBounds
+                                // Printed from the platen up: the newest at the
+                                // bottom, older ones fed up above it.
+                                verticalLayoutDirection: ListView.BottomToTop
+                                model: root.printed
+                                onCountChanged: Qt.callLater(() => positionViewAtBeginning())
+
+                                Behavior on contentY {
+                                    enabled: !list.moving
+                                    NumberAnimation { duration: 260; easing.type: Easing.OutQuad }
+                                }
+
+                                delegate: Item {
+                                    id: block
+
+                                    required property var modelData
+                                    readonly property bool critical: root.control.critical(modelData)
+                                    readonly property real progress: modelData === root.typing ? root.typed : 1
+                                    readonly property string head: {
+                                        const at = root.control.receivedAt(modelData);
+                                        return `${at ? Qt.formatTime(at, "HH:mm") : "--:--"}  ${(modelData?.appName ?? "").toUpperCase()}`;
+                                    }
+                                    readonly property string summary: modelData?.summary ?? ""
+                                    readonly property string body: root.control.plain(modelData)
+                                    // How much has been typed of head, summary, body.
+                                    readonly property int chars: Math.round(progress * (head.length + summary.length + body.length))
+                                    property real tear: 0
+
+                                    width: ListView.view.width
+                                    height: lines.implicitHeight + 26
+
+                                    SequentialAnimation {
+                                        id: tearing
+
+                                        NumberAnimation { target: block; property: "tear"; to: 1; duration: 280; easing.type: Easing.InCubic }
+                                        ScriptAction { script: root.control.dismiss(block.modelData) }
+                                    }
+
+                                    Item {
+                                        width: parent.width
+                                        height: parent.height
+                                        x: block.tear * 60
+                                        y: -block.tear * 14
+                                        rotation: block.tear * 5
+                                        opacity: 1 - block.tear
+
+                                        Column {
+                                            id: lines
+
+                                            x: 4
+                                            y: 10
+                                            width: parent.width - 8
+                                            spacing: 3
 
                                             Text {
-                                                anchors.centerIn: parent
-                                                text: "✂"
-                                                color: Qt.alpha(root.ink, 0.7)
+                                                width: parent.width
+                                                text: block.head.slice(0, block.chars)
+                                                color: Qt.alpha(block.critical ? root.redInk : root.ink, 0.6)
+                                                font.family: Theme.font.family
                                                 font.pixelSize: 10
+                                                font.letterSpacing: 1
                                             }
-                                            MouseArea {
-                                                id: tabArea
+                                            Text {
+                                                width: parent.width
+                                                text: block.summary.slice(0, Math.max(0, block.chars - block.head.length))
+                                                wrapMode: Text.Wrap
+                                                maximumLineCount: 2
+                                                elide: Text.ElideRight
+                                                color: block.critical ? root.redInk : root.ink
+                                                font.family: Theme.font.family
+                                                font.pixelSize: 13
+                                                font.bold: true
+                                            }
+                                            Text {
+                                                width: parent.width
+                                                text: block.body.slice(0, Math.max(0, block.chars - block.head.length - block.summary.length))
+                                                wrapMode: Text.Wrap
+                                                maximumLineCount: 3
+                                                elide: Text.ElideRight
+                                                color: Qt.alpha(block.critical ? root.redInk : root.ink, 0.85)
+                                                font.family: Theme.font.family
+                                                font.pixelSize: 11
+                                                visible: block.body !== ""
+                                            }
+                                        }
+                                        // The perforation it tears along.
+                                        Row {
+                                            y: parent.height - 2
+                                            spacing: 4
 
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: tearing.start()
+                                            Repeater {
+                                                model: Math.floor(block.width / 7)
+
+                                                Rectangle {
+                                                    width: 3
+                                                    height: 1
+                                                    color: Qt.alpha(root.ink, 0.35)
+                                                }
+                                            }
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+                                            hoverEnabled: true
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: mouse => {
+                                                if (mouse.button === Qt.RightButton)
+                                                    tearing.start();
+                                                else
+                                                    root.control.invoke(block.modelData);
+                                            }
+
+                                            // The tear tab, in the margin by the perforation.
+                                            Rectangle {
+                                                x: parent.width - width + 2
+                                                y: parent.height - height - 3
+                                                width: 18
+                                                height: 14
+                                                radius: 2
+                                                color: tabArea.containsMouse ? "#e6dcc4" : "#efe8d6"
+                                                border.width: 1
+                                                border.color: Qt.alpha(root.ink, 0.3)
+                                                visible: parent.containsMouse || tabArea.containsMouse
+
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "✂"
+                                                    color: Qt.alpha(root.ink, 0.7)
+                                                    font.pixelSize: 10
+                                                }
+                                                MouseArea {
+                                                    id: tabArea
+
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: tearing.start()
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
+                            }
+                        }
+
+                        // The overflow latch: once the paper's longer than the
+                        // window, it drops onto it and holds it at the top; the
+                        // paper feeds through under it.
+                        Item {
+                            width: feed.width
+                            height: 12
+                            y: strip.overflowing && root.cutAway === 0 ? 0 : -16
+
+                            Behavior on y {
+                                NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 2 }
+                            }
+
+                            Rectangle {
+                                anchors.fill: parent
+                                border.width: 1
+                                border.color: "black"
+                                gradient: Gradient {
+                                    GradientStop { position: 0; color: "#e9eaee" }
+                                    GradientStop { position: 0.5; color: "#9a9ca3" }
+                                    GradientStop { position: 1; color: "#4d4f55" }
+                                }
+                            }
+                            Repeater {
+                                model: [40, feed.width - 60]
+
+                                Rectangle {
+                                    required property real modelData
+
+                                    x: modelData
+                                    y: parent.height - 3
+                                    width: 20
+                                    height: 6
+                                    radius: 3
+                                    color: "#1c1c1e"
+                                }
+                            }
+                            RectangularShadow {
+                                anchors.fill: parent
+                                offset.y: 3
+                                blur: 6
+                                color: Qt.alpha("black", 0.5)
+                                z: -1
+                            }
+                        }
+                        // The cutter's flash across the platen.
+                        Rectangle {
+                            y: feed.height - 2
+                            width: feed.width
+                            height: 2
+                            color: "#f4f6f8"
+                            opacity: root.cutFlash
                         }
                         // The paper curling over the platen at the bottom.
                         Rectangle {
@@ -337,7 +474,7 @@ Item {
                         }
                     }
                     Rectangle {
-                        x: 26 + (list.width - width) * (root.typing && typeOut.running ? (root.typed * 37) % 1 : 0.5)
+                        x: 32 + (list.width - width) * (root.typing && typeOut.running ? (root.typed * 37) % 1 : 0.5)
                         y: parent.height - 36
                         width: 30
                         height: 22
