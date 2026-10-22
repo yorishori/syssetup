@@ -2,9 +2,10 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell.Widgets
 
-// An old round sticker of an icon: printed on paper, a little faded, its rim
-// chipped and a few scratches through it (wear.png, turned by `seed` so no
-// two wear the same). The icon stays readable.
+// An old round sticker of an icon: printed on paper, a touch faded, a chip
+// or a scratch here and there (wear.png, turned by `seed` so no
+// two wear the same). The icon stays readable: a light one (the white
+// symbolic icons panels get) is printed on dark paper, the rest on cream.
 Item {
     id: root
 
@@ -13,6 +14,12 @@ Item {
 
     implicitWidth: 20
     implicitHeight: 20
+
+    IconTone {
+        id: tone
+
+        source: root.source
+    }
 
     Item {
         id: paper
@@ -24,7 +31,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: width / 2
-            color: "#d8d1c0"
+            color: tone.lightness > 0.62 ? "#2c2b29" : "#d8d1c0"
         }
         IconImage {
             anchors.centerIn: parent
@@ -49,13 +56,13 @@ Item {
     MultiEffect {
         anchors.fill: parent
         source: paper
-        saturation: -0.2
-        contrast: -0.1
-        brightness: -0.04
+        saturation: -0.12
+        contrast: -0.05
+        brightness: -0.02
         maskEnabled: true
         maskSource: wear
-        // Light wear: the rim chips and scratches show, the icon stays readable.
-        maskThresholdMin: 0.2
-        maskSpreadAtMin: 0.25
+        // Light wear: only the deepest chips and scratches show.
+        maskThresholdMin: 0.08
+        maskSpreadAtMin: 0.2
     }
 }

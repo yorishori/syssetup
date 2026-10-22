@@ -124,35 +124,15 @@ Item {
         easing.type: Easing.OutCubic
     }
 
-    // Looks at the icon and takes its strongest color for the cable: the
-    // average of its pixels, weighted toward the saturated, opaque ones.
-    Canvas {
-        property string source: root.control.icon
+    // The icon's strongest color, for the cable.
+    IconTone {
+        id: tone
 
-        width: 24
-        height: 24
-        visible: false
-        onSourceChanged: if (source && !(source in root.colors)) loadImage(source)
-        onImageLoaded: requestPaint()
-        onPaint: {
-            const ctx = getContext("2d");
-            if (!isImageLoaded(source))
-                return;
-            ctx.clearRect(0, 0, width, height);
-            ctx.drawImage(source, 0, 0, width, height);
-            const px = ctx.getImageData(0, 0, width, height).data;
-            let r = 0, g = 0, b = 0, w = 0;
-            for (let i = 0; i < px.length; i += 4) {
-                const max = Math.max(px[i], px[i + 1], px[i + 2]), min = Math.min(px[i], px[i + 1], px[i + 2]);
-                const weight = (px[i + 3] / 255) * (0.15 + (max - min) / 255);
-                r += px[i] * weight;
-                g += px[i + 1] * weight;
-                b += px[i + 2] * weight;
-                w += weight;
-            }
-            if (w > 0) {
+        source: root.control.icon
+        onKnownChanged: {
+            if (known) {
                 const next = Object.assign({}, root.colors);
-                next[source] = Qt.rgba(r / w / 255, g / w / 255, b / w / 255, 1);
+                next[source] = color;
                 root.colors = next;
             }
         }
