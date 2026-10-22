@@ -29,7 +29,7 @@ Item {
     readonly property bool drawer: (Theme.values.layout?.drawers ?? []).includes(control.name)
     readonly property bool hanging: (Theme.values.layout?.hangers ?? []).includes(control.name)
     readonly property bool clipContent: !hanging
-    readonly property bool behindBar: hanging
+    readonly property bool behindBar: (Theme.values.layout?.behindBar ?? []).includes(control.name)
 
     readonly property real overhang: 0
     readonly property real inset: 0

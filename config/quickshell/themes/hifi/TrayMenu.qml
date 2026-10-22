@@ -3,42 +3,72 @@ import QtQuick.Shapes
 import qs.core
 import qs.modules.tray as M
 
-// The plug's cable, pulled down out of the panel, with its tag: a cable tag
-// wrapped round it, its white flap written up with what the app offers.
-// The cable is the color of the app's icon. It swings a little as it comes
-// down, and goes back up into the panel when done.
-//
-// On the flap: the app's name, then a line per entry; tick boxes for the
-// ones that toggle (ticked in pen), circles for the ones to pick one of
-// (filled in), rules between groups, faint print for what can't be used, ›
-// for more. The line under the hand (or the keys) gets a highlighter stroke.
-// More flips the tag over: its back has the rest, with ← BACK at the top.
+// The app's plug, pulled out of its socket in the panel: the socket feeds
+// its cable out and the plug drops and hangs on the end, swinging to a stop.
+// Along the cable, flag labels like a cable printer's, wrapped round it:
+// the app's name on the first, then one per thing the app offers, in a run
+// down the cable, a gap where it groups them. A tick box or a circle on the
+// ones that toggle or pick; › on the ones with more; faint for what can't be
+// used. The one under the hand (or the keys) lifts. More: the labels spin
+// round the cable to show it, ← BACK on the first after the name. Done, the
+// cable's reeled back in and the plug goes home. The cable is the color of
+// the app's icon.
 Item {
     id: root
 
     required property M.TrayPanel control
 
-    readonly property real flapWidth: 250
-    readonly property real line: 24
-    // The jack, behind the middle of the panel (the drop's padding above us).
-    readonly property real jack: -(Theme.barHeight / 2 + 14)
-    readonly property real cableLength: 36
-    readonly property color ink: "#25262b"
-    readonly property color penBlue: "#2346a8"
+    readonly property real flapLength: 168
+    readonly property real tagHeight: 18
+    readonly property real pitch: 25
+    // The socket, in the panel above (the drop's padding above us).
+    readonly property real socket: -(Theme.barHeight / 2 + 14)
+    readonly property real cableX: flapLength + 24
+    readonly property real firstTag: 22
+    readonly property color ink: "#1d1d20"
+    // Label tape colors, round the run.
+    readonly property var tapes: ["#ffe14a", "#f6f3ea", "#86d873", "#69b6f2", "#ff8a6a"]
     // The cable's color: the icon's, once it's been looked at; until then (or
     // if it can't be), one made up from the app's name.
     property var colors: ({})
     readonly property color cable: colors[control.icon] ?? fallbackColor(control.title)
 
-    // Down out of the panel (0-1), and the swing it comes down with.
+    // The labels down the cable: the name, BACK in a submenu, then the
+    // entries ({ entry, y }).
+    readonly property var run: {
+        const out = [];
+        let y = firstTag;
+        out.push({ kind: "name", y: y });
+        y += pitch;
+        if (control.stack.length > 0) {
+            out.push({ kind: "back", y: y });
+            y += pitch;
+        }
+        for (const e of control.entries) {
+            if (e.isSeparator) {
+                y += 10;
+                continue;
+            }
+            out.push({ kind: "entry", entry: e, index: control.entries.indexOf(e), y: y });
+            y += pitch;
+        }
+        if (control.entries.length === 0) {
+            out.push({ kind: "loading", y: y });
+            y += pitch;
+        }
+        return out;
+    }
+    readonly property real plugAt: (run.length > 0 ? run[run.length - 1].y : firstTag) + 40
+
+    // Fed out (0-1), the swing it comes out with, and the labels spinning
+    // round to a submenu (0-1).
     property real out: 0
     property real swing: 0
-    // The tag flipping over to another menu: 180 its back, 0 its front.
-    property real flip: 0
+    property real spin: 1
     property int depth: 0
 
-    implicitWidth: flapWidth + 40
-    implicitHeight: cableLength + 22 + flap.height + 20
+    implicitWidth: 2 * cableX
+    implicitHeight: plugAt + 24
 
     function fallbackColor(name: string): color {
         let h = 0;
@@ -52,53 +82,51 @@ Item {
 
         function onOpenChanged(): void {
             if (root.control.open) {
-                takeIn.stop();
-                pullOut.restart();
+                reelIn.stop();
+                feedOut.restart();
             } else {
-                pullOut.stop();
-                takeIn.restart();
+                feedOut.stop();
+                reelIn.restart();
             }
         }
         function onStackChanged(): void {
             if (root.control.stack.length !== root.depth) {
                 root.depth = root.control.stack.length;
-                turnOver.restart();
+                spinRound.restart();
             }
         }
     }
-    // Pulled down, swinging to a stop.
+    // The plug drops, the cable feeding out after it, and swings to a stop.
     ParallelAnimation {
-        id: pullOut
+        id: feedOut
 
-        NumberAnimation { target: root; property: "out"; from: 0; to: 1; duration: 320; easing.type: Easing.OutBack; easing.overshoot: 0.8 }
-        NumberAnimation { target: root; property: "swing"; from: 7; to: 0; duration: 1200; easing.type: Easing.OutElastic; easing.amplitude: 1; easing.period: 0.35 }
+        NumberAnimation { target: root; property: "out"; from: 0; to: 1; duration: 420; easing.type: Easing.OutBounce }
+        NumberAnimation { target: root; property: "swing"; from: 9; to: 0; duration: 1400; easing.type: Easing.OutElastic; easing.amplitude: 1; easing.period: 0.4 }
     }
-    // Back up into the panel.
+    // Reeled back in.
     NumberAnimation {
-        id: takeIn
+        id: reelIn
 
         target: root
         property: "out"
         to: 0
-        duration: 220
+        duration: 240
         easing.type: Easing.InCubic
     }
     NumberAnimation {
-        id: turnOver
+        id: spinRound
 
         target: root
-        property: "flip"
-        from: 180
-        to: 0
-        duration: 300
+        property: "spin"
+        from: 0
+        to: 1
+        duration: 460
         easing.type: Easing.OutCubic
     }
 
     // Looks at the icon and takes its strongest color for the cable: the
     // average of its pixels, weighted toward the saturated, opaque ones.
     Canvas {
-        id: sampler
-
         property string source: root.control.icon
 
         width: 24
@@ -133,296 +161,200 @@ Item {
     Item {
         id: hanging
 
-        x: 20
-        width: root.flapWidth
+        // Where the plug is: in the socket, to the end of the cable.
+        readonly property real end: root.socket + (root.plugAt - root.socket) * root.out
+
+        width: root.width
         height: root.height
-        // Pulled out of the panel: up behind it until it's out.
-        transform: [
-            Translate {
-                y: -(1 - root.out) * (root.cableLength + 22 + flap.height + 40)
-            },
-            Rotation {
-                origin.x: root.flapWidth / 2
-                origin.y: root.jack
-                angle: root.swing
-            }
-        ]
-
-        // The cable, out of the jack behind the panel down to the tag.
-        Shape {
-            anchors.fill: parent
-            preferredRendererType: Shape.CurveRenderer
-
-            ShapePath {
-                strokeColor: Qt.darker(root.cable, 1.8)
-                strokeWidth: 8
-                fillColor: "transparent"
-                capStyle: ShapePath.RoundCap
-                startX: root.flapWidth / 2
-                startY: root.jack
-
-                PathLine { x: root.flapWidth / 2; y: root.cableLength + 22 }
-            }
-            ShapePath {
-                strokeColor: root.cable
-                strokeWidth: 6
-                fillColor: "transparent"
-                capStyle: ShapePath.RoundCap
-                startX: root.flapWidth / 2
-                startY: root.jack
-
-                PathLine { x: root.flapWidth / 2; y: root.cableLength + 22 }
-            }
-            ShapePath {
-                strokeColor: Qt.alpha(Qt.lighter(root.cable, 1.7), 0.6)
-                strokeWidth: 1.5
-                fillColor: "transparent"
-                startX: root.flapWidth / 2 - 1.5
-                startY: root.jack
-
-                PathLine { x: root.flapWidth / 2 - 1.5; y: root.cableLength + 22 }
-            }
+        visible: root.out > 0.01
+        transform: Rotation {
+            origin.x: root.cableX
+            origin.y: root.socket
+            angle: root.swing
         }
 
-        // The tag: wrapped round the cable, the flap hanging from it.
+        // The cable, out of the socket down to the plug.
         Rectangle {
-            id: wrap
-
-            x: root.flapWidth / 2 - width / 2
-            y: root.cableLength
-            width: 26
-            height: 24
+            x: root.cableX - 4
+            y: root.socket
+            width: 8
+            height: Math.max(0, hanging.end - root.socket)
             radius: 4
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: "#d9d6cc" }
-                GradientStop { position: 0.5; color: "#fbfaf6" }
-                GradientStop { position: 1; color: "#cbc8be" }
+                GradientStop { position: 0; color: Qt.darker(root.cable, 1.6) }
+                GradientStop { position: 0.4; color: Qt.lighter(root.cable, 1.25) }
+                GradientStop { position: 1; color: Qt.darker(root.cable, 1.8) }
             }
-            border.width: 1
-            border.color: "#a9a69c"
         }
-        Item {
-            id: flap
 
-            y: root.cableLength + 22
-            width: root.flapWidth
-            height: Math.min(page.implicitHeight + 20, 520)
-            transform: Rotation {
-                origin.x: flap.width / 2
-                axis { x: 0; y: 1; z: 0 }
-                angle: root.flip
-            }
+        // The labels, there once the cable's out past them.
+        Repeater {
+            model: root.run
 
-            Rectangle {
-                anchors.fill: parent
-                radius: 6
-                color: root.flip > 90 ? "#efeee8" : "#fbfaf6"
-                border.width: 1
-                border.color: "#c3c0b6"
-            }
-            // Its edge in the cable's color, where it's printed for it.
-            Rectangle {
-                x: 1
-                y: 1
-                width: parent.width - 2
-                height: 5
-                topLeftRadius: 5
-                topRightRadius: 5
-                color: root.cable
-                opacity: root.flip > 90 ? 0.4 : 1
-            }
+            Item {
+                id: tag
 
-            Flickable {
-                anchors {
-                    fill: parent
-                    margins: 10
-                    topMargin: 12
-                }
-                contentHeight: page.implicitHeight
-                clip: true
-                interactive: contentHeight > height
-                boundsBehavior: Flickable.StopAtBounds
-                visible: root.flip < 90
+                required property var modelData
+                required property int index
+                readonly property bool isName: modelData.kind === "name"
+                readonly property var entry: modelData.entry ?? null
+                readonly property bool usable: modelData.kind === "back" || (entry?.enabled ?? false)
+                readonly property bool here: modelData.kind === "entry" && root.control.highlighted === modelData.index
+                readonly property int kind: entry?.buttonType ?? 0  // 1 tick box, 2 circle
+                readonly property bool on: entry?.checkState === Qt.Checked
+                readonly property color tape: isName ? "#232327" : root.tapes[index % root.tapes.length]
+                readonly property string words: isName ? root.control.title.toUpperCase()
+                    : modelData.kind === "back" ? "← BACK"
+                    : modelData.kind === "loading" ? "loading..."
+                    : root.control.label(entry)
+                // Spinning round the cable to a submenu, one after another.
+                readonly property real turn: 90 * (1 - Math.max(0, Math.min(1, (root.spin * 1.7 - index * 0.08) / 0.7)))
 
-                Column {
-                    id: page
+                x: root.cableX - 9
+                y: modelData.y
+                width: root.flapLength + 18
+                height: root.tagHeight
+                visible: hanging.end > y + height
+                opacity: modelData.kind === "entry" && !usable ? 0.5 : 1
+                transform: [
+                    Rotation {
+                        origin.x: 9
+                        axis { x: 0; y: 1; z: 0 }
+                        angle: tag.turn
+                    },
+                    Rotation {
+                        origin.x: 9
+                        origin.y: root.tagHeight / 2
+                        angle: tag.here || tagArea.containsMouse && tag.usable ? -5 : 0
 
-                    width: parent.width
+                        Behavior on angle {
+                            NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                        }
+                    }
+                ]
 
+                // The flap, out to the side.
+                Rectangle {
+                    x: 14
+                    width: Math.min(root.flapLength, lettering.implicitWidth + (tag.kind ? 34 : 18) + (tag.entry?.hasChildren ? 14 : 0))
+                    height: parent.height
+                    radius: 3
+                    color: tag.here || tagArea.containsMouse && tag.usable ? Qt.lighter(tag.tape, 1.08) : tag.tape
+                    border.width: 1
+                    border.color: Qt.darker(tag.tape, 1.25)
+
+                    // A tick box, or a circle to fill in.
+                    Rectangle {
+                        x: 7
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: 10
+                        height: 10
+                        radius: tag.kind === 2 ? 5 : 1
+                        color: "transparent"
+                        border.width: 1.2
+                        border.color: root.ink
+                        visible: tag.kind !== 0
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: tag.kind === 2 ? 4 : 6
+                            height: width
+                            radius: tag.kind === 2 ? 2 : 0.5
+                            color: root.ink
+                            visible: tag.on
+                        }
+                    }
                     Text {
-                        width: parent.width
-                        text: root.control.title.toUpperCase()
+                        id: lettering
+
+                        x: tag.kind ? 23 : 8
+                        width: Math.min(implicitWidth, root.flapLength - x - (tag.entry?.hasChildren ? 20 : 8))
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: tag.words
                         elide: Text.ElideRight
+                        color: tag.isName ? "#f4f2ec" : root.ink
+                        font.family: Theme.font.family
+                        font.pixelSize: tag.isName ? 10 : 11
+                        font.bold: tag.isName || tag.modelData.kind === "back"
+                        font.letterSpacing: tag.isName ? 1.5 : 0
+                    }
+                    Text {
+                        anchors {
+                            right: parent.right
+                            rightMargin: 5
+                            verticalCenter: parent.verticalCenter
+                        }
+                        text: "›"
                         color: root.ink
                         font.family: Theme.font.family
-                        font.pixelSize: 11
+                        font.pixelSize: 14
                         font.bold: true
-                        font.letterSpacing: 2
-                        bottomPadding: 4
-                    }
-                    Rectangle {
-                        width: parent.width
-                        height: 1
-                        color: Qt.alpha(root.ink, 0.5)
-                    }
-                    Item {
-                        width: 1
-                        height: 4
-                    }
-
-                    // Back, inside a submenu.
-                    Item {
-                        width: parent.width
-                        height: root.line
-                        visible: root.control.stack.length > 0
-
-                        Text {
-                            x: 4
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "← BACK"
-                            color: root.penBlue
-                            font.family: Theme.font.family
-                            font.pixelSize: 11
-                            font.bold: true
-                            font.letterSpacing: 1.5
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.control.back()
-                        }
-                    }
-                    Text {
-                        x: 4
-                        height: root.line
-                        verticalAlignment: Text.AlignVCenter
-                        text: "loading..."
-                        color: Qt.alpha(root.ink, 0.5)
-                        font.family: Theme.font.family
-                        font.pixelSize: 11
-                        font.italic: true
-                        visible: root.control.entries.length === 0
-                    }
-
-                    Repeater {
-                        model: root.control.entryModel
-
-                        Item {
-                            id: entry
-
-                            required property var modelData
-                            required property int index
-                            readonly property bool here: root.control.highlighted === index
-                            readonly property int kind: modelData.buttonType  // 0 none, 1 check, 2 radio
-                            readonly property bool on: modelData.checkState === Qt.Checked
-
-                            width: page.width
-                            height: modelData.isSeparator ? 9 : root.line
-
-                            // A rule between groups.
-                            Rectangle {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width
-                                height: 1
-                                color: Qt.alpha(root.ink, 0.3)
-                                visible: entry.modelData.isSeparator
-                            }
-
-                            Item {
-                                anchors.fill: parent
-                                visible: !entry.modelData.isSeparator
-                                opacity: entry.modelData.enabled ? 1 : 0.35
-
-                                // The highlighter stroke under the hand.
-                                Rectangle {
-                                    x: -2
-                                    y: 4
-                                    width: parent.width + 4
-                                    height: parent.height - 8
-                                    radius: 3
-                                    rotation: -0.6
-                                    color: Qt.alpha("#ffe14a", 0.55)
-                                    visible: entry.here
-                                }
-                                // A tick box, or a circle to fill in.
-                                Rectangle {
-                                    x: 4
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 11
-                                    height: 11
-                                    radius: entry.kind === 2 ? 5.5 : 1
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: Qt.alpha(root.ink, 0.7)
-                                    visible: entry.kind !== 0
-
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 5
-                                        height: 5
-                                        radius: 2.5
-                                        color: root.penBlue
-                                        visible: entry.kind === 2 && entry.on
-                                    }
-                                }
-                                // The tick, in pen.
-                                Shape {
-                                    x: 4
-                                    y: (parent.height - 11) / 2
-                                    width: 14
-                                    height: 12
-                                    visible: entry.kind === 1 && entry.on
-                                    preferredRendererType: Shape.CurveRenderer
-
-                                    ShapePath {
-                                        strokeColor: root.penBlue
-                                        strokeWidth: 2
-                                        fillColor: "transparent"
-                                        capStyle: ShapePath.RoundCap
-                                        joinStyle: ShapePath.RoundJoin
-                                        startX: 2
-                                        startY: 6
-
-                                        PathLine { x: 5; y: 10 }
-                                        PathLine { x: 13; y: -1 }
-                                    }
-                                }
-                                Text {
-                                    x: entry.kind !== 0 ? 24 : 4
-                                    width: parent.width - x - 16
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: root.control.label(entry.modelData)
-                                    elide: Text.ElideRight
-                                    color: root.ink
-                                    font.family: Theme.font.family
-                                    font.pixelSize: 12
-                                }
-                                Text {
-                                    anchors {
-                                        right: parent.right
-                                        rightMargin: 2
-                                        verticalCenter: parent.verticalCenter
-                                    }
-                                    text: "›"
-                                    color: Qt.alpha(root.ink, 0.6)
-                                    font.family: Theme.font.family
-                                    font.pixelSize: 16
-                                    font.bold: true
-                                    visible: entry.modelData.hasChildren
-                                }
-                                MouseArea {
-                                    anchors.fill: parent
-                                    enabled: entry.modelData.enabled
-                                    hoverEnabled: true
-                                    cursorShape: Qt.PointingHandCursor
-                                    onEntered: root.control.highlighted = entry.index
-                                    onClicked: root.control.activate(entry.modelData)
-                                }
-                            }
-                        }
+                        visible: tag.entry?.hasChildren ?? false
                     }
                 }
+                // Wrapped round the cable.
+                Rectangle {
+                    width: 18
+                    height: parent.height
+                    radius: 3
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0; color: Qt.darker(tag.tape, 1.35) }
+                        GradientStop { position: 0.45; color: Qt.lighter(tag.tape, 1.05) }
+                        GradientStop { position: 1; color: Qt.darker(tag.tape, 1.3) }
+                    }
+                }
+                MouseArea {
+                    id: tagArea
+
+                    anchors.fill: parent
+                    enabled: tag.usable
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: if (tag.modelData.kind === "entry") root.control.highlighted = tag.modelData.index
+                    onClicked: tag.modelData.kind === "back" ? root.control.back() : root.control.activate(tag.entry)
+                }
+            }
+        }
+
+        // The plug, hanging on the end, its cap the one from the socket.
+        Item {
+            x: root.cableX - 13
+            y: hanging.end - 8
+            width: 26
+            height: 34
+
+            // Its sleeve, where the cable goes in.
+            Rectangle {
+                x: 8
+                width: 10
+                height: 12
+                radius: 2
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: "#6c6f75" }
+                    GradientStop { position: 0.5; color: "#d6d8dc" }
+                    GradientStop { position: 1; color: "#55585e" }
+                }
+            }
+            Rectangle {
+                y: 8
+                width: 26
+                height: 26
+                radius: 13
+                border.width: 1
+                border.color: Theme.palette.shadow
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.lighter(Theme.palette.surface, 1.3) }
+                    GradientStop { position: 1; color: Qt.darker(Theme.palette.surface, 1.5) }
+                }
+            }
+            Sticker {
+                x: 1
+                y: 9
+                source: root.control.icon
+                seed: Math.max(0, root.control.slot)
             }
         }
     }

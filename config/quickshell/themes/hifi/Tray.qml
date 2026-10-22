@@ -20,6 +20,26 @@ Row {
 
     spacing: 6
 
+    // The app whose cable was last out: its plug's back in once the cable's
+    // reeled in.
+    property var lastPulled: null
+
+    PauseAnimation {
+        id: returning
+
+        duration: 260
+    }
+    Connections {
+        target: root.control
+
+        function onPulledChanged(): void {
+            if (root.control.pulled !== null)
+                root.lastPulled = root.control.pulled;
+            else
+                returning.restart();
+        }
+    }
+
     Legend {
         anchors.verticalCenter: parent.verticalCenter
         text: "aux"
@@ -87,9 +107,12 @@ Row {
                 width: 26
                 height: 26
 
-                // Pushed in: it comes from closer to you and settles.
+                // Pushed in: it comes from closer to you and settles. While its
+                // menu's open it's out, hanging on its cable; it's back in a
+                // moment after the cable's reeled in.
                 scale: 1
                 opacity: 1
+                visible: plug.modelData !== root.control.pulled && !(returning.running && plug.modelData === root.lastPulled)
                 Component.onCompleted: insert.start()
 
                 ParallelAnimation {

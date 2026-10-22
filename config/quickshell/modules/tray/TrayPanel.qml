@@ -30,6 +30,8 @@ Skinned {
     readonly property var entries: opener.children.values
     readonly property string title: item ? (item.tooltipTitle || item.title || item.id) : ""
     readonly property string icon: item?.icon ?? ""
+    // Where it is in the tray, counting from the first.
+    readonly property int slot: SystemTray.items.values.indexOf(item)
 
     skin: "TrayMenu"
     focus: open

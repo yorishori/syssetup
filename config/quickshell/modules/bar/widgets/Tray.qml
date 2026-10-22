@@ -11,6 +11,8 @@ Skinned {
     id: tray
 
     readonly property var items: SystemTray.items.values
+    // The app whose menu is open, if any (skins may show it pulled out).
+    property var pulled: null
 
     signal menuRequested(SystemTrayItem trayItem, Item anchor)
 

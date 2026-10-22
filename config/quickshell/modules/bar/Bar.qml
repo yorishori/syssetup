@@ -212,6 +212,7 @@ PanelWindow {
             Tray {
                 id: tray
 
+                pulled: bar.openDrop === "tray" ? bar.trayItem : null
                 onMenuRequested: (trayItem, anchor) => bar.toggleTrayMenu(trayItem, anchor)
             }
         }
