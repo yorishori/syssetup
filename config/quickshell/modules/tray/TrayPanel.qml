@@ -1,19 +1,17 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.SystemTray
-import Quickshell.Widgets
 import qs.components
-import qs.core
 
 // A tray app's menu, drawn by us. Entries come from the app over D-Bus
 // (QsMenuOpener); triggering one runs the app's own action. Submenus open in
-// place with a BACK row. Keyboard: Up/Down to move, Enter/Right to open or
-// activate, Left/Backspace to go back, Escape to close.
+// place, with a way back. Keyboard: Up/Down to move, Enter/Right to open or
+// activate, Left/Backspace to go back, Escape to close. The skin (TrayMenu)
+// lays it out.
 //
 // If the app's menu never loads, `fallback` asks the bar to show the native
 // menu instead, so a quirky app is never unusable.
-ColumnLayout {
+Skinned {
     id: root
 
     required property SystemTrayItem item
@@ -27,11 +25,13 @@ ColumnLayout {
     property int highlighted: -1
 
     readonly property var current: stack.length > 0 ? stack[stack.length - 1] : item?.menu ?? null
+    // The entries shown (QsMenuEntry), as a model and as a list.
+    readonly property var entryModel: opener.children
     readonly property var entries: opener.children.values
     readonly property string title: item ? (item.tooltipTitle || item.title || item.id) : ""
+    readonly property string icon: item?.icon ?? ""
 
-    width: 260
-    spacing: 4
+    skin: "TrayMenu"
     focus: open
 
     function reset(): void {
@@ -70,6 +70,11 @@ ColumnLayout {
         }
     }
 
+    // An entry's text without its mnemonic underscores.
+    function label(entry: var): string {
+        return (entry?.text ?? "").replace(/_(?!_)/g, "");
+    }
+
     onItemChanged: reset()
     onOpenChanged: {
         reset();
@@ -103,113 +108,5 @@ ColumnLayout {
         interval: 1500
         running: root.open && root.entries.length === 0
         onTriggered: root.fallback()
-    }
-
-    SectionTitle {
-        text: root.title
-        code: "tray"
-    }
-
-    // Back row inside submenus
-    MenuRow {
-        visible: root.stack.length > 0
-        label: "back"
-        glyph: "\u{F0141}"
-        stencil: true
-        onClicked: root.back()
-    }
-
-    Placeholder {
-        text: "-- loading --"
-        visible: root.entries.length === 0
-    }
-
-    Repeater {
-        model: opener.children
-
-        Item {
-            id: entryItem
-
-            required property QsMenuEntry modelData
-            required property int index
-
-            Layout.fillWidth: true
-            implicitHeight: modelData.isSeparator ? 9 : 26
-
-            Divider {
-                anchors.centerIn: parent
-                width: parent.width - 12
-                visible: entryItem.modelData.isSeparator
-            }
-
-            MenuRow {
-                anchors.fill: parent
-                visible: !entryItem.modelData.isSeparator
-                label: entryItem.modelData.text.replace(/_(?!_)/g, "")
-                icon: entryItem.modelData.icon
-                buttonType: entryItem.modelData.buttonType
-                checked: entryItem.modelData.checkState === Qt.Checked
-                submenu: entryItem.modelData.hasChildren
-                enabled: entryItem.modelData.enabled
-                current: root.highlighted === entryItem.index
-                onEntered: root.highlighted = entryItem.index
-                onClicked: root.activate(entryItem.modelData)
-            }
-        }
-    }
-
-    // One menu line: [lamp] [icon] label  [›]
-    component MenuRow: ListRow {
-        id: row
-
-        property string label
-        property string icon: ""
-        property string glyph: ""
-        property int buttonType: QsMenuButtonType.None
-        property bool checked: false
-        property bool submenu: false
-        property bool stencil: false
-
-        implicitHeight: 26
-        leftPadding: 8
-        rightPadding: 8
-        spacing: 8
-        marker: false
-
-        // Checkbox: square lamp. Radio: small diamond lamp.
-        Lamp {
-            on: row.checked
-            rotation: row.buttonType === QsMenuButtonType.RadioButton ? 45 : 0
-            visible: row.buttonType !== QsMenuButtonType.None
-        }
-        IconImage {
-            implicitSize: 14
-            source: Icons.url(row.icon)
-            visible: row.icon !== ""
-        }
-        StyledText {
-            text: row.glyph
-            color: Theme.palette.dim
-            visible: row.glyph !== ""
-        }
-        StyledText {
-            Layout.fillWidth: true
-            text: row.label
-            elide: Text.ElideRight
-            color: !row.enabled ? Theme.palette.muted
-                : row.checked ? Theme.palette.accent
-                : row.current || row.hovered ? Theme.palette.fg
-                : Theme.palette.dim
-            glow: row.checked && row.enabled
-            font.pixelSize: row.stencil ? Theme.font.size - 2 : Theme.font.size
-            font.bold: row.stencil
-            caps: row.stencil
-            tracking: row.stencil ? 1.5 : 0
-        }
-        StyledText {
-            text: "\u{F0142}"
-            color: Theme.palette.muted
-            visible: row.submenu
-        }
     }
 }
