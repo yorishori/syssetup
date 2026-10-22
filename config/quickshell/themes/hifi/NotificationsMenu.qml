@@ -4,9 +4,10 @@ import qs.core
 import qs.modules.notifications as M
 
 // A split-flap board in a drawer, like the message counter on the panel: a
-// row per notification, newest at the top, its time, who it's from and what
-// it says on flap cards (in red for the critical, their lamps lit). When
-// the board changes, the cards flip through to their new letters. Scroll
+// row per notification, newest at the top: its time and who it's from on
+// letter flaps, what it says on one wide card (in red for the critical,
+// their lamps lit). When the board changes, the letters flip through to
+// their new ones and the message cards through a few others to theirs. Scroll
 // (or the page keys) to flip to the next page of rows; click a row to act
 // on it, its key to be done with it.
 //
@@ -166,8 +167,11 @@ Item {
                                             text: root.cards(line.n?.appName ?? "", root.fromChars)
                                             ink: line.ink
                                         }
-                                        Field {
-                                            text: root.cards(line.n?.summary ?? "", root.messageChars)
+                                        // The message, on one wide card.
+                                        FlapLine {
+                                            width: root.messageChars * root.pitch - 2
+                                            height: root.cardHeight
+                                            value: (line.n?.summary ?? "").toUpperCase()
                                             ink: line.ink
                                         }
                                     }
