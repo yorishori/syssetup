@@ -1,16 +1,16 @@
 import QtQuick
-import qs.core
+import qs.components
 import qs.services
 
-// Opens / closes the session menu. Glows while it's open.
-BarLabel {
-    text: "\u{F0425}"
-    lit: Panels.isOpen("session")
-    color: Panels.isOpen("session") ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
+// Opens / closes the session menu.
+Skinned {
+    id: root
 
-    Behavior on color {
-        ColorAnimation { duration: 150 }
-    }
+    readonly property bool open: Panels.isOpen("session")
+    readonly property bool hovered: area.containsMouse
+    readonly property bool pressed: area.pressed
+
+    skin: "PowerButton"
 
     MouseArea {
         id: area

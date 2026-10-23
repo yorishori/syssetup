@@ -1,204 +1,44 @@
 import QtQuick
-import QtQuick.Layouts
 import qs.components
-import qs.core
 import qs.services
 
-// Wired status, Wi-Fi power and scan, visible networks. Click a network to
-// show its actions: connect (asking for a passphrase if it's new),
-// disconnect, forget.
-ColumnLayout {
+// Network: wired links, Wi-Fi power and scan, the visible networks, and for
+// one of them its actions: connect (with a passphrase if it's new),
+// disconnect, forget. The skin (NetworkMenu) lays it out and keeps which
+// network is picked.
+Skinned {
     id: root
 
-    // Path of the network whose actions are shown, "" for none.
-    property string expanded: ""
+    property bool open: false
 
-    width: 320
-    spacing: 10
+    readonly property var wired: Network.wired  // { name, connected }
+    readonly property bool wifiEnabled: Network.wifiEnabled
+    readonly property bool scanning: Network.scanning
+    // { path, name, secure, known, connected, strength (0-100) }, strongest
+    // first.
+    readonly property var networks: Network.networks
+    readonly property bool busy: Network.busy
+    readonly property string pending: Network.pending  // name of the network being joined
+    readonly property string error: Network.error
 
-    // Wired
-    SectionTitle {
-        text: "Wired"
-        code: "networkd"
-        visible: Network.wired.length > 0
+    skin: "NetworkMenu"
+
+    function needsPassphrase(network: var): bool {
+        return !!network && network.secure && !network.known;
     }
-    Repeater {
-        model: Network.wired
-
-        RowLayout {
-            required property var modelData
-
-            Layout.fillWidth: true
-            Layout.leftMargin: 8
-            Layout.rightMargin: 8
-            spacing: 10
-
-            Lamp {
-                on: modelData.connected
-            }
-            StyledText {
-                Layout.fillWidth: true
-                text: modelData.name
-                color: modelData.connected ? Theme.palette.accent : Theme.palette.dim
-                glow: modelData.connected
-            }
-            StyledText {
-                text: modelData.connected ? "link" : "no cable"
-                caps: true
-                color: Theme.palette.muted
-                font.pixelSize: Theme.font.size - 3
-                tracking: 1
-            }
-        }
+    function scan(): void {
+        Network.scan();
     }
-
-    // Wi-Fi header
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 4
-
-        SectionTitle {
-            Layout.fillWidth: true
-            text: "Wi-Fi"
-            code: "iwd"
-        }
-        // Only the glyph spins; the key is disabled (no hover) while scanning.
-        IconButton {
-            icon: "\u{F0450}"
-            visible: Network.wifiEnabled
-            enabled: !Network.scanning
-            iconColor: Network.scanning ? Theme.palette.accent : Theme.palette.fg
-            onClicked: Network.scan()
-
-            NumberAnimation on iconRotation {
-                running: Network.scanning
-                loops: Animation.Infinite
-                from: 0
-                to: 360
-                duration: 900
-                alwaysRunToEnd: true
-            }
-        }
-        IconButton {
-            icon: Network.wifiEnabled ? "\u{F05A9}" : "\u{F05AA}"
-            lit: Network.wifiEnabled
-            iconColor: Theme.palette.off
-            onClicked: Network.setWifiEnabled(!Network.wifiEnabled)
-        }
+    function setWifiEnabled(on: bool): void {
+        Network.setWifiEnabled(on);
     }
-
-    StyledText {
-        Layout.fillWidth: true
-        Layout.leftMargin: 8
-        text: Theme.caps("err") + " " + Network.error
-        color: Theme.palette.error
-        wrapMode: Text.Wrap
-        visible: Network.error !== ""
+    function connect(network: var, passphrase: string): void {
+        Network.connect(network, passphrase);
     }
-
-    StyledText {
-        Layout.leftMargin: 8
-        text: !Network.wifiEnabled ? "-- radio off --" : Network.scanning ? "scanning…" : "-- no networks --"
-        color: Theme.palette.muted
-        visible: Network.networks.length === 0
+    function disconnect(): void {
+        Network.disconnect();
     }
-
-    // Networks
-    Repeater {
-        // Strongest 8; the rest are rarely what you want.
-        model: Network.wifiEnabled ? Network.networks.slice(0, 8) : []
-
-        ColumnLayout {
-            id: item
-
-            required property var modelData
-            readonly property bool open: root.expanded === modelData.path
-            readonly property bool needsPassphrase: modelData.secure && !modelData.known
-
-            Layout.fillWidth: true
-            spacing: 6
-
-            ListRow {
-                implicitHeight: 26
-                leftPadding: 8
-                rightPadding: 8
-                marker: false
-                highlighted: item.open
-                onClicked: {
-                    root.expanded = item.open ? "" : item.modelData.path;
-                    if (root.expanded && item.needsPassphrase)
-                        passphrase.focusInput();
-                }
-
-                SignalBars {
-                    Layout.alignment: Qt.AlignVCenter
-                    strength: item.modelData.strength
-                    color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    text: item.modelData.name
-                    color: item.modelData.connected ? Theme.palette.accent : Theme.palette.dim
-                    glow: item.modelData.connected
-                    elide: Text.ElideRight
-                }
-                StyledText {
-                    text: Network.pending === item.modelData.name ? "linking…"
-                        : item.modelData.connected ? "link"
-                        : item.modelData.known ? "saved"
-                        : item.modelData.secure ? "\u{F033E}" : "open"
-                    caps: true
-                    color: Theme.palette.muted
-                    font.pixelSize: Theme.font.size - 3
-                    tracking: 1
-                }
-            }
-
-            // Actions for this network
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.leftMargin: 8
-                Layout.rightMargin: 8
-                spacing: 6
-                visible: item.open
-
-                TextField {
-                    id: passphrase
-
-                    Layout.fillWidth: true
-                    placeholder: "passphrase"
-                    echoMode: TextInput.Password
-                    visible: item.needsPassphrase && !item.modelData.connected
-                    onAccepted: connectButton.clicked()
-                }
-                Item {
-                    Layout.fillWidth: true
-                    visible: !passphrase.visible
-                }
-                TextButton {
-                    id: connectButton
-
-                    text: "Connect"
-                    visible: !item.modelData.connected
-                    enabled: !Network.busy && (!item.needsPassphrase || passphrase.text.length >= 8)
-                    onClicked: {
-                        Network.connect(item.modelData, passphrase.text);
-                        passphrase.text = "";
-                    }
-                }
-                TextButton {
-                    text: "Disconnect"
-                    visible: item.modelData.connected
-                    enabled: !Network.busy
-                    onClicked: Network.disconnect()
-                }
-                TextButton {
-                    text: "Forget"
-                    visible: item.modelData.known
-                    enabled: !Network.busy
-                    onClicked: Network.forget(item.modelData)
-                }
-            }
-        }
+    function forget(network: var): void {
+        Network.forget(network);
     }
 }

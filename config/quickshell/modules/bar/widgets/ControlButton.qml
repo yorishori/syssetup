@@ -1,21 +1,17 @@
 import QtQuick
-import qs.core
+import qs.components
 
-// Opens the control center. Glows while it's open.
-BarLabel {
+// Opens the control center (`active` while it's open).
+Skinned {
     id: root
 
     property bool active: false
+    readonly property bool hovered: area.containsMouse
+    readonly property bool pressed: area.pressed
 
     signal clicked
 
-    text: "\u{F062E}"
-    lit: active
-    color: active ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
-
-    Behavior on color {
-        ColorAnimation { duration: 150 }
-    }
+    skin: "ControlButton"
 
     MouseArea {
         id: area

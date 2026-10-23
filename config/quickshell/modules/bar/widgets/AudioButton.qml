@@ -1,29 +1,30 @@
 import QtQuick
-import qs.core
+import qs.components
 import qs.services
 
-// Audio at a glance: dim red + crossed out when off, glowing accent while a
-// media player is playing (MPRIS; the Pipewire peak meter doesn't support pro-audio
-// devices), dim otherwise. Click opens the audio drop, middle click mutes, scroll
-// changes volume.
-BarLabel {
+// The output: its volume, muted, a player playing (MPRIS; the Pipewire peak
+// meter doesn't support pro-audio devices). Click opens the audio drop,
+// middle click mutes, scroll changes the volume.
+Skinned {
     id: root
+
+    readonly property bool ready: Audio.ready
+    readonly property real volume: Audio.volume
+    readonly property bool muted: Audio.muted
+    readonly property bool off: !ready || muted
+    readonly property bool playing: Media.playing
+    readonly property bool hovered: area.containsMouse
 
     signal toggleDrop
 
-    readonly property bool off: !Audio.ready || Audio.muted
-
-    text: off ? "\u{F075F}" : "\u{F057E}"
-    lit: !off && Media.playing
-    color: off ? Theme.palette.off : lit ? Theme.palette.accent : Theme.palette.dim
-
-    Behavior on color {
-        ColorAnimation { duration: 250 }
-    }
+    skin: "AudioButton"
 
     MouseArea {
+        id: area
+
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: mouse => {
             if (mouse.button === Qt.MiddleButton)

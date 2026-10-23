@@ -20,6 +20,9 @@ Singleton {
 
     // Currently shown as popups, newest first.
     property var popups: []
+    // Where the bar's notification counter is across the screen (its
+    // middle), for popups that come out of the bar under it; -1 without one.
+    property real slotX: -1
 
     // Do not disturb: no popups (critical ones still show). With `dndUntil`
     // set (ms since epoch) it switches itself off at that time.

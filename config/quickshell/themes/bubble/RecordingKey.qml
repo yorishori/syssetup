@@ -8,6 +8,7 @@ Item {
     id: root
 
     required property W.RecordingKey control
+    readonly property bool shown: control.recording
 
     implicitWidth: row.implicitWidth + 20
     implicitHeight: 22

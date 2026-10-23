@@ -44,5 +44,5 @@ while IFS=$'\t' read -r pattern why; do
     fi
 done <<< "$rules"
 
-[[ $status -eq 0 ]] && echo "themes ok: $(ls -d themes/*/ | wc -l) themes, $(echo "$skins" | wc -l) skins each"
+[[ $status -eq 0 ]] && echo "themes ok: $(ls themes/*/Spec.qml | wc -l) themes, $(echo "$skins" | wc -l) skins each"
 exit $status

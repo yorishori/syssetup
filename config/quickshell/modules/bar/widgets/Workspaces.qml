@@ -1,68 +1,44 @@
 import QtQuick
 import qs.components
-import qs.core
 import qs.services
 
-// Workspaces as two-digit readouts. The focused one glows, with an indicator
-// lamp underneath that slides between them; occupied ones are bright, empty
-// ones dim.
-Item {
+// Workspaces 1 to `slots` (the Sway config binds keys up to 7), more if a
+// higher one exists (`count`). Click one to go there, scroll to step through
+// them. The skin lays them out and says which one is under a point
+// (workspaceAt(x), 0 for none).
+Skinned {
     id: root
 
-    // Always show the configured count, more if a higher workspace exists.
-    readonly property int count: Math.max(Config.bar.workspaces, ...Wm.workspaces.map(w => w.id))
-    readonly property int cell: 24
+    readonly property int slots: 7
+    readonly property int count: Math.max(slots, ...Wm.workspaces.map(w => w.id))
+    readonly property int active: Wm.activeWorkspace
+    readonly property int hovered: area.containsMouse ? at(area.mouseX) : 0
 
-    implicitWidth: count * cell
-    implicitHeight: Config.bar.height
-
-    Repeater {
-        model: root.count
-
-        Item {
-            id: cellItem
-
-            required property int index
-            readonly property int wsId: index + 1
-            readonly property bool active: Wm.activeWorkspace === wsId
-
-            x: index * root.cell
-            width: root.cell
-            height: root.height
-
-            BarLabel {
-                anchors.centerIn: parent
-                text: String(cellItem.wsId).padStart(2, "0")
-                font.pixelSize: Theme.font.size
-                lit: cellItem.active
-                color: cellItem.active ? Theme.palette.accent
-                    : Wm.isOccupied(cellItem.wsId) ? Theme.palette.fg
-                    : Theme.palette.muted
-
-                Behavior on color {
-                    ColorAnimation { duration: 150 }
-                }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: Wm.focusWorkspace(cellItem.wsId)
-            }
-        }
+    function occupied(id: int): bool {
+        return Wm.isOccupied(id);
     }
 
-    Marker {
-        readonly property bool shown: Wm.activeWorkspace >= 1 && Wm.activeWorkspace <= root.count
+    function at(x: real): int {
+        return root.view?.workspaceAt(x) ?? 0;
+    }
 
-        x: (Wm.activeWorkspace - 1) * root.cell + 5
-        y: root.height - 4
-        width: root.cell - 10
-        height: 2
-        visible: shown
+    skin: "Workspaces"
 
-        Behavior on x {
-            NumberAnimation { duration: 260; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
+    MouseArea {
+        id: area
+
+        anchors.fill: parent
+        hoverEnabled: true
+        cursorShape: root.hovered > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: mouse => {
+            const id = root.at(mouse.x);
+            if (id > 0)
+                Wm.focusWorkspace(id);
+        }
+        onWheel: wheel => {
+            const id = Math.max(1, Math.min(root.count, root.active + (wheel.angleDelta.y > 0 ? -1 : 1)));
+            if (id !== root.active)
+                Wm.focusWorkspace(id);
         }
     }
 }

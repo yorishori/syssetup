@@ -29,11 +29,13 @@ import qs.modules.keys
 // their folders known, the names are never used.
 import qs.themes.cyber as CyberTheme
 import qs.themes.bubble as BubbleTheme
+import qs.themes.hifi as HifiTheme
 
 // Entry point. Only lists modules; each one is loaded in isolation.
 ShellRoot {
     ModuleLoader { name: "wallpaper"; path: "modules/wallpaper/Wallpaper.qml" }
     ModuleLoader { name: "bar"; path: "modules/bar/Bar.qml" }
+    ModuleLoader { name: "session"; path: "modules/session/SessionScreen.qml" }
     ModuleLoader { name: "notifications"; path: "modules/notifications/Popups.qml" }
     ModuleLoader { name: "clipboard"; path: "modules/clipboard/ClipboardPanel.qml" }
     ModuleLoader { name: "osd"; path: "modules/osd/Osd.qml" }

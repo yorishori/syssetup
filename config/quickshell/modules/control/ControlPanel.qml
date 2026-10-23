@@ -1,13 +1,13 @@
 import QtQuick
-import QtQuick.Layouts
 import qs.components
 import qs.core
 import qs.services
 
 // Control center: system readouts, pending updates, storage, USB devices and
-// tool keys. Live readings only run while it's open. Scrolls if taller than
-// the screen allows (`maxHeight`).
-Item {
+// tool keys. The skin (ControlMenu) lays it out, and scrolls if it's taller
+// than the screen allows (`maxHeight`). Live readings only run while it's
+// open.
+Skinned {
     id: root
 
     property bool open: false
@@ -17,22 +17,43 @@ Item {
     // gets focus.
     signal done
 
+    // What it shows: CPU, GPU, memory, board, kernel (Sysinfo); pending
+    // updates per repository (Updates); disks, shares and USB devices
+    // (Storage); the hostname and uptime (Session); your tools (config.json
+    // → controlCenter.tools: [{ label, command }]).
+    readonly property var system: Sysinfo
+    readonly property var updates: Updates
+    readonly property var storage: Storage
+    readonly property var session: Session
+    readonly property var tools: Config.controlCenter.tools
+
+    skin: "ControlMenu"
+
     function run(command: string): void {
         Launcher.runInTerminal(command);
         done();
     }
-
-    width: 400
-    implicitHeight: Math.min(column.implicitHeight, maxHeight)
-    height: implicitHeight
-
-    onOpenChanged: {
-        Sysinfo.active = open;
-        Storage.active = open;
-        if (open) {
-            Session.refresh();
-            Updates.check(false);
-        }
+    function inspect(mountPoint: string): void {
+        run(`ncdu -x '${mountPoint}'`);
+    }
+    function upgrade(): void {
+        Updates.upgrade();
+        done();
+    }
+    function checkUpdates(): void {
+        Updates.check(true);
+    }
+    function openSettings(): void {
+        Panels.open("settings");
+    }
+    function mount(device: string): void {
+        Storage.mount(device);
+    }
+    function eject(device: string): void {
+        Storage.eject(device);
+    }
+    function connect(mountPoint: string): void {
+        Storage.connect(mountPoint);
     }
 
     function percent(v: real): string {
@@ -46,471 +67,12 @@ Item {
         return days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
     }
 
-    // "CPU  AMD Ryzen 5 5600G" style label + value line.
-    component Fact: RowLayout {
-        property string label
-        property string value
-        property alias trailing: extra.data
-
-        Layout.fillWidth: true
-        spacing: 10
-
-        StyledText {
-            Layout.preferredWidth: 52
-            text: parent.label
-            caps: true
-            color: Theme.palette.muted
-            font.pixelSize: Theme.font.size - 3
-            font.bold: true
-            tracking: 1.5
+    onOpenChanged: {
+        Sysinfo.active = open;
+        Storage.active = open;
+        if (open) {
+            Session.refresh();
+            Updates.check(false);
         }
-        StyledText {
-            Layout.fillWidth: true
-            text: parent.value
-            elide: Text.ElideRight
-        }
-        RowLayout {
-            id: extra
-
-            spacing: 6
-        }
-    }
-
-    // Read-only meter with its readouts: [meter ────] 012%  54°
-    component Level: RowLayout {
-        property real value: 0
-        property string extra: ""
-
-        Layout.fillWidth: true
-        Layout.leftMargin: 62
-        spacing: 8
-
-        Meter {
-            Layout.fillWidth: true
-            implicitHeight: 8
-            interactive: false
-            segments: 24
-            value: parent.value
-            color: parent.value >= 0.85 ? Theme.palette.warn : Theme.palette.accent
-        }
-        StyledText {
-            text: root.percent(parent.value)
-            color: Theme.palette.dim
-            font.pixelSize: Theme.font.size - 2
-            font.bold: true
-        }
-        StyledText {
-            Layout.preferredWidth: 34
-            horizontalAlignment: Text.AlignRight
-            text: parent.extra
-            color: Theme.palette.muted
-            font.pixelSize: Theme.font.size - 2
-            visible: text !== ""
-        }
-    }
-
-    Flickable {
-        id: flick
-
-        anchors.fill: parent
-        contentHeight: column.implicitHeight
-        interactive: contentHeight > height
-        boundsBehavior: Flickable.StopAtBounds
-        clip: true
-
-        ColumnLayout {
-            id: column
-
-            width: flick.width - 6
-            spacing: 8
-
-            // ── System ───────────────────────────────────────────────────────
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 4
-
-                SectionTitle {
-                    text: "System"
-                    code: `${Session.hostname} · up ${Session.uptimeText}`
-                }
-                IconButton {
-                    size: 24
-                    icon: "\u{F0493}"
-                    onClicked: Panels.open("settings")
-                }
-            }
-            Fact {
-                label: "CPU"
-                value: Sysinfo.cpu
-            }
-            Level {
-                value: Sysinfo.cpuUsage
-                extra: Sysinfo.cpuTemp >= 0 ? `${Sysinfo.cpuTemp}°` : ""
-            }
-            Fact {
-                label: "GPU"
-                value: Sysinfo.gpu.replace(/^NVIDIA /, "")
-            }
-            Level {
-                value: Sysinfo.gpuUsage
-                extra: Sysinfo.gpuTemp >= 0 ? `${Sysinfo.gpuTemp}°` : ""
-            }
-            Fact {
-                label: "RAM"
-                value: `${Sysinfo.gib(Sysinfo.memUsed)} / ${Sysinfo.gib(Sysinfo.memTotal)} GiB`
-                    + (Sysinfo.gpuMemTotal > 0 ? `  · VRAM ${(Sysinfo.gpuMemUsed / 1024).toFixed(1)} / ${(Sysinfo.gpuMemTotal / 1024).toFixed(0)}` : "")
-            }
-            Level {
-                value: Sysinfo.memTotal > 0 ? Sysinfo.memUsed / Sysinfo.memTotal : 0
-            }
-            Fact {
-                label: "board"
-                value: Sysinfo.board
-            }
-            Fact {
-                label: "kernel"
-                value: Sysinfo.kernel
-
-                trailing: Tag {
-                    text: "reboot pending"
-                    visible: Sysinfo.rebootPending
-                }
-            }
-
-            // ── Updates ──────────────────────────────────────────────────────
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.topMargin: 6
-                spacing: 4
-
-                SectionTitle {
-                    text: "Updates"
-                    code: Updates.checking ? "" : Updates.count > 0 ? String(Updates.count).padStart(2, "0") : "--"
-                }
-                IconButton {
-                    size: 24
-                    icon: "\u{F0450}"
-                    enabled: !Updates.checking
-                    iconColor: Updates.checking ? Theme.palette.accent : Theme.palette.fg
-                    onClicked: Updates.check(true)
-
-                    NumberAnimation on iconRotation {
-                        running: Updates.checking
-                        loops: Animation.Infinite
-                        from: 0
-                        to: 360
-                        duration: 900
-                        alwaysRunToEnd: true
-                    }
-                }
-            }
-            // One readout per repository, in equal cells: stencilled name over a count.
-            Item {
-                id: repoReadouts
-
-                readonly property var repos: Object.keys(Updates.counts)
-
-                Layout.fillWidth: true
-                implicitHeight: 44
-                visible: !Updates.failed
-
-                Repeater {
-                    model: repoReadouts.repos
-
-                    Column {
-                        required property string modelData
-                        required property int index
-                        readonly property int n: Updates.counts[modelData]
-
-                        x: index * repoReadouts.width / repoReadouts.repos.length
-                        width: repoReadouts.width / repoReadouts.repos.length
-                        spacing: 0
-
-                        StyledText {
-                            width: parent.width
-                            horizontalAlignment: Text.AlignHCenter
-                            text: parent.modelData
-                            caps: true
-                            color: Theme.palette.muted
-                            font.pixelSize: Theme.font.size - 3
-                            font.bold: true
-                            tracking: 1.5
-                        }
-                        StyledText {
-                            width: parent.width
-                            horizontalAlignment: Text.AlignHCenter
-                            text: Updates.checking ? "··" : String(parent.n).padStart(2, "0")
-                            color: parent.n > 0 && !Updates.checking ? Theme.palette.accent : Theme.palette.surface
-                            glow: parent.n > 0 && !Updates.checking
-                            font.pixelSize: 22
-                            font.bold: true
-                        }
-                    }
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.leftMargin: 8
-                spacing: 10
-
-                StyledText {
-                    Layout.fillWidth: true
-                    text: Updates.checking ? "checking…"
-                        : Updates.failed ? "-- check failed (offline?) --"
-                        : Updates.count === 0 ? "-- up to date --"
-                        : `last upgrade ${root.ago(Updates.lastUpgrade)}`
-                    color: Theme.palette.muted
-                    font.pixelSize: Theme.font.size - 2
-                }
-                TextButton {
-                    text: `\u{F06B0}  update${Updates.aurHelper ? " (" + Updates.aurHelper + ")" : ""}`
-                    visible: Updates.count > 0 && !Updates.checking
-                    onClicked: {
-                        Updates.upgrade();
-                        root.done();
-                    }
-                }
-            }
-
-            // ── Storage ──────────────────────────────────────────────────────
-            SectionTitle {
-                Layout.topMargin: 6
-                text: "Storage"
-                code: String(Storage.mounted.length + Storage.network.length).padStart(2, "0")
-            }
-            StyledText {
-                Layout.leftMargin: 8
-                text: Theme.caps("err") + " " + Storage.error
-                color: Theme.palette.error
-                wrapMode: Text.Wrap
-                Layout.fillWidth: true
-                visible: Storage.error !== ""
-            }
-            Repeater {
-                model: Storage.mounted
-
-                ColumnLayout {
-                    id: disk
-
-                    required property var modelData
-                    readonly property real usage: modelData.size > 0 ? modelData.used / modelData.size : 0
-
-                    Layout.fillWidth: true
-                    spacing: 2
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-
-                        StyledText {
-                            Layout.preferredWidth: 52
-                            text: disk.modelData.removable ? "\u{F129E}" : "\u{F02CA}"
-                            color: disk.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
-                        }
-                        StyledText {
-                            text: disk.modelData.mount
-                            font.bold: true
-                        }
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: `${disk.modelData.name} · ${disk.modelData.fstype}`
-                            color: Theme.palette.muted
-                            font.pixelSize: Theme.font.size - 2
-                            elide: Text.ElideRight
-                        }
-                        StyledText {
-                            text: `${Storage.human(disk.modelData.avail)} free`
-                            color: disk.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
-                            font.pixelSize: Theme.font.size - 2
-                            font.bold: true
-                        }
-                        IconButton {
-                            size: 22
-                            icon: "\u{F07AF}"
-                            iconColor: Theme.palette.dim
-                            onClicked: root.run(`ncdu -x '${disk.modelData.mount}'`)
-                        }
-                        IconButton {
-                            size: 22
-                            icon: "\u{F01EA}"
-                            iconColor: Theme.palette.dim
-                            visible: disk.modelData.removable
-                            onClicked: Storage.eject(disk.modelData.device)
-                        }
-                    }
-                    Level {
-                        value: disk.usage
-                        extra: Storage.human(disk.modelData.size)
-                    }
-                }
-            }
-            Repeater {
-                model: Storage.mountable
-
-                RowLayout {
-                    required property var modelData
-
-                    Layout.fillWidth: true
-                    spacing: 10
-
-                    StyledText {
-                        Layout.preferredWidth: 52
-                        text: "\u{F129E}"
-                        color: Theme.palette.muted
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: `${modelData.name} · ${modelData.fstype} · ${Storage.human(modelData.size)}`
-                        color: Theme.palette.dim
-                        elide: Text.ElideRight
-                    }
-                    TextButton {
-                        text: "mount"
-                        onClicked: Storage.mount(modelData.device)
-                    }
-                }
-            }
-
-            // Network shares (systemd mount/automount units)
-            Repeater {
-                model: Storage.network
-
-                ColumnLayout {
-                    id: share
-
-                    required property var modelData
-                    readonly property bool mounted: modelData.state === "mounted"
-                    readonly property real usage: modelData.size > 0 ? modelData.used / modelData.size : 0
-
-                    Layout.fillWidth: true
-                    spacing: 2
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-
-                        StyledText {
-                            Layout.preferredWidth: 52
-                            text: "\u{F08F3}"
-                            color: share.modelData.state === "failed" ? Theme.palette.warn
-                                : share.mounted ? Theme.palette.dim : Theme.palette.muted
-                        }
-                        StyledText {
-                            text: share.modelData.mount
-                            font.bold: true
-                            color: share.mounted ? Theme.palette.fg : Theme.palette.dim
-                        }
-                        StyledText {
-                            Layout.fillWidth: true
-                            text: `${share.modelData.source} · ${share.modelData.fstype}`
-                            color: Theme.palette.muted
-                            font.pixelSize: Theme.font.size - 2
-                            elide: Text.ElideRight
-                        }
-                        StyledText {
-                            text: `${Storage.human(share.modelData.avail)} free`
-                            color: share.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
-                            font.pixelSize: Theme.font.size - 2
-                            font.bold: true
-                            visible: share.mounted && share.modelData.size > 0
-                        }
-                        Tag {
-                            text: share.modelData.state === "failed" ? "failed" : share.modelData.state === "idle" ? "idle" : "off"
-                            fill: share.modelData.state === "failed" ? Theme.palette.warn : Theme.palette.surface
-                            textColor: share.modelData.state === "failed" ? Theme.palette.shadow : Theme.palette.dim
-                            visible: !share.mounted
-                        }
-                        TextButton {
-                            text: "connect"
-                            visible: share.modelData.state === "idle" || share.modelData.state === "failed"
-                            onClicked: Storage.connect(share.modelData.mount)
-                        }
-                        IconButton {
-                            size: 22
-                            icon: "\u{F07AF}"
-                            iconColor: Theme.palette.dim
-                            visible: share.mounted
-                            onClicked: root.run(`ncdu -x '${share.modelData.mount}'`)
-                        }
-                    }
-                    Level {
-                        value: share.usage
-                        extra: Storage.human(share.modelData.size)
-                        visible: share.mounted && share.modelData.size > 0
-                    }
-                    StyledText {
-                        Layout.leftMargin: 62
-                        text: `systemd: ${share.modelData.reason}`
-                        color: Theme.palette.warn
-                        font.pixelSize: Theme.font.size - 3
-                        visible: share.modelData.state === "failed"
-                    }
-                }
-            }
-
-            // ── USB ──────────────────────────────────────────────────────────
-            SectionTitle {
-                Layout.topMargin: 6
-                text: "USB"
-                code: String(Storage.usb.length).padStart(2, "0")
-            }
-            Placeholder {
-                text: "-- nothing connected --"
-                visible: Storage.usb.length === 0
-            }
-            Repeater {
-                model: Storage.usb
-
-                RowLayout {
-                    required property var modelData
-
-                    Layout.fillWidth: true
-                    spacing: 10
-
-                    StyledText {
-                        Layout.preferredWidth: 52
-                        text: "\u{F0553}"
-                        color: Theme.palette.dim
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        text: modelData.name
-                        color: Theme.palette.dim
-                        elide: Text.ElideRight
-                    }
-                    StyledText {
-                        text: modelData.id
-                        color: Theme.palette.muted
-                        font.pixelSize: Theme.font.size - 3
-                    }
-                }
-            }
-
-            // ── Tools ────────────────────────────────────────────────────────
-            SectionTitle {
-                Layout.topMargin: 6
-                text: "Tools"
-            }
-            Flow {
-                Layout.fillWidth: true
-                spacing: 8
-
-                Repeater {
-                    model: Config.controlCenter.tools
-
-                    TextButton {
-                        required property var modelData
-
-                        text: `\u{F018D}  ${modelData.label}`
-                        onClicked: root.run(modelData.command)
-                    }
-                }
-            }
-        }
-    }
-
-    // Scroll position lamp, when scrolling is possible.
-    ScrollLamp {
-        view: flick
     }
 }

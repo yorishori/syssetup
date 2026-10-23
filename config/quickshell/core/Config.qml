@@ -23,7 +23,8 @@ Singleton {
         theme: {
             name: "cyber",
             cyber: {},
-            bubble: {}
+            bubble: {},
+            hifi: {}
         },
         wallpaper: {
             path: "",            // image file ("~/…" ok); empty = plain color
@@ -33,8 +34,7 @@ Singleton {
         bar: {
             height: 32,
             padding: 18,
-            spacing: 16,
-            workspaces: 5  // minimum number of workspaces shown
+            spacing: 16
         },
         launcher: {
             terminal: ["kitty", "-e"],                   // prefix for terminal commands

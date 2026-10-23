@@ -34,7 +34,8 @@
         "backdrop": 0.45
       }
     },
-    "bubble": {}
+    "bubble": {},
+    "hifi": {}
   },
   "wallpaper": {
     "path": "",
@@ -44,8 +45,7 @@
   "bar": {
     "height": 40,
     "padding": 18,
-    "spacing": 16,
-    "workspaces": 6
+    "spacing": 16
   },
   "launcher": {
     "terminal": [
