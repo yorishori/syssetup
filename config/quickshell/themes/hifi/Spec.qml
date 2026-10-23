@@ -79,10 +79,10 @@ QtObject {
             // others are doors that swing down.
             drawers: ["audio", "launcher", "control", "network", "bluetooth", "notifications"],
             // Drops that hang there instead, bringing themselves in and out.
-            hangers: ["calendar", "tray"],
+            hangers: ["calendar", "tray", "keys"],
             // Hanging from behind the panel (the tray's cables come out of
             // its face).
-            behindBar: ["calendar"]
+            behindBar: ["calendar", "keys"]
         },
         // What each display on the panel glows in.
         display: {
