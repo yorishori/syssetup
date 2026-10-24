@@ -1,16 +1,17 @@
 import QtQuick
 import QtQuick.Effects
-import qs.components as C
 import qs.core
 import qs.modules.lock as M
+import qs.modules.session as S
 
 // Locked: the session screen's blast doors, shut. They slam across as it
 // locks. On the left door, the time on a big red seven-segment display and
-// the date under it; on the right door (the primary screen's), the access
-// panel: who's locked out on its plate, a display that takes the password
-// (a glowing dot for each letter; with a passcode, a lamp for each digit),
-// what it's doing, and the power keys under it (reboot and power off ask
-// twice). A wrong password lights its lamp red and the doors shudder.
+// the date under it; on the right door (the primary screen's), who's locked
+// out on tape, a display behind smoked glass that takes the password (a
+// glowing dot for each letter typed, nothing for those not), what it's
+// doing, and the session screen's keys under it (reboot and power off ask
+// twice). A wrong password lights its lamp red and the doors shudder; the
+// right one draws the bolts and the doors part.
 Item {
     id: root
 
@@ -38,6 +39,20 @@ Item {
         function onRefocusRequested(): void {
             field.forceActiveFocus();
         }
+        function onUnlockingChanged(): void {
+            if (root.control.unlocking) {
+                slam.stop();
+                open.start();
+            }
+        }
+    }
+    // The bolts drawn (a knock), then the doors part.
+    SequentialAnimation {
+        id: open
+
+        NumberAnimation { target: root; property: "jolt"; to: -0.5; duration: 70 }
+        NumberAnimation { target: root; property: "jolt"; to: 0; duration: 90 }
+        NumberAnimation { target: root; property: "shut"; to: 0; duration: 480; easing.type: Easing.InOutCubic }
     }
 
     SequentialAnimation {
@@ -179,187 +194,180 @@ Item {
             width: root.width / 2 + depth / 2
             height: root.height
 
-            Item {
+            // Who's locked out, on tape; the display that takes the
+            // password; the session screen's keys under it.
+            Column {
                 id: panel
 
                 x: rightDoor.edgeWidth + 80
                 anchors.verticalCenter: parent.verticalCenter
-                width: 400
-                height: inside.height + 48
+                spacing: 12
                 visible: root.control.primary
 
-                Metal {
-                    anchors.fill: parent
-                    raised: true
-                }
-                Repeater {
-                    model: [[0, 0], [1, 0], [0, 1], [1, 1]]
-
-                    Screw {
-                        required property var modelData
-
-                        x: modelData[0] ? panel.width - width - 8 : 8
-                        y: modelData[1] ? panel.height - height - 8 : 8
-                        angle: 20 + 50 * modelData[0] + 30 * modelData[1]
-                    }
+                Legend {
+                    text: `${root.control.user} @ ${root.control.hostname}`
+                    size: 14
                 }
 
-                Column {
-                    id: inside
+                // The display: a dot for each letter typed, none for those
+                // not (so it doesn't tell how long a passcode is), and under
+                // it what it's doing; its lamp red when it's refused.
+                Item {
+                    width: 420
+                    height: 86
 
-                    x: 28
-                    y: 24
-                    width: panel.width - 56
-                    spacing: 14
+                    Well {
+                        id: tube
 
-                    // Who's locked out, on its plate.
-                    Row {
-                        spacing: 10
-
-                        Led {
-                            anchors.verticalCenter: parent.verticalCenter
-                            size: 9
-                            on: true
-                            color: root.failed ? Theme.palette.error : root.vfd
-                        }
-                        Silk {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: `${root.control.user} @ ${root.control.hostname}`
-                            font.pixelSize: 12
-                        }
+                        anchors.fill: parent
+                        fill: Qt.tint("#050807", Qt.alpha(root.vfd, 0.05))
                     }
+                    TextInput {
+                        id: field
 
-                    // The display, taking the password.
+                        anchors.fill: parent
+                        opacity: 0
+                        echoMode: TextInput.Password
+                        onAccepted: root.control.unlock(text)
+                        // Passcode: checked as soon as it's all there.
+                        onTextChanged: {
+                            if (root.control.passcode > 0 && text.length === root.control.passcode)
+                                root.control.unlock(text);
+                        }
+                        // Never let the focus wander off.
+                        onActiveFocusChanged: {
+                            if (!activeFocus)
+                                Qt.callLater(root.control.refocus);
+                        }
+                        Component.onCompleted: root.control.refocus()
+                    }
                     Item {
-                        width: parent.width
-                        height: 54
-
-                        Well {
-                            id: glass
-
-                            anchors.fill: parent
-                            roundness: 4
-                            fill: Qt.tint("#050807", Qt.alpha(root.vfd, 0.05))
+                        anchors.fill: parent
+                        layer.enabled: (Theme.glow.opacity ?? 0) > 0
+                        layer.effect: MultiEffect {
+                            shadowEnabled: true
+                            shadowColor: root.vfd
+                            shadowOpacity: Theme.glow.opacity ?? 0
+                            shadowBlur: 0.6
+                            blurMax: 16
+                            shadowHorizontalOffset: 0
+                            shadowVerticalOffset: 0
                         }
-                        TextInput {
-                            id: field
 
-                            anchors.fill: parent
-                            opacity: 0
-                            echoMode: TextInput.Password
-                            onAccepted: root.control.unlock(text)
-                            // Passcode: checked as soon as it's all there.
-                            onTextChanged: {
-                                if (root.control.passcode > 0 && text.length === root.control.passcode)
-                                    root.control.unlock(text);
-                            }
-                            // Never let the focus wander off.
-                            onActiveFocusChanged: {
-                                if (!activeFocus)
-                                    Qt.callLater(root.control.refocus);
-                            }
-                            Component.onCompleted: root.control.refocus()
-                        }
                         Row {
                             x: 16
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 9
-                            layer.enabled: true
-                            layer.effect: MultiEffect {
-                                shadowEnabled: true
-                                shadowColor: root.vfd
-                                shadowBlur: 0.5
-                                shadowHorizontalOffset: 0
-                                shadowVerticalOffset: 0
-                            }
+                            y: 14
+                            height: 26
+                            spacing: 8
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "▸"
+                                text: root.control.passcode > 0 ? "CODE" : "PASS"
                                 color: root.vfd
                                 font.family: Theme.font.family
-                                font.pixelSize: 15
+                                font.pixelSize: 10
+                                font.bold: true
                             }
-                            // A dot for each letter (up to what fits), or a lamp
-                            // per passcode digit.
                             Repeater {
-                                model: root.control.passcode > 0 ? root.control.passcode : Math.min(field.text.length, 24)
+                                model: Math.min(field.text.length, 22)
 
                                 Rectangle {
-                                    required property int index
-                                    readonly property bool lit: root.control.passcode === 0 || index < field.text.length
-
                                     anchors.verticalCenter: parent.verticalCenter
-                                    width: root.control.passcode > 0 ? 14 : 9
-                                    height: width
-                                    radius: width / 2
-                                    color: lit ? root.vfd : "transparent"
-                                    border.width: 1
-                                    border.color: Qt.alpha(root.vfd, 0.5)
+                                    width: 10
+                                    height: 10
+                                    radius: 5
+                                    color: root.vfd
                                 }
                             }
                             // The cursor.
                             Rectangle {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: 2
-                                height: 20
+                                width: 10
+                                height: 3
                                 color: root.vfd
-                                visible: root.control.passcode === 0 && field.activeFocus
+                                visible: field.activeFocus && !root.control.unlocking
                             }
                         }
-                        Image {
-                            anchors {
-                                fill: parent
-                                margins: 3
+                        Text {
+                            x: 16
+                            y: parent.height - 28
+                            text: root.control.unlocking ? "OPEN"
+                                : root.control.authState === "checking" ? "CHECKING…"
+                                : root.failed ? `DENIED · ${String(root.control.failures).padStart(2, "0")}`
+                                : "ENTER TO UNLOCK"
+                            color: root.vfd
+                            opacity: 0.7
+                            font.family: Theme.font.family
+                            font.pixelSize: 11
+                            font.bold: true
+                            font.letterSpacing: 2
+                        }
+                    }
+                    Led {
+                        anchors {
+                            right: parent.right
+                            rightMargin: 16
+                            verticalCenter: parent.verticalCenter
+                        }
+                        size: 10
+                        on: true
+                        color: root.failed ? Theme.palette.error : root.control.unlocking ? Theme.palette.ok : root.vfd
+                    }
+                    // The mesh.
+                    Image {
+                        anchors {
+                            fill: parent
+                            margins: 3
+                        }
+                        source: Qt.resolvedUrl("grille.png")
+                        fillMode: Image.Tile
+                        opacity: 0.35
+                    }
+                    Gloss {
+                        anchors {
+                            fill: parent
+                            margins: 1
+                        }
+                        roundness: tube.r
+                    }
+                }
+                Silk {
+                    width: 420
+                    text: root.control.authMessage
+                    wrapMode: Text.Wrap
+                    opacity: 0.8
+                    visible: text !== ""
+                }
+
+                // The power keys: the session screen's, smaller.
+                Row {
+                    topPadding: 24
+                    spacing: 8
+
+                    Repeater {
+                        model: [
+                            { key: "reboot", label: "Reboot", glyph: "\u{F0709}", action: "reboot" },
+                            { key: "sleep", label: "Sleep", glyph: "\u{F0904}", action: "sleep" },
+                            { key: "shutdown", label: "Power off", glyph: "\u{F0425}", action: "poweroff" }
+                        ]
+
+                        Item {
+                            required property var modelData
+
+                            width: 130
+                            height: 160
+
+                            S.SessionKey {
+                                width: 220
+                                height: 222
+                                scale: 0.58
+                                transformOrigin: Item.TopLeft
+                                key: parent.modelData.key
+                                label: root.control.armed === parent.modelData.action ? "Again" : parent.modelData.label
+                                glyph: parent.modelData.glyph
+                                armed: root.control.armed === parent.modelData.action
+                                onClicked: root.control.power(parent.modelData.action)
                             }
-                            source: Qt.resolvedUrl("grille.png")
-                            fillMode: Image.Tile
-                            opacity: 0.3
-                        }
-                        Gloss {
-                            anchors {
-                                fill: parent
-                                margins: 1
-                            }
-                            roundness: 4
-                        }
-                    }
-
-                    // What it's doing.
-                    Silk {
-                        text: root.control.authState === "checking" ? "authenticating…"
-                            : root.failed ? `access denied · ${String(root.control.failures).padStart(2, "0")}`
-                            : root.control.passcode > 0 ? "type your passcode" : "enter to unlock"
-                        color: root.failed ? Theme.palette.error : Theme.palette.fg
-                        font.pixelSize: 11
-                    }
-                    Silk {
-                        width: parent.width
-                        text: root.control.authMessage
-                        wrapMode: Text.Wrap
-                        font.pixelSize: 10
-                        opacity: 0.75
-                        visible: text !== ""
-                    }
-
-                    // The power keys.
-                    Row {
-                        spacing: 10
-                        topPadding: 6
-
-                        C.TextButton {
-                            text: root.control.armed === "reboot" ? "confirm?" : "reboot"
-                            lit: root.control.armed === "reboot"
-                            onClicked: root.control.power("reboot")
-                        }
-                        C.TextButton {
-                            text: "sleep"
-                            onClicked: root.control.power("sleep")
-                        }
-                        C.TextButton {
-                            text: root.control.armed === "poweroff" ? "confirm?" : "power off"
-                            lit: root.control.armed === "poweroff"
-                            onClicked: root.control.power("poweroff")
                         }
                     }
                 }

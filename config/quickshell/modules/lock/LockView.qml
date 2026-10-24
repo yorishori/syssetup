@@ -22,6 +22,8 @@ Skinned {
     readonly property string authMessage: Session.authMessage
     readonly property int failures: Session.failures
     readonly property date now: Time.now
+    // Unlocked, the view still up a moment while it opens (see Lock).
+    readonly property bool unlocking: !Session.locked
 
     // A wrong password (shake, clear the field); locked or unlocked (clear
     // it); put the keys back in the field.

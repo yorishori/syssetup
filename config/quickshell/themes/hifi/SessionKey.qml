@@ -27,7 +27,7 @@ Column {
     }
     Legend {
         anchors.horizontalCenter: parent.horizontalCenter
-        text: `${root.control.number} ${root.control.label}`
+        text: root.control.number > 0 ? `${root.control.number} ${root.control.label}` : root.control.label
         size: 16
     }
 }

@@ -82,7 +82,10 @@ QtObject {
             hangers: ["calendar", "tray", "keys"],
             // Hanging from behind the panel (the tray's cables come out of
             // its face).
-            behindBar: ["calendar", "keys"]
+            behindBar: ["calendar", "keys"],
+            // The lock screen's doors part on unlocking; the lock is held
+            // that long.
+            unlockHold: 700
         },
         // What each display on the panel glows in.
         display: {
