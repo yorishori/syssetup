@@ -175,16 +175,12 @@ Item {
             width: parent.width
             height: root.cardHeight
 
-            // Paper above the card, up to the roller.
+            // The laminate, a clear edge round the paper, all the way up onto
+            // the roller (its top corners out of sight behind the panel).
             Rectangle {
-                y: root.roller
+                y: root.roller - 8
                 width: parent.width
-                height: -root.roller + 1
-                color: Qt.darker(root.paper, 1.04)
-            }
-            // The laminate, a clear edge round the paper.
-            Rectangle {
-                anchors.fill: parent
+                height: parent.height - y
                 radius: 6
                 color: Qt.rgba(0.93, 0.95, 0.96, 0.85)
                 border.width: 1
@@ -192,8 +188,9 @@ Item {
             }
             Rectangle {
                 x: 4
+                y: root.roller
                 width: parent.width - 8
-                height: parent.height - 4
+                height: parent.height - 4 - y
                 color: root.paper
             }
 
@@ -432,7 +429,9 @@ Item {
 
             // The laminate's sheen.
             Rectangle {
-                anchors.fill: parent
+                y: root.roller - 8
+                width: parent.width
+                height: parent.height - y
                 radius: 6
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
@@ -453,7 +452,7 @@ Item {
             height: 16
             visible: sheet.y < -14
             gradient: Gradient {
-                GradientStop { position: 0; color: Qt.alpha(Theme.palette.shadow, 0.55) }
+                GradientStop { position: 0; color: Qt.alpha(Theme.palette.shadow, 0.35) }
                 GradientStop { position: 1; color: "transparent" }
             }
         }
