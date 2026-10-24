@@ -1,29 +1,12 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
-import qs.components
-import qs.core
 import qs.services
 
-// Compose overlay (bind it to the compose key): a drawer from the bottom edge.
-// Type a sequence (' then e) and every character it can still become is
-// shown with its keys; a complete, unambiguous sequence inserts right away.
-// Typing something that starts no sequence searches by name ("euro").
-// Enter inserts the selected one, arrows move, Escape closes.
+// Compose overlay (bind it to the compose key): see ComposePad; the theme
+// draws it. A click outside closes.
 PanelWindow {
     id: win
-
-    property string typed: ""
-    property int selected: 0
-    readonly property var results: Compose.search(typed)
-    readonly property bool byName: typed !== "" && results.length > 0 && !results[0].seq.startsWith(typed)
-    readonly property int columns: 8
-
-    function move(step: int): void {
-        if (results.length > 0)
-            selected = Math.max(0, Math.min(results.length - 1, selected + step));
-    }
 
     screen: Display.primary
     anchors {
@@ -34,31 +17,13 @@ PanelWindow {
     }
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
-    visible: Compose.open || drawer.height > 0
+    visible: Compose.open || (pad.view?.showing ?? false)
     mask: Region {
-        item: Compose.open ? fullArea : drawer
+        item: Compose.open ? fullArea : (pad.view?.inputArea ?? null)
     }
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "qs-compose"
     WlrLayershell.keyboardFocus: Compose.open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-
-    Connections {
-        target: Compose
-
-        function onOpenChanged(): void {
-            win.typed = "";
-            field.text = "";
-            if (Compose.open)
-                field.focusInput();
-        }
-    }
-    onTypedChanged: {
-        selected = 0;
-        const done = Compose.complete(typed);
-        if (done)
-            Compose.insert(done.result);
-    }
-    onSelectedChanged: grid.positionViewAtIndex(selected, GridView.Contain)
 
     // Click outside the drawer closes.
     Item {
@@ -72,136 +37,9 @@ PanelWindow {
         }
     }
 
-    MouseArea {
-        anchors.fill: drawer
-    }
+    ComposePad {
+        id: pad
 
-    BottomDrawer {
-        id: drawer
-
-        anchors {
-            bottom: parent.bottom
-            bottomMargin: drawer.lift
-            horizontalCenter: parent.horizontalCenter
-        }
-        width: 680
-        open: Compose.open
-
-        ColumnLayout {
-            width: parent.width
-            spacing: 10
-
-            Keys.onUpPressed: win.move(-win.columns)
-            Keys.onDownPressed: win.move(win.columns)
-            Keys.onEscapePressed: Panels.close()
-
-            SectionTitle {
-                text: "Compose"
-                code: !Compose.loaded ? "loading" : win.typed === "" ? `${Compose.entries.length} sequences`
-                    : win.byName ? `${win.results.length} by name` : `${win.results.length} matches`
-            }
-
-            Placeholder {
-                text: win.typed === "" ? "-- start a sequence: ' e → é, o c → ©, - > → → --" : "-- no sequence or name matches --"
-                visible: win.results.length === 0
-            }
-
-            Item {
-                Layout.fillWidth: true
-                Layout.preferredHeight: grid.height
-                visible: win.results.length > 0
-
-                GridView {
-                    id: grid
-
-                    width: parent.width
-                    height: Math.min(Math.ceil(count / win.columns), 3) * cellHeight
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    cellWidth: Math.floor(width / win.columns)
-                    cellHeight: 70
-                    model: win.results
-
-                    delegate: Tile {
-                        id: tile
-
-                        required property var modelData
-                        required property int index
-
-                        width: grid.cellWidth
-                        height: grid.cellHeight
-                        current: win.selected === index
-                        onEntered: win.selected = tile.index
-                        onClicked: Compose.insert(tile.modelData.result)
-
-                        ColumnLayout {
-                            anchors.centerIn: parent
-                            spacing: 2
-
-                            StyledText {
-                                Layout.alignment: Qt.AlignHCenter
-                                text: tile.modelData.result
-                                color: tile.current ? Theme.palette.accent : Theme.palette.fg
-                                glow: tile.current
-                                font.pixelSize: 24
-                            }
-                            // The keys, with the part already typed dimmed.
-                            StyledText {
-                                Layout.alignment: Qt.AlignHCenter
-                                textFormat: Text.StyledText
-                                text: {
-                                    const seq = tile.modelData.seq;
-                                    const done = win.byName ? 0 : win.typed.length;
-                                    const esc = s => [...s].map(c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c] ?? c).join(" ");
-                                    const typedPart = esc(seq.slice(0, done));
-                                    const rest = esc(seq.slice(done));
-                                    return `<font color="${Theme.palette.muted}">${typedPart}</font>${typedPart && rest ? " " : ""}${rest}`;
-                                }
-                                color: Theme.palette.dim
-                                font.pixelSize: Theme.font.size - 2
-                                font.bold: true
-                            }
-                        }
-                    }
-                }
-                ScrollLamp {
-                    view: grid
-                }
-            }
-
-            // Selected: name
-            StyledText {
-                Layout.fillWidth: true
-                text: win.results[win.selected]?.name ?? ""
-                caps: true
-                color: Theme.palette.muted
-                font.pixelSize: Theme.font.size - 2
-                font.bold: true
-                tracking: 1.5
-                elide: Text.ElideRight
-                visible: text !== ""
-            }
-
-            TextField {
-                id: field
-
-                Layout.fillWidth: true
-                prompt: "compose>"
-                placeholder: "type a sequence, or a name"
-                captureHorizontal: true
-                onTextChanged: win.typed = text
-                onAccepted: {
-                    const r = win.results[win.selected];
-                    if (r)
-                        Compose.insert(r.result);
-                }
-                onHorizontal: step => win.move(step)
-            }
-
-            KeyHints {
-                Layout.alignment: Qt.AlignHCenter
-                hints: [["↵", "insert"], ["←↑↓→", "move"], ["esc", "close"]]
-            }
-        }
+        anchors.fill: parent
     }
 }
