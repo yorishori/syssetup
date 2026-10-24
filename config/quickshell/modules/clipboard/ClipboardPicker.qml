@@ -105,8 +105,12 @@ Skinned {
     }
     onEntriesChanged: selected = Math.min(selected, Math.max(0, entries.length - 1))
 
-    Keys.onUpPressed: move(onHistory ? 1 : -columns)
-    Keys.onDownPressed: move(onHistory ? -1 : columns)
+    // Up goes up the list, whichever end its newest is at (the skin's
+    // `newestAtTop`; else at the bottom, by the prompt).
+    readonly property bool newestAtTop: view?.newestAtTop ?? false
+
+    Keys.onUpPressed: move(onHistory ? (newestAtTop ? -1 : 1) : -columns)
+    Keys.onDownPressed: move(onHistory ? (newestAtTop ? 1 : -1) : columns)
     Keys.onTabPressed: switchTab(1)
     Keys.onBacktabPressed: switchTab(-1)
     Keys.onEscapePressed: hide()

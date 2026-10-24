@@ -220,7 +220,7 @@ Item {
             Text {
                 x: window.x
                 y: 10
-                text: `HIFI · ${Math.round(root.control.area.width)}×${Math.round(root.control.area.height)}`
+                text: `${Math.round(root.control.area.width)}×${Math.round(root.control.area.height)}`
                 color: root.printInk
                 opacity: 0.6
                 font.family: Theme.font.family

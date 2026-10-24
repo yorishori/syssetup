@@ -18,6 +18,10 @@ Item {
     required property M.ClipboardPicker control
 
     readonly property bool showing: rise > 0.001
+    // The newest clip's at the top of the sheet.
+    readonly property bool newestAtTop: true
+    // Every sheet's as big, so turning to another doesn't move a thing.
+    readonly property real bodyHeight: 420
     readonly property real sheetWidth: 600
     readonly property real margin: 24
     readonly property real tabRoom: 84
@@ -177,13 +181,10 @@ Item {
         Rectangle {
             id: sheet
 
-            readonly property real bodyHeight: root.control.entries.length === 0 ? 70
-                : root.control.onHistory ? list.height : grid.height + 44
-
             x: root.margin
             y: root.clipRoom - 26
             width: root.sheetWidth
-            height: 26 + 52 + bodyHeight + 40
+            height: 26 + 52 + root.bodyHeight + 40
             color: root.control.onHistory ? root.paper : root.transfer
             border.width: 1
             border.color: Qt.alpha("black", 0.18)
@@ -310,7 +311,7 @@ Item {
                 x: 16
                 y: 78
                 width: parent.width - 32
-                height: Math.min(contentHeight, 420)
+                height: root.bodyHeight
                 visible: root.control.onHistory && root.control.entries.length > 0
                 clip: true
                 spacing: 6
@@ -442,12 +443,12 @@ Item {
                 x: 16
                 y: 78
                 width: parent.width - 32
-                height: Math.min(Math.ceil(count / root.control.columns), 6) * cellHeight
+                height: root.bodyHeight - 44
                 visible: !root.control.onHistory && root.control.entries.length > 0
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
                 cellWidth: Math.floor(width / root.control.columns)
-                cellHeight: 44
+                cellHeight: 47
                 model: root.control.symbols
 
                 delegate: Item {
@@ -463,7 +464,7 @@ Item {
                     // Ringed in pencil.
                     Rectangle {
                         anchors.centerIn: parent
-                        width: Math.min(parent.width, parent.height) - 4 + (root.control.tab === "kaomoji" ? parent.width - parent.height : 0)
+                        width: root.control.tab === "kaomoji" ? Math.min(parent.width - 4, glyph.contentWidth + 22) : Math.min(parent.width, parent.height) - 4
                         height: parent.height - 6
                         radius: height / 2
                         color: "transparent"
@@ -473,6 +474,8 @@ Item {
                         rotation: -3
                     }
                     Text {
+                        id: glyph
+
                         anchors.centerIn: parent
                         width: parent.width - 8
                         horizontalAlignment: Text.AlignHCenter
@@ -591,19 +594,6 @@ Item {
                             GradientStop { position: 1; color: "#6c6f75" }
                         }
                     }
-                }
-                Text {
-                    anchors {
-                        horizontalCenter: parent.horizontalCenter
-                        bottom: parent.bottom
-                        bottomMargin: 6
-                    }
-                    text: "HIFI"
-                    color: Qt.alpha("#2a2b2f", 0.55)
-                    font.family: Theme.font.family
-                    font.pixelSize: 9
-                    font.bold: true
-                    font.letterSpacing: 3
                 }
             }
         }

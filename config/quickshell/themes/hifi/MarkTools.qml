@@ -3,10 +3,11 @@ import qs.core
 import qs.modules.capture as M
 
 // The shot, as a frame of film: the picture in its black film, sprocket
-// holes along the edges. The tools are the edge printing along the bottom,
-// in the film's orange: ▸ PEN, ▸ BOX… the one in hand printed bright; the
-// inks as dots of themselves; UNDO; CANCEL and ▸ DONE at the far end. Where
-// the bottom edge would be off the screen, it comes up over the picture.
+// holes along the edges, its size and the day printed along the top. The
+// tools are the edge printing along the bottom, in the film's orange:
+// ▸ PEN, ▸ BOX… the one in hand printed bright; the inks as dots of
+// themselves; UNDO; CANCEL and ▸ DONE at the far end. Where the bottom edge
+// would be off the screen, it comes up over the picture.
 Item {
     id: root
 
@@ -85,7 +86,7 @@ Item {
         Rectangle { y: root.rebate; width: root.side; height: root.a.height; color: root.film }
         Rectangle { x: parent.width - root.side; y: root.rebate; width: root.side; height: root.a.height; color: root.film }
 
-        // The top edge: the stock, by its holes.
+        // The top edge: the size and the day, by its holes.
         Item {
             width: strip.width
             height: root.rebate
@@ -99,7 +100,7 @@ Item {
             Text {
                 x: 14
                 y: 2
-                text: `HIFI SAFETY FILM 400        ${root.frameNumber}`
+                text: `${Math.round(root.a.width)}×${Math.round(root.a.height)}        ${Qt.formatDate(new Date(), "dd.MM.yyyy")}`
                 color: root.edgeInk
                 opacity: 0.85
                 font.family: Theme.font.family
