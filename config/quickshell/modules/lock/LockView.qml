@@ -1,25 +1,44 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import qs.components
 import qs.core
 import qs.services
 
-// What the lock screen shows (used by Lock.qml for each screen): clock and
-// date; on the primary screen also the console: password prompt (focus always
-// returns to it), passcode lamps when lock.passcode is set, and power keys
-// (reboot and power off need a second press within 3 s).
-ScreenFill {
+// What the lock screen shows (used by Lock.qml for each screen): the time;
+// on the primary screen also the password prompt (focus always returns to
+// it), passcode lamps when lock.passcode is set, and power keys (reboot and
+// power off need a second press within 3 s). The skin (LockScreen) draws it,
+// with the field; `unlock` checks what's typed in it.
+Skinned {
     id: root
 
     property bool primary: true
     readonly property int passcode: Config.lock.passcode
     property string armed: ""  // power key waiting for its second press
 
+    readonly property string user: Quickshell.env("USER") ?? ""
+    readonly property string hostname: Session.hostname
+    readonly property string authState: Session.authState  // "", "checking", "failed"
+    readonly property string authMessage: Session.authMessage
+    readonly property int failures: Session.failures
+    readonly property date now: Time.now
+
+    // A wrong password (shake, clear the field); locked or unlocked (clear
+    // it); put the keys back in the field.
+    signal failed
+    signal reset
+    signal refocusRequested
+
+    skin: "LockScreen"
+
     // (This view only exists while the screen is locked.)
     function refocus(): void {
         if (primary)
-            field.focusInput();
+            refocusRequested();
+    }
+
+    function unlock(password: string): void {
+        Session.unlockWith(password);
     }
 
     // Typing goes straight into the prompt, no click needed. The field's own
@@ -49,193 +68,21 @@ ScreenFill {
         onTriggered: root.armed = ""
     }
 
-    // Clicking anywhere puts the focus back in the input.
-    MouseArea {
-        anchors.fill: parent
-        onClicked: root.refocus()
-    }
+    Connections {
+        target: Session
 
-    ColumnLayout {
-        id: panel
-
-        anchors.centerIn: parent
-        spacing: 18
-
-        // Shake on a wrong password.
-        transform: Translate {
-            id: shake
+        function onFailuresChanged(): void {
+            if (Session.failures > 0)
+                root.failed();
+            root.refocus();
         }
-        SequentialAnimation {
-            id: shakeAnim
-
-            NumberAnimation { target: shake; property: "x"; to: -10; duration: 50 }
-            NumberAnimation { target: shake; property: "x"; to: 10; duration: 70 }
-            NumberAnimation { target: shake; property: "x"; to: -6; duration: 60 }
-            NumberAnimation { target: shake; property: "x"; to: 0; duration: 80; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
+        function onLockedChanged(): void {
+            root.reset();
+            root.armed = "";
+            root.refocus();
         }
-        Connections {
-            target: Session
-
-            function onFailuresChanged(): void {
-                if (Session.failures > 0) {
-                    shakeAnim.restart();
-                    field.text = "";
-                }
-                root.refocus();
-            }
-            function onLockedChanged(): void {
-                field.text = "";
-                root.armed = "";
-                root.refocus();
-            }
-            function onAuthStateChanged(): void {
-                root.refocus();
-            }
-        }
-
-        // Clock
-        StyledText {
-            Layout.alignment: Qt.AlignHCenter
-            text: Qt.formatDateTime(Time.now, "HH:mm")
-            color: Theme.palette.accent
-            glow: true
-            font.pixelSize: 96
-            font.bold: true
-        }
-        StyledText {
-            Layout.alignment: Qt.AlignHCenter
-            text: Qt.formatDate(Time.now, "dddd d MMMM")
-            caps: true
-            color: Theme.palette.dim
-            font.bold: true
-            tracking: 3
-        }
-
-        // Console (primary screen only)
-        Item {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.topMargin: 24
-            implicitWidth: 420
-            implicitHeight: box.implicitHeight + 36
-            visible: root.primary
-
-            Card {
-                anchors.fill: parent
-            }
-
-            ColumnLayout {
-                id: box
-
-                anchors {
-                    left: parent.left
-                    right: parent.right
-                    top: parent.top
-                    margins: 18
-                }
-                spacing: 12
-
-                SectionTitle {
-                    text: "Locked"
-                    code: Session.hostname
-                }
-                RowLayout {
-                    spacing: 10
-
-                    Lamp {
-                        on: true
-                        litColor: Session.authState === "failed" ? Theme.palette.warn : Theme.palette.accent
-                    }
-                    StyledText {
-                        text: Quickshell.env("USER") ?? ""
-                        font.bold: true
-                    }
-                }
-                TextField {
-                    id: field
-
-                    Layout.fillWidth: true
-                    prompt: root.passcode > 0 ? "code>" : "pass>"
-                    placeholder: root.passcode > 0 ? "passcode" : "password"
-                    echoMode: TextInput.Password
-                    onAccepted: Session.unlockWith(text)
-                    // Passcode mode: check as soon as enough is typed.
-                    onTextChanged: {
-                        if (root.passcode > 0 && text.length === root.passcode)
-                            Session.unlockWith(text);
-                    }
-                    // Never let the focus wander off.
-                    onInputFocusedChanged: {
-                        if (!inputFocused)
-                            Qt.callLater(root.refocus);
-                    }
-
-                    Component.onCompleted: root.refocus()
-                }
-                // Passcode lamps: one per character, lit as you type.
-                Row {
-                    spacing: 6
-                    visible: root.passcode > 0
-
-                    Repeater {
-                        model: root.passcode
-
-                        Lamp {
-                            required property int index
-
-                            implicitWidth: 12
-                            implicitHeight: 12
-                            on: index < field.text.length
-                            litColor: Session.authState === "failed" ? Theme.palette.warn : Theme.palette.accent
-                        }
-                    }
-                }
-                StyledText {
-                    text: Session.authState === "checking" ? "authenticating…"
-                        : Session.authState === "failed" ? `access denied · ${String(Session.failures).padStart(2, "0")}`
-                        : root.passcode > 0 ? "type your passcode" : "enter to unlock"
-                    caps: true
-                    color: Session.authState === "failed" ? Theme.palette.warn : Theme.palette.muted
-                    font.pixelSize: Theme.font.size - 2
-                    font.bold: true
-                    tracking: 1.5
-                }
-                StyledText {
-                    Layout.fillWidth: true
-                    text: Session.authMessage
-                    color: Theme.palette.muted
-                    font.pixelSize: Theme.font.size - 3
-                    wrapMode: Text.Wrap
-                    visible: text !== ""
-                }
-
-                // Power keys
-                Divider {
-                    Layout.fillWidth: true
-                    Layout.topMargin: 4
-                }
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 8
-
-                    TextButton {
-                        text: root.armed === "reboot" ? "confirm?" : "\u{F0709}  reboot"
-                        lit: root.armed === "reboot"
-                        onClicked: root.power("reboot")
-                    }
-                    TextButton {
-                        text: "\u{F0904}  sleep"
-                        onClicked: root.power("sleep")
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                    }
-                    TextButton {
-                        text: root.armed === "poweroff" ? "confirm?" : "\u{F0425}  power off"
-                        lit: root.armed === "poweroff"
-                        onClicked: root.power("poweroff")
-                    }
-                }
-            }
+        function onAuthStateChanged(): void {
+            root.refocus();
         }
     }
 }
