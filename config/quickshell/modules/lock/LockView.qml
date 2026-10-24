@@ -15,6 +15,9 @@ Skinned {
     property bool primary: true
     readonly property int passcode: Config.lock.passcode
     property string armed: ""  // power key waiting for its second press
+    // The screen as it was just before locking, if the theme asked for one
+    // (see Lock): an image url, or empty.
+    property url snapshot
 
     readonly property string user: Quickshell.env("USER") ?? ""
     readonly property string hostname: Session.hostname

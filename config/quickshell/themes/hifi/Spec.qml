@@ -84,8 +84,10 @@ QtObject {
             // its face).
             behindBar: ["calendar", "keys"],
             // The lock screen's doors part on unlocking; the lock is held
-            // that long.
-            unlockHold: 700
+            // that long. They close over, and open onto, a snapshot of the
+            // desktop taken as it locks.
+            unlockHold: 700,
+            lockSnapshot: true
         },
         // What each display on the panel glows in.
         display: {

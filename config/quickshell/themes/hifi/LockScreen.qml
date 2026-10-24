@@ -70,10 +70,16 @@ Item {
         NumberAnimation { target: root; property: "jolt"; to: 0; duration: 80 }
     }
 
-    // The room, behind the doors.
+    // The room behind the doors: the desktop as it was when it locked.
     Rectangle {
         anchors.fill: parent
         color: Theme.palette.shadow
+    }
+    Image {
+        anchors.fill: parent
+        source: root.control.snapshot
+        visible: status === Image.Ready
+        cache: false
     }
 
     // Clicking anywhere puts the focus back in the panel.
