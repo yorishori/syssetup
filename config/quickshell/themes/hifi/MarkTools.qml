@@ -1,13 +1,12 @@
 import QtQuick
-import qs.components as C
 import qs.core
 import qs.modules.capture as M
 
 // The shot, as a frame of film: the picture in its black film, sprocket
-// holes along the rebates, the edge printing by them (the frame's number,
-// the stock). Under it (or over it, or in it, where there's room), a strip
-// of the camera's metal: the tools as keys, the inks as color chips, undo;
-// DONE and CANCEL.
+// holes along the edges. The tools are the edge printing along the bottom,
+// in the film's orange: ▸ PEN, ▸ BOX… the one in hand printed bright; the
+// inks as dots of themselves; UNDO; CANCEL and ▸ DONE at the far end. Where
+// the bottom edge would be off the screen, it comes up over the picture.
 Item {
     id: root
 
@@ -15,14 +14,61 @@ Item {
 
     readonly property rect a: control.area
     readonly property real rebate: 34
+    readonly property real foot: 42
     readonly property real side: 10
     readonly property color film: "#121112"
     readonly property color edgeInk: "#e2953a"
     // A frame number, made up for the day.
     readonly property int frameNumber: 1 + new Date().getDate() % 36
+    readonly property var names: ({ pen: "PEN", box: "BOX", arrow: "ARROW", mark: "MARK", block: "REDACT" })
 
-    function clamp(v: real, lo: real, hi: real): real {
-        return Math.max(lo, Math.min(hi, v));
+    // A row of sprocket holes along a strip of film `length` long.
+    component Holes: Row {
+        property real length
+
+        spacing: 9
+
+        Repeater {
+            model: Math.max(0, Math.floor((parent.length - 16) / 21))
+
+            Rectangle {
+                width: 12
+                height: 13
+                radius: 2
+                color: "#d9d2c2"
+                opacity: 0.85
+            }
+        }
+    }
+
+    // Edge printing to press: dim, brighter under the hand, bright when on.
+    component Printed: Text {
+        id: printed
+
+        property bool on: false
+        property bool usable: true
+
+        signal pressed
+
+        color: root.edgeInk
+        opacity: !usable ? 0.25 : on ? 1 : hit.containsMouse ? 0.85 : 0.5
+        font.family: Theme.font.family
+        font.pixelSize: 10
+        font.bold: true
+        font.letterSpacing: 1.5
+
+        MouseArea {
+            id: hit
+
+            anchors {
+                fill: parent
+                margins: -5
+            }
+            enabled: printed.usable
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: printed.pressed()
+        }
     }
 
     // ── The film ─────────────────────────────────────────────────────────────
@@ -32,140 +78,152 @@ Item {
         x: root.a.x - root.side
         y: root.a.y - root.rebate
         width: root.a.width + 2 * root.side
-        height: root.a.height + 2 * root.rebate
+        height: root.a.height + root.rebate
 
         // The film round the picture (the picture shows through its middle).
         Rectangle { width: parent.width; height: root.rebate; color: root.film }
-        Rectangle { y: parent.height - root.rebate; width: parent.width; height: root.rebate; color: root.film }
         Rectangle { y: root.rebate; width: root.side; height: root.a.height; color: root.film }
         Rectangle { x: parent.width - root.side; y: root.rebate; width: root.side; height: root.a.height; color: root.film }
 
-        // The rebates: sprocket holes, and the edge printing outside them.
-        Repeater {
-            model: [0, 1]
+        // The top edge: the stock, by its holes.
+        Item {
+            width: strip.width
+            height: root.rebate
+            clip: true
 
-            Item {
-                id: rebate
-
-                required property int modelData
-
-                y: modelData ? strip.height - root.rebate : 0
-                width: strip.width
-                height: root.rebate
-                clip: true
-
-                Row {
-                    x: 8
-                    y: rebate.modelData ? 6 : root.rebate - 6 - 13
-                    spacing: 9
-
-                    Repeater {
-                        model: Math.max(0, Math.floor((strip.width - 16) / 21))
-
-                        Rectangle {
-                            width: 12
-                            height: 13
-                            radius: 2
-                            color: "#d9d2c2"
-                            opacity: 0.85
-                        }
-                    }
-                }
-                Text {
-                    x: 14
-                    y: rebate.modelData ? root.rebate - height - 2 : 2
-                    text: rebate.modelData ? `▸ ${root.frameNumber}        ▸ ${root.frameNumber}A`
-                        : `HIFI SAFETY FILM 400        ${root.frameNumber}`
-                    color: root.edgeInk
-                    opacity: 0.85
-                    font.family: Theme.font.family
-                    font.pixelSize: 8
-                    font.bold: true
-                    font.letterSpacing: 1.5
-                }
+            Holes {
+                x: 8
+                y: root.rebate - 6 - 13
+                length: strip.width
+            }
+            Text {
+                x: 14
+                y: 2
+                text: `HIFI SAFETY FILM 400        ${root.frameNumber}`
+                color: root.edgeInk
+                opacity: 0.85
+                font.family: Theme.font.family
+                font.pixelSize: 8
+                font.bold: true
+                font.letterSpacing: 1.5
             }
         }
     }
 
-    // ── The tools ────────────────────────────────────────────────────────────
+    // ── The bottom edge, with the tools printed on it ────────────────────────
     Item {
-        readonly property real below: strip.y + strip.height + 12
-        readonly property real above: strip.y - height - 12
+        readonly property real from: Math.max(0, strip.x)
+        readonly property real shown: Math.min(root.width, strip.x + strip.width) - from
+        // Room for all the printing: a narrow shot's edge runs on past it.
+        readonly property real needed: tools.width + ends.width + 60
 
-        x: root.clamp(root.a.x + root.a.width / 2 - width / 2, 12, root.width - width - 12)
-        y: below + height + 4 < root.height ? below
-            : above > 0 ? above
-            : root.a.y + root.a.height - height - 12
-        width: tools.implicitWidth
-        height: tools.implicitHeight
+        x: needed > shown ? Math.max(0, Math.min(root.width - width, strip.x + strip.width / 2 - width / 2)) : from
+        y: Math.min(root.a.y + root.a.height, root.height - root.foot)
+        width: Math.max(shown, needed)
+        height: root.foot
+        clip: true
 
-        Metal {
+        Rectangle {
             anchors.fill: parent
-            raised: true
+            color: root.film
         }
+        Holes {
+            x: 8
+            y: 6
+            length: parent.width
+        }
+
+        // Left: the tools, the inks, undo.
         Row {
             id: tools
 
-            padding: 9
-            spacing: 6
+            x: 14
+            y: 24
+            spacing: 14
 
             Repeater {
                 model: root.control.tools
 
-                C.IconButton {
+                Printed {
                     required property var modelData
 
-                    anchors.verticalCenter: parent.verticalCenter
-                    icon: modelData.glyph
-                    lit: root.control.tool === modelData.key
-                    onClicked: root.control.toolPicked(modelData.key)
+                    text: `▸ ${root.names[modelData.key] ?? modelData.key.toUpperCase()}`
+                    on: root.control.tool === modelData.key
+                    onPressed: root.control.toolPicked(modelData.key)
                 }
             }
-            Item {
-                width: 8
-                height: 1
-            }
-            Repeater {
-                model: root.control.inks
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 8
 
-                Item {
-                    required property color modelData
+                Repeater {
+                    model: root.control.inks
 
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 22
-                    height: 22
+                    Item {
+                        id: dot
 
-                    C.Swatch {
-                        anchors.centerIn: parent
-                        width: 16
-                        height: 16
-                        color: parent.modelData
-                        selected: Qt.colorEqual(root.control.ink, parent.modelData)
-                        onClicked: root.control.inkPicked(parent.modelData)
+                        required property color modelData
+                        readonly property bool on: Qt.colorEqual(root.control.ink, modelData)
+
+                        width: 12
+                        height: 12
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: "transparent"
+                            border.width: 1.5
+                            border.color: root.edgeInk
+                            visible: dot.on
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 7
+                            height: 7
+                            radius: 3.5
+                            color: dot.modelData
+                            opacity: dot.on || inkArea.containsMouse ? 1 : 0.6
+                        }
+                        MouseArea {
+                            id: inkArea
+
+                            anchors {
+                                fill: parent
+                                margins: -4
+                            }
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.control.inkPicked(dot.modelData)
+                        }
                     }
                 }
             }
-            Item {
-                width: 8
-                height: 1
+            Printed {
+                text: "↶ UNDO"
+                usable: root.control.canUndo
+                onPressed: root.control.undone()
             }
-            C.IconButton {
-                anchors.verticalCenter: parent.verticalCenter
-                icon: "\u{F054C}"
-                enabled: root.control.canUndo
-                opacity: enabled ? 1 : 0.4
-                onClicked: root.control.undone()
+        }
+
+        // Right: cancel, done.
+        Row {
+            id: ends
+
+            anchors {
+                right: parent.right
+                rightMargin: 14
             }
-            C.TextButton {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "done"
-                lit: true
-                onClicked: root.control.done()
+            y: 24
+            spacing: 18
+
+            Printed {
+                text: "CANCEL"
+                onPressed: root.control.cancelled()
             }
-            C.TextButton {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "cancel"
-                onClicked: root.control.cancelled()
+            Printed {
+                text: `▸ DONE  ${root.frameNumber}A`
+                on: true
+                onPressed: root.control.done()
             }
         }
     }
