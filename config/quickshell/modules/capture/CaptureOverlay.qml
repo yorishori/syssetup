@@ -182,34 +182,14 @@ PanelWindow {
         }
     }
 
-    // ── The outlined area, set apart from the rest ───────────────────────────
+    // ── The outlined area, set apart from the rest, its size, how to choose ──
     Selection {
         anchors.fill: parent
         area: win.hasShown ? win.shown : Qt.rect(0, 0, 0, 0)
+        moving: win.dragging
+        marking: win.marking
+        kind: Capture.kind
         visible: win.ready
-    }
-
-    // Size readout
-    Tag {
-        x: win.shown.x
-        y: win.shown.y > 28 ? win.shown.y - height - 6 : win.shown.y + 6
-        text: `${Math.round(win.shown.width)}×${Math.round(win.shown.height)}`
-        fill: Theme.palette.accent
-        visible: win.ready && win.hasShown && !win.marking
-    }
-
-    // How to select, shown the whole time until the shot or recording starts.
-    Tag {
-        anchors {
-            top: parent.top
-            topMargin: 48
-            horizontalCenter: parent.horizontalCenter
-        }
-        text: Capture.kind === "screenshot" ? "click a window · drag a region · enter for the screen" : "record: click a window · drag a region · enter for the screen"
-        fill: Theme.palette.surface
-        textColor: Theme.palette.fg
-        size: Theme.font.size - 1
-        visible: win.ready && !win.marking
     }
 
     // ── Selecting ────────────────────────────────────────────────────────────

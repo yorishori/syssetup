@@ -1,6 +1,7 @@
 import QtQuick
 import qs.core
 import qs.modules.capture as M
+import "../glyphs" as G
 
 // Dims everything outside the area; a rounded accent line around it.
 Item {
@@ -24,5 +25,9 @@ Item {
         border.width: 2
         border.color: Theme.palette.accent
         visible: root.control.hasArea
+    }
+
+    G.SelectionTags {
+        control: root.control
     }
 }
