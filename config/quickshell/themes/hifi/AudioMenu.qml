@@ -37,403 +37,6 @@ Item {
     implicitWidth: Math.max(deck.implicitWidth, mixer.implicitWidth) + 2 * margin
     implicitHeight: column.implicitHeight + 2 * margin
 
-    // A section of the faceplate, outlined in silkscreen.
-    component Frame: Rectangle {
-        radius: 4
-        color: "transparent"
-        border.width: 1
-        border.color: Qt.alpha(root.silk, 0.55)
-    }
-
-    // A click-stop rotary selector: `count` positions printed round it, the
-    // pointer on `index`. Click for the next, right click for the previous,
-    // or scroll. Dead with one position or none.
-    component Selector: Item {
-        id: selector
-
-        property int count: 0
-        property int index: 0
-        property string legend
-        readonly property bool live: count > 1
-        property real angle: count > 1 ? -135 + 270 * index / (count - 1) : 0
-
-        signal stepped(int step)
-
-        width: 52
-        height: 62
-
-        Behavior on angle {
-            SpringAnimation { spring: 6; damping: 0.45; epsilon: 0.2 }
-        }
-
-        // The positions.
-        Repeater {
-            model: Math.max(selector.count, 1)
-
-            Rectangle {
-                required property int index
-                readonly property real a: (selector.count > 1 ? -135 + 270 * index / (selector.count - 1) : 0) * Math.PI / 180
-
-                x: selector.width / 2 + Math.sin(a) * 22 - 1.5
-                y: 24 - Math.cos(a) * 22 - 1.5
-                width: 3
-                height: 3
-                radius: 1.5
-                color: Qt.alpha(Theme.palette.fg, index === selector.index ? 0.8 : 0.3)
-            }
-        }
-        // The knob.
-        Item {
-            x: (selector.width - 30) / 2
-            y: 9
-            width: 30
-            height: 30
-            opacity: selector.live ? 1 : 0.5
-
-            RectangularShadow {
-                anchors.fill: parent
-                radius: width / 2
-                offset.y: 2
-                blur: 4
-                color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
-            }
-            Rectangle {
-                anchors.fill: parent
-                radius: width / 2
-                border.width: 1
-                border.color: Theme.palette.shadow
-                gradient: Gradient {
-                    GradientStop { position: 0; color: knobArea.containsMouse && selector.live ? Qt.lighter(Theme.palette.surface, 1.6) : Qt.lighter(Theme.palette.surface, 1.3) }
-                    GradientStop { position: 1; color: Qt.darker(Theme.palette.surface, 1.7) }
-                }
-            }
-            // The pointer, a line across the knob's face.
-            Item {
-                anchors.fill: parent
-                rotation: selector.angle
-
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: 3
-                    width: 3
-                    height: 11
-                    radius: 1.5
-                    color: Theme.palette.fg
-                }
-            }
-        }
-        Legend {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
-            text: selector.legend
-            size: 8
-        }
-
-        MouseArea {
-            id: knobArea
-
-            anchors.fill: parent
-            enabled: selector.live
-            hoverEnabled: true
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            cursorShape: Qt.PointingHandCursor
-            onClicked: mouse => selector.stepped(mouse.button === Qt.RightButton ? -1 : 1)
-            onWheel: wheel => selector.stepped(wheel.angleDelta.y > 0 ? 1 : -1)
-        }
-    }
-
-    // The mute key and its LED.
-    component Mute: Row {
-        id: mute
-
-        required property M.AudioPanel panel
-        property var nodes: []
-        readonly property bool muted: nodes[0]?.audio?.muted ?? false
-
-        spacing: 8
-
-        Led {
-            anchors.verticalCenter: parent.verticalCenter
-            size: 8
-            on: mute.muted
-            color: Theme.palette.error
-        }
-        C.IconButton {
-            size: 28
-            icon: mute.muted ? "\u{F075F}" : "\u{F057E}"
-            iconColor: mute.muted ? Theme.palette.error : Theme.palette.fg
-            onClicked: mute.panel.setMuted(mute.nodes, !mute.muted)
-        }
-    }
-
-    // The output or the input: its screen, a device selector, the profile's
-    // MODE selector, a horizontal fader with its scale printed above it, and
-    // the mute key.
-    component Bus: Column {
-        id: bus
-
-        required property M.AudioPanel panel
-        required property PwNode node
-        required property var devices
-        required property var profiles
-        property string deviceLegend
-
-        signal pick(var device)
-
-        readonly property real volume: node?.audio?.volume ?? 0
-
-        spacing: 6
-
-        Item {
-            width: row.width + 24
-            height: row.height + 16
-
-            Frame {
-                anchors.fill: parent
-            }
-            Row {
-                id: row
-
-                x: 12
-                y: 8
-                spacing: 12
-
-                Readout {
-                    anchors.verticalCenter: parent.verticalCenter
-                    line1: bus.panel.nodeName(bus.node)
-                    line2: bus.profiles.switching ? "switching..." : bus.profiles.current?.label ?? ""
-                }
-                Selector {
-                    legend: bus.deviceLegend
-                    count: bus.devices.length
-                    index: bus.devices.indexOf(bus.node)
-                    onStepped: step => bus.pick(bus.devices[(index + step + count) % count])
-                }
-                Selector {
-                    legend: "mode"
-                    count: bus.profiles.list.length
-                    index: bus.profiles.list.findIndex(p => p.current)
-                    onStepped: step => bus.profiles.set(bus.profiles.list[(index + step + count) % count].index)
-                }
-                // The fader, its scale printed above.
-                Item {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 196
-                    height: 44
-
-                    Repeater {
-                        model: 11
-
-                        Item {
-                            required property int index
-                            readonly property bool major: index % 2 === 0
-
-                            x: 6 + index * (184 / 10) - width / 2
-                            width: 14
-                            height: 22
-
-                            Text {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: parent.index
-                                visible: parent.major
-                                color: Qt.alpha(Theme.palette.fg, 0.55)
-                                font.family: Theme.font.family
-                                font.pixelSize: 8
-                            }
-                            Rectangle {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                anchors.bottom: parent.bottom
-                                width: 1
-                                height: parent.major ? 7 : 4
-                                color: Qt.alpha(Theme.palette.fg, parent.major ? 0.5 : 0.3)
-                            }
-                        }
-                    }
-                    C.Meter {
-                        x: 6
-                        y: 28
-                        width: 184
-                        height: 12
-                        value: bus.volume
-                        color: "transparent"
-                        onMoved: value => bus.panel.setLevel([bus.node], value)
-                    }
-                }
-                Mute {
-                    anchors.verticalCenter: parent.verticalCenter
-                    panel: bus.panel
-                    nodes: [bus.node]
-                }
-            }
-        }
-    }
-
-    // An app's channel: its name, an upright fader with its scale, the mute.
-    component Channel: Item {
-        id: channel
-
-        required property M.AudioPanel panel
-        property var nodes: []
-        property string name
-        readonly property real volume: nodes[0]?.audio?.volume ?? 0
-
-        implicitWidth: 80
-        implicitHeight: strip.implicitHeight + 24
-
-        Column {
-            id: strip
-
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 12
-            spacing: 12
-
-            Legend {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: channel.name.slice(0, 9)
-            }
-
-            // The fader, with its scale printed beside it.
-            Item {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: 60
-                height: 150
-
-                Repeater {
-                    model: 11
-
-                    Item {
-                        required property int index
-                        readonly property bool major: index % 2 === 0
-
-                        y: 6 + (10 - index) * (138 / 10) - height / 2
-                        width: 22
-                        height: 10
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: parent.index
-                            visible: parent.major
-                            color: Qt.alpha(Theme.palette.fg, 0.55)
-                            font.family: Theme.font.family
-                            font.pixelSize: 8
-                        }
-                        Rectangle {
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.major ? 7 : 4
-                            height: 1
-                            color: Qt.alpha(Theme.palette.fg, parent.major ? 0.5 : 0.3)
-                        }
-                    }
-                }
-                C.Meter {
-                    x: 32
-                    y: 6
-                    width: 14
-                    height: 138
-                    vertical: true
-                    value: channel.volume
-                    color: "transparent"
-                    onMoved: value => channel.panel.setLevel(channel.nodes, value)
-                }
-            }
-
-            Mute {
-                anchors.horizontalCenter: parent.horizontalCenter
-                panel: channel.panel
-                nodes: channel.nodes
-            }
-        }
-    }
-
-    // The tonearm, seen from above: the tube from the pivot, the headshell
-    // on its neck hooking up onto the record, the cartridge and the finger
-    // lift on it. Solid parts, lit from above.
-    component ArmShape: Item {
-        // The tube: a polished cylinder, its highlight along the top.
-        Rectangle {
-            y: -4
-            width: deck.tube
-            height: 8
-            radius: 4
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#6d6e72" }
-                GradientStop { position: 0.25; color: "#f6f6f4" }
-                GradientStop { position: 0.4; color: "#d9dadc" }
-                GradientStop { position: 0.75; color: "#7c7d81" }
-                GradientStop { position: 1; color: "#3b3c40" }
-            }
-        }
-        Item {
-            x: deck.tube - 4
-            rotation: -52
-
-            // The neck.
-            Rectangle {
-                y: -3.5
-                width: 48
-                height: 7
-                radius: 3.5
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "#6d6e72" }
-                    GradientStop { position: 0.3; color: "#f6f6f4" }
-                    GradientStop { position: 0.75; color: "#7c7d81" }
-                    GradientStop { position: 1; color: "#3b3c40" }
-                }
-            }
-            // The headshell, bevelled, the cartridge under it.
-            Rectangle {
-                x: 40
-                y: -11
-                width: 32
-                height: 22
-                radius: 3
-                border.width: 1
-                border.color: "black"
-                gradient: Gradient {
-                    GradientStop { position: 0; color: "#5a5b61" }
-                    GradientStop { position: 0.15; color: "#3a3b40" }
-                    GradientStop { position: 1; color: "#141517" }
-                }
-
-                Rectangle {
-                    x: 2
-                    y: 1
-                    width: parent.width - 4
-                    height: 1
-                    color: Qt.alpha("white", 0.3)
-                }
-                Rectangle {
-                    x: 9
-                    y: 5
-                    width: 16
-                    height: 12
-                    radius: 2
-                    border.width: 1
-                    border.color: Qt.darker(Theme.palette.error, 2.5)
-                    gradient: Gradient {
-                        GradientStop { position: 0; color: Qt.lighter(Theme.palette.error, 1.15) }
-                        GradientStop { position: 1; color: Qt.darker(Theme.palette.error, 1.6) }
-                    }
-                }
-            }
-            // The finger lift.
-            Rectangle {
-                x: 70
-                y: -18
-                width: 5
-                height: 16
-                radius: 2.5
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0; color: "#f2f2f0" }
-                    GradientStop { position: 1; color: "#6d6e72" }
-                }
-            }
-        }
-    }
-
     // What's on the turntable: `shown` is its player; it follows the current
     // one, swapping records when that changes.
     property MprisPlayer shown: null
@@ -667,7 +270,8 @@ Item {
                     blurMax: 24
                 }
 
-                ArmShape {
+                ToneArm {
+                    tube: deck.tube
                     y: 120
                 }
             }
@@ -704,7 +308,8 @@ Item {
 
             // The arm itself, lifting toward you: it comes closer (larger),
             // and tips a little on its pivot.
-            ArmShape {
+            ToneArm {
+                tube: deck.tube
                 x: deck.pivot.x
                 y: deck.pivot.y
 
@@ -774,7 +379,7 @@ Item {
             // The deck's controls, a framed section beside the platter: its
             // screen (the track; blank with no player), the SOURCE switch,
             // and the transport keys set into the faceplate.
-            Frame {
+            SilkFrame {
                 x: deck.side - 12
                 y: 12
                 width: deck.width - deck.side
@@ -852,7 +457,7 @@ Item {
             Layout.alignment: Qt.AlignHCenter
             spacing: 12
 
-            Bus {
+            AudioBus {
                 panel: root.control
                 node: root.control.output
                 devices: root.control.outputs
@@ -860,7 +465,7 @@ Item {
                 deviceLegend: "out"
                 onPick: device => root.control.setDefaultOutput(device)
             }
-            Bus {
+            AudioBus {
                 panel: root.control
                 node: root.control.input
                 devices: root.control.inputs
@@ -877,7 +482,7 @@ Item {
                 implicitHeight: apps.height
                 visible: root.control.apps.length > 0
 
-                Frame {
+                SilkFrame {
                     anchors.fill: parent
                 }
                 Row {
@@ -901,7 +506,7 @@ Item {
                                 color: Qt.alpha(root.silk, 0.3)
                                 visible: lane.index > 0
                             }
-                            Channel {
+                            AudioChannel {
                                 id: channel
 
                                 panel: root.control
