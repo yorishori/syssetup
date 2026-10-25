@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import qs.components
@@ -117,46 +116,26 @@ PanelWindow {
         }
     }
 
-    // An open drop takes the keyboard, so the launcher can be typed into
-    // straight away. On Hyprland the focus grab below hands it over, and
-    // Exclusive focus would make Hyprland drop the grab, closing the drop.
-    // Sway has no grab, so the drop takes the keyboard outright.
-    WlrLayershell.keyboardFocus: !openDrop ? WlrKeyboardFocus.None
-        : Wm.hyprland ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.Exclusive
-
-    // Without a focus grab (Sway), an open drop takes input on the whole
-    // screen, and a click outside it lands on outsideClick below.
-    readonly property bool catchOutside: openDrop !== "" && !Wm.hyprland
+    // An open drop takes the keyboard outright, so the launcher can be typed
+    // into straight away, and input on the whole screen: a click outside it
+    // lands on outsideClick below and closes it.
+    WlrLayershell.keyboardFocus: openDrop ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     mask: Region {
-        item: bar.catchOutside ? outsideClick : background
+        item: bar.openDrop ? outsideClick : background
 
         Region { item: bar.activeDrop ?? background }
     }
 
-    // Closes the drop when clicking anywhere outside the bar (Hyprland).
-    Loader {
-        active: Wm.hyprland
-
-        sourceComponent: HyprlandFocusGrab {
-            windows: [bar]
-            active: bar.openDrop !== ""
-            onCleared: {
-                if (bar.openDrop)
-                    Panels.close();
-            }
-        }
-    }
-
-    // Closes the drop when clicking anywhere outside it (Sway). The click
-    // doesn't reach the window underneath. Under everything, drops that
-    // hang behind the bar included.
+    // Closes the drop when clicking anywhere outside it. The click doesn't
+    // reach the window underneath. Under everything, drops that hang behind
+    // the bar included.
     MouseArea {
         id: outsideClick
 
         z: -2
         anchors.fill: parent
-        enabled: bar.catchOutside
+        enabled: bar.openDrop !== ""
         acceptedButtons: Qt.AllButtons
         onPressed: Panels.close()
     }
@@ -168,8 +147,8 @@ PanelWindow {
     }
 
     // Backdrop behind blurring drops: darkens the rest of the screen, and the
-    // compositor may blur behind it (a Hyprland layer rule or SwayFX
-    // layer_effects on "qs-bar", see README). Transparent otherwise, so
+    // compositor may blur behind it (SwayFX layer_effects on "qs-bar", see
+    // README). Transparent otherwise, so
     // nothing is blurred.
     Backdrop {
         z: -2

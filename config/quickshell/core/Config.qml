@@ -10,9 +10,8 @@ import Quickshell.Io
 // defaults below. How the machine is set up (terminal, launcher entries,
 // calendar, theme tokens…) is Setup's, in the project.
 //
-// The file is watched and re-read on save. If it is missing, defaults are used
-// (and, once, what an older config.json in the shell's folder had). If it is
-// invalid, the last good settings stay and Health is told why.
+// The file is watched and re-read on save. If it is missing, defaults are
+// used. If it is invalid, the last good settings stay and Health is told why.
 //
 // set(path, value) changes a setting: it applies immediately, and the file is
 // rewritten shortly after the last change (atomically; the previous file is
@@ -80,7 +79,6 @@ Singleton {
     property string loadedText: ""   // file content as last read
     property string writtenText: ""  // what we last wrote (to ignore its echo)
     property bool backedUp: false
-    property bool fresh: false  // no settings.json was found
 
     function write(): void {
         const text = JSON.stringify(values, null, 2) + "\n";
@@ -124,25 +122,6 @@ Singleton {
             else
                 out[key] = o;
         }
-        return out;
-    }
-
-    // What an older config.json (in the shell's folder, before settings
-    // moved here) had of these settings.
-    function fromOldConfig(json: var): var {
-        const out = {};
-        if (typeof json.theme?.name === "string")
-            out.theme = json.theme.name;
-        if (typeof json.screen === "string")
-            out.screen = json.screen;
-        if (json.wallpaper)
-            out.wallpaper = json.wallpaper;
-        if (json.idle)
-            out.idle = { lock: json.idle.lock, screenOff: json.idle.screenOff };
-        if (json.lock?.passcode !== undefined)
-            out.passcode = json.lock.passcode;
-        if (Array.isArray(json.notifications?.mutedApps))
-            out.mutedApps = json.notifications.mutedApps;
         return out;
     }
 
@@ -211,32 +190,9 @@ Singleton {
         onLoadFailed: error => {
             if (error === FileViewError.FileNotFound) {
                 root.values = root.defaults;
-                root.fresh = true;
-                oldConfig.reload();
             } else {
                 Health.report("config", `cannot read settings.json: ${FileViewError.toString(error)}`);
             }
-        }
-    }
-
-    // No settings yet: take what an older config.json had, once.
-    FileView {
-        id: oldConfig
-
-        path: Quickshell.shellPath("config.json")
-        printErrors: false
-
-        onLoaded: {
-            if (!root.fresh)
-                return;
-            root.fresh = false;
-            try {
-                const old = root.fromOldConfig(JSON.parse(text()));
-                if (Object.keys(old).length > 0) {
-                    root.values = root.merge(root.defaults, old);
-                    writeDelay.restart();
-                }
-            } catch (e) {}
         }
     }
 

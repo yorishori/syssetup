@@ -9,7 +9,7 @@ import qs.core
 // Polkit agent: when something asks for admin rights (pkexec, systemctl, an
 // app's "unlock" button), polkit hands the password prompt to us and the
 // polkit module shows it. There can be one agent per session: if another one
-// (hyprpolkitagent, polkit-gnome) registered first, Health says so.
+// (polkit-gnome, lxpolkit…) registered first, Health says so.
 Singleton {
     id: root
 
@@ -32,7 +32,7 @@ Singleton {
     HealthCheck {
         source: "polkit"
         ok: agent.isRegistered
-        reason: "not the polkit agent (is another one running, e.g. hyprpolkitagent?); admin prompts won't show here"
+        reason: "not the polkit agent (is another one running, e.g. polkit-gnome?); admin prompts won't show here"
         grace: 5000
     }
 

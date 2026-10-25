@@ -92,10 +92,6 @@ Singleton {
     }
 
     function load(): void {
-        if (!Wm.sway) {
-            error = "only Sway's binds can be read";
-            return;
-        }
         reader.running = true;
     }
 

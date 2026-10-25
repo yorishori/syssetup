@@ -158,7 +158,7 @@ Singleton {
     PamContext {
         id: pam
 
-        // The system's login stack (/etc/pam.d/login), as hyprlock uses.
+        // The system's login stack (/etc/pam.d/login).
         config: "login"
 
         onPamMessage: {

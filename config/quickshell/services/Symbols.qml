@@ -20,7 +20,6 @@ Singleton {
     // refresh(): rerun scripts/gen-symbols.sh (downloads the Unicode, CLDR and
     // Nerd Fonts data, rebuilds kaomoji from assets/kaomoji.json). The file
     // watch below loads the result.
-    readonly property bool refreshing: refresher.running
     property string refreshStatus: ""
 
     function refresh(): void {

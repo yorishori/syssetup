@@ -191,26 +191,9 @@ Singleton {
     Process {
         id: windowList
 
-        command: Wm.sway ? ["swaymsg", "-r", "-t", "get_tree"]
-            : ["sh", "-c", "hyprctl monitors -j; echo '---'; hyprctl clients -j"]
+        command: ["swaymsg", "-r", "-t", "get_tree"]
         stdout: StdioCollector {
-            onStreamFinished: {
-                if (Wm.sway) {
-                    root.windows = root.swayWindows(text);
-                    return;
-                }
-                try {
-                    const [monitorsJson, clientsJson] = text.split("\n---\n");
-                    const mon = JSON.parse(monitorsJson).find(m => m.name === Display.primary?.name);
-                    const visible = [mon?.activeWorkspace?.id, mon?.specialWorkspace?.id].filter(id => id);
-                    root.windows = JSON.parse(clientsJson)
-                        .filter(c => c.mapped && !c.hidden && visible.includes(c.workspace.id))
-                        .map(c => ({ x: c.at[0] - mon.x, y: c.at[1] - mon.y, w: c.size[0], h: c.size[1] }))
-                        .reverse();  // topmost first (roughly: floating windows come last in the list)
-                } catch (e) {
-                    root.windows = [];
-                }
-            }
+            onStreamFinished: root.windows = root.swayWindows(text)
         }
     }
 

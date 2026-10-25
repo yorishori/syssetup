@@ -24,10 +24,9 @@ Singleton {
 
     property bool cameraActive: false
 
-    // Screen: shared through the wlr or Hyprland portal (their Pipewire video
-    // streams, xdpw…/xdph…, exist only while sharing), or being recorded by
-    // the shell itself.
-    readonly property bool sharing: Pipewire.nodes.values.some(n => /^xd(pw|ph)/.test(n.name))
+    // Screen: shared through the wlr portal (its Pipewire video streams,
+    // xdpw…, exist only while sharing), or being recorded by the shell itself.
+    readonly property bool sharing: Pipewire.nodes.values.some(n => /^xdpw/.test(n.name))
     readonly property bool screenActive: sharing || (Capture.recording && Capture.kind === "screen")
     property bool fuserMissing: false
 
