@@ -32,6 +32,6 @@ Skinned {
             else
                 Panels.toggle("audio");
         }
-        onWheel: wheel => Audio.changeVolume(wheel.angleDelta.y > 0 ? 0.05 : -0.05)
+        onWheel: wheel => Audio.changeVolume(wheel.angleDelta.y > 0 ? Audio.step : -Audio.step)
     }
 }

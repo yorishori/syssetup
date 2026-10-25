@@ -31,10 +31,7 @@ Singleton {
 
     readonly property bool busy: state !== "idle"
     readonly property bool recording: state === "recording"
-    // Private: the session's runtime dir, else the shell's cache (never /tmp,
-    // which anyone can write to).
-    readonly property string tmpDir: Quickshell.env("XDG_RUNTIME_DIR")
-        ? `${Quickshell.env("XDG_RUNTIME_DIR")}/qs-capture` : `${Quickshell.cacheDir}/capture`
+    readonly property string tmpDir: Paths.privateDir("capture")
 
     // Folder and file name the prompt suggests.
     readonly property string folderKey: kind === "screenshot" ? "screenshots" : kind === "screen" ? "recordings" : "voice"
@@ -122,12 +119,11 @@ Singleton {
     function save(path: string, alsoCopy: bool): void {
         const target = path.trim() || suggestedName();
         const dir = target.replace(/\/[^\/]*$/, "");
-        const home = Quickshell.env("HOME");
         finisher.command = ["sh", "-c", `
             target="$1"; src="$2"
             mkdir -p "$(dirname "$target")" && mv -f "$src" "$target" || exit 1
             [ "$3" = copy ] && wl-copy --type image/png < "$target"
-            exit 0`, "sh", target.replace(/^~(?=\/|$)/, home), file, alsoCopy ? "copy" : ""];
+            exit 0`, "sh", Paths.expand(target), file, alsoCopy ? "copy" : ""];
         // Remember the folder for next time, once the file is really there.
         finisher.rememberAs = dir && dir !== suggestedDir ? folderKey : "";
         finisher.rememberDir = dir;
@@ -181,7 +177,7 @@ Singleton {
         }
     }
 
-    Component.onCompleted: Quickshell.execDetached(["sh", "-c", 'mkdir -p "$1" && chmod 700 "$1"', "sh", tmpDir])
+    Component.onCompleted: Paths.makePrivate(tmpDir)
 
     Timer {
         interval: 1000

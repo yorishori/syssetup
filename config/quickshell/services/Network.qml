@@ -64,8 +64,7 @@ Singleton {
         if (action.running)
             return;
         error = "";
-        action.command = ["sh", "-c", '"$@" 2>&1; echo "exit:$?"', "sh", ...command];
-        action.running = true;
+        action.run(command);
     }
 
     // iwd reports signal in 1/100 dBm; map -100..-50 dBm to 0..100.
@@ -168,43 +167,26 @@ Singleton {
         }
     }
 
-    Process {
+    Action {
         id: action
 
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const out = text.replace(/\x1b\[[0-9;]*m/g, "").trim().split("\n");
-                const code = out.pop();
-                if (code !== "exit:0")
-                    root.error = out.join(" ").trim() || "action failed";
-                root.pending = "";
-                root.refresh();
-            }
+        onDone: (ok, output) => {
+            if (!ok)
+                root.error = output || "action failed";
+            root.pending = "";
+            root.refresh();
         }
     }
 
     // Any signal from either daemon means something changed.
-    component Monitor: Process {
-        id: monitor
-
-        required property string dest
-
-        running: true
-        command: ["gdbus", "monitor", "--system", "--dest", dest]
-        stdout: SplitParser {
-            onRead: root.refresh()
-        }
-        // gdbus exiting is unexpected; bring it back.
-        onExited: restartTimer.start()
-
-        readonly property Timer restartTimer: Timer {
-            interval: 5000
-            onTriggered: monitor.running = true
-        }
+    DbusMonitor {
+        dest: "net.connman.iwd"
+        onRead: root.refresh()
     }
-
-    Monitor { dest: "net.connman.iwd" }
-    Monitor { dest: "org.freedesktop.network1" }
+    DbusMonitor {
+        dest: "org.freedesktop.network1"
+        onRead: root.refresh()
+    }
 
     HealthCheck {
         source: "wifi"

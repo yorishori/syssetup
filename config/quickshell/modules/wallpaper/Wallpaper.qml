@@ -15,7 +15,7 @@ Scope {
     // "~/…" and file:// both work.
     readonly property string path: {
         const p = Config.wallpaper.path ?? "";
-        return p.startsWith("~/") ? Quickshell.env("HOME") + p.slice(1) : p.replace(/^file:\/\//, "");
+        return Paths.expand(p.replace(/^file:\/\//, ""));
     }
     readonly property int fillMode: ({
         fill: Image.PreserveAspectCrop,

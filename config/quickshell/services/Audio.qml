@@ -124,6 +124,9 @@ Singleton {
             node.audio.muted = !node.audio.muted;
     }
 
+    // One volume key press or wheel notch.
+    readonly property real step: 0.05
+
     function setVolume(value: real): void { setNodeVolume(output, value); }
     function changeVolume(delta: real): void { setNodeVolume(output, volume + delta); }
     function toggleMute(): void { toggleNodeMute(output); }
@@ -244,8 +247,8 @@ Singleton {
     IpcHandler {
         target: "audio"
 
-        function up(): void { root.changeVolume(0.05); }
-        function down(): void { root.changeVolume(-0.05); }
+        function up(): void { root.changeVolume(root.step); }
+        function down(): void { root.changeVolume(-root.step); }
         function mute(): void { root.toggleMute(); }
         function set(percent: int): void { root.setVolume(percent / 100); }
         function get(): string {

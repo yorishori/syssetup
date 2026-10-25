@@ -15,7 +15,8 @@ scripts/check.sh                    # structure checks (run before committing)
 
 ```
 shell.qml      lists the top-level modules; nothing else
-core/          Config, Setup, Theme, Health, ModuleLoader, Icons
+core/          Config, Setup, Theme, Health, ModuleLoader, Icons; helpers for services
+               (Action, DbusMonitor, Paths, objects.js)
 services/      the logic: one singleton per area (Audio, Network, Session, …), no UI
 components/    themed widgets with behaviour only (Skinned + a skin name)
 modules/       the windows and panels: services wired to components, no drawing
@@ -111,7 +112,9 @@ session lock goes up, until the lock window's first frame.
 - **Service**: `services/<Name>.qml`, `pragma Singleton`, imports only `qs.core`. Report
   failures with `HealthCheck { source; ok; reason }`. Run commands with arguments
   passed as they are (`["sh", "-c", '… "$1"', "sh", value]`), never outside text
-  pasted into a command line. Poll only while something shows the result. A
+  pasted into a command line (`Action` runs one and reports how it went;
+  `DbusMonitor` watches a D-Bus name; `Paths.privateDir` is where private
+  temp files go). Poll only while something shows the result. A
   service that has to run with no UI showing it (a daemon: notifications, idle,
   polkit…) is listed in `modules/daemons/Daemons.qml`, which starts it.
 - **Bar widget**: `modules/bar/widgets/<Name>.qml` (a `Skinned`; one that opens a panel

@@ -3,7 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "merge.js" as Merge
+import "objects.js" as Objects
 
 // Settings: what's changed now and then from the Settings panel, and what the
 // shell remembers on its own. Kept out of the project, in
@@ -48,7 +48,7 @@ Singleton {
         }
     })
 
-    readonly property string dir: `${Quickshell.env("XDG_STATE_HOME") || `${Quickshell.env("HOME")}/.local/state`}/quickshell`
+    readonly property string dir: `${Paths.stateHome}/quickshell`
 
     property var values: defaults
 
@@ -62,18 +62,17 @@ Singleton {
 
     // The setting at a dotted path, e.g. get("idle.lock").
     function get(path: string): var {
-        return path.split(".").reduce((o, k) => o?.[k], values);
+        return Objects.getPath(values, path);
+    }
+
+    // Its default.
+    function defaultOf(path: string): var {
+        return Objects.getPath(defaults, path);
     }
 
     // Change a setting; applied now, written to settings.json shortly after.
     function set(path: string, value: var): void {
-        const next = JSON.parse(JSON.stringify(values));
-        const keys = path.split(".");
-        let node = next;
-        for (const k of keys.slice(0, -1))
-            node = node[k] = node[k] ?? {};
-        node[keys[keys.length - 1]] = value;
-        values = next;
+        values = Objects.setPath(values, path, value);
         writeDelay.restart();
     }
 
@@ -165,7 +164,7 @@ Singleton {
                 return;
             try {
                 const rejected = [];
-                root.values = Merge.merge(root.defaults, JSON.parse(content), rejected);
+                root.values = Objects.merge(root.defaults, JSON.parse(content), rejected);
                 if (rejected.length)
                     Health.report("config", `settings.json: wrong type for ${rejected.join(", ")}, using the defaults`);
                 else

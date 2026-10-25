@@ -47,8 +47,7 @@ Singleton {
 
     function action(command: var): void {
         error = "";
-        runner.command = ["sh", "-c", '"$@" 2>&1 >/dev/null; echo "exit:$?"', "sh", ...command];
-        runner.running = true;
+        runner.run(command);
     }
 
     function human(bytes: real): string {
@@ -156,16 +155,14 @@ $m"
         root.mountable = mountable;
     }
 
-    Process {
+    Action {
         id: runner
 
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const lines = text.trim().split("\n");
-                if (lines.pop() !== "exit:0")
-                    root.error = lines.join(" ").trim() || "failed";
-                root.refresh();
-            }
+        keepStdout: false
+        onDone: (ok, output) => {
+            if (!ok)
+                root.error = output || "failed";
+            root.refresh();
         }
     }
 }

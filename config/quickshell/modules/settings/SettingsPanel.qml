@@ -48,7 +48,7 @@ Skinned {
         return Config.get(path);
     }
     function defaultOf(path: string): var {
-        return path.split(".").reduce((o, k) => o?.[k], Config.defaults);
+        return Config.defaultOf(path);
     }
     function changed(path: string): bool {
         return JSON.stringify(value(path)) !== JSON.stringify(defaultOf(path));

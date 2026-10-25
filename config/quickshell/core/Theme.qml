@@ -2,7 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import "merge.js" as Merge
+import "objects.js" as Objects
 
 // The active theme: how the shell looks, never what it does.
 //
@@ -35,7 +35,7 @@ Singleton {
     readonly property QtObject spec: specs[name] ?? specs[names[0]]
 
     // The theme's tokens with your tweaks (Setup.themes.<name>) over them.
-    readonly property var values: Merge.merge(spec?.defaults ?? {}, Setup.themes[name] ?? {})
+    readonly property var values: Objects.merge(spec?.defaults ?? {}, Setup.themes[name] ?? {})
 
     readonly property var palette: values.palette
     readonly property var font: values.font
@@ -63,7 +63,7 @@ Singleton {
 
     // A token at a dotted path inside the theme, e.g. get("palette.accent").
     function get(path: string): var {
-        return path.split(".").reduce((o, k) => o?.[k], values);
+        return Objects.getPath(values, path);
     }
 
     // Label text as the theme sets labels (stencil capitals in cyber).

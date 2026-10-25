@@ -98,7 +98,7 @@ Singleton {
     FileView {
         id: userTable
 
-        path: `${Quickshell.env("HOME")}/.XCompose`
+        path: `${Paths.home}/.XCompose`
         printErrors: false
         watchChanges: true
         onFileChanged: reload()

@@ -63,10 +63,8 @@ Singleton {
         pending = device.address;
         error = "";
         errorFor = "";
-        action.command = ["sh", "-c", '"$@" 2>&1; echo "exit:$?"', "sh",
-            "sh", "-c", 'p=$1; shift; for m; do busctl --system --timeout=60 call org.bluez "$p" org.bluez.Device1 "$m" || exit; done', "sh",
-            path, ...methods];
-        action.running = true;
+        action.run(["sh", "-c", 'p=$1; shift; for m; do busctl --system --timeout=60 call org.bluez "$p" org.bluez.Device1 "$m" || exit; done', "sh",
+            path, ...methods]);
     }
 
     // Glyph for a device, from the type BlueZ reports.
@@ -82,20 +80,16 @@ Singleton {
             : "\u{F00AF}";
     }
 
-    Process {
+    Action {
         id: action
 
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const out = text.trim().split("\n");
-                const code = out.pop();
-                if (code !== "exit:0") {
-                    root.error = out.join(" ").replace(/^Call failed:\s*/, "").trim() || "action failed";
-                    root.errorFor = root.pending;
-                    console.warn(`bluetooth: ${root.pending}: ${root.error}`);
-                }
-                root.pending = "";
+        onDone: (ok, output) => {
+            if (!ok) {
+                root.error = output.replace(/^Call failed:\s*/, "") || "action failed";
+                root.errorFor = root.pending;
+                console.warn(`bluetooth: ${root.pending}: ${root.error}`);
             }
+            root.pending = "";
         }
     }
 

@@ -29,3 +29,22 @@ function merge(base, over, rejected, prefix) {
     }
     return out;
 }
+
+// The value at a dotted path, e.g. getPath(values, "idle.lock"); undefined if
+// any step is missing.
+function getPath(obj, path) {
+    return path.split(".").reduce((o, k) => o?.[k], obj);
+}
+
+// A copy of `obj` with the value at a dotted path replaced (groups on the way
+// are created as needed). `obj` itself is left alone, so bindings see a new
+// object.
+function setPath(obj, path, value) {
+    const next = JSON.parse(JSON.stringify(obj));
+    const keys = path.split(".");
+    let node = next;
+    for (const k of keys.slice(0, -1))
+        node = node[k] = node[k] ?? {};
+    node[keys[keys.length - 1]] = value;
+    return next;
+}

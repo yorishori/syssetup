@@ -113,35 +113,19 @@ Singleton {
         return id ? `/org/freedesktop/login1/session/${esc}` : "";
     }
 
-    Process {
+    DbusMonitor {
         id: logind
 
-        running: true
-        command: ["gdbus", "monitor", "--system", "--dest", "org.freedesktop.login1"]
-        stdout: SplitParser {
-            onRead: line => {
-                if (line.includes(".Manager.PrepareForSleep (true,)")) {
+        dest: "org.freedesktop.login1"
+        onRead: line => {
+            if (line.includes(".Manager.PrepareForSleep (true,)")) {
+                root.lockNow();
+            } else if (line.includes(".Session.Lock ()")) {
+                const path = line.split(":")[0];
+                if (!root.sessionPath || path === root.sessionPath)
                     root.lockNow();
-                } else if (line.includes(".Session.Lock ()")) {
-                    const path = line.split(":")[0];
-                    if (!root.sessionPath || path === root.sessionPath)
-                        root.lockNow();
-                }
             }
         }
-        // Restarted, waiting longer each time it dies straight away (gdbus
-        // missing, no system bus) so it doesn't spin.
-        property real startedAt: 0
-        onRunningChanged: if (running) startedAt = Date.now()
-        onExited: {
-            logindRetry.interval = Date.now() - startedAt > 10000 ? 5000 : Math.min(logindRetry.interval * 2, 300000);
-            logindRetry.start();
-        }
-    }
-    Timer {
-        id: logindRetry
-        interval: 5000
-        onTriggered: logind.running = true
     }
 
     // Holds sleep back (logind waits up to 5s) until the screen is locked.
