@@ -6,7 +6,6 @@ import Quickshell.Wayland
 import qs.components
 import qs.core
 import qs.services
-import "widgets"
 
 // The bar, and the drops that hang from it.
 //
@@ -14,7 +13,9 @@ import "widgets"
 // only reserves the bar's height and only takes input on the bar and the open
 // drop. Which panel is open lives in Panels (one at a time); outside click or
 // Escape closes it. Each drop's contents is its own module
-// (modules/<name>/<Name>Panel.qml), loaded in isolation by PanelLoader.
+// (modules/<name>/<Name>Panel.qml), loaded in isolation by PanelLoader, and
+// each bar widget too (widgets/<Name>.qml, by BarSlot): a broken one is
+// reported and leaves a gap, never takes the bar down.
 PanelWindow {
     id: bar
 
@@ -22,41 +23,26 @@ PanelWindow {
     // show is open).
     readonly property string openDrop: panels.some(p => p.name === Panels.current) ? Panels.current : ""
 
-    // Drops, in the order they're declared. `edge` pins one flush to a screen
-    // edge; `blur` darkens and blurs the rest of the screen behind it. Themes
-    // that show the session menu full screen (SessionScreen) have no drop
-    // for it.
+    // The drops, in the order they're declared: the panel each one holds
+    // (modules/<name>/<Name>Panel.qml), the bar slot it hangs under, `edge`
+    // to pin it flush to a screen edge instead, `blur` to darken and blur the
+    // rest of the screen behind it, and `bindings` for panel properties kept
+    // bound. Themes that show the session menu full screen (SessionScreen)
+    // have no drop for it.
+    readonly property real tallest: bar.height - Theme.barHeight - 60
     readonly property var panels: [
-        { name: "session", edge: "left", blur: true },
-        { name: "calendar" },
-        { name: "tray", bindings: { item: () => bar.trayItem } },
-        { name: "launcher", blur: true },
-        { name: "network" },
-        { name: "bluetooth" },
-        { name: "audio" },
-        { name: "notifications" },
-        { name: "control", edge: "right", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
-        { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
-        { name: "keys", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } }
+        { name: "session", under: power, edge: "left", blur: true },
+        { name: "calendar", under: clock },
+        { name: "tray", bindings: { item: () => bar.trayItem } },  // under the app's icon
+        { name: "launcher", under: workspaces, blur: true },
+        { name: "network", under: network },
+        { name: "bluetooth", under: bluetooth },
+        { name: "audio", under: audio },
+        { name: "notifications", under: notifications },
+        { name: "control", under: control, edge: "right", blur: true, bindings: { maxHeight: () => bar.tallest } },
+        { name: "settings", under: workspaces, blur: true, bindings: { maxHeight: () => bar.tallest } },
+        { name: "keys", under: workspaces, blur: true, bindings: { maxHeight: () => bar.tallest } }
     ].filter(p => p.name !== "session" || !Theme.sessionScreen)
-
-    // The bar key each drop hangs under.
-    function anchorFor(name: string): Item {
-        switch (name) {
-        case "session": return powerButton;
-        case "calendar": return clock;
-        case "tray": return bar.trayAnchor;
-        case "launcher": return workspaces;
-        case "network": return networkButton;
-        case "bluetooth": return bluetoothButton;
-        case "audio": return audioButton;
-        case "notifications": return notifButton;
-        case "control": return controlButton;
-        case "settings": return workspaces;
-        case "keys": return workspaces;
-        }
-        return null;
-    }
 
     // The open drop, for the input mask.
     readonly property Item activeDrop: {
@@ -166,7 +152,7 @@ PanelWindow {
         }
         height: Theme.barHeight
         // The groups of keys, for themes that draw them apart.
-        islands: [[leftGroup], [launcherButton, workspaces, centerRow], [rightGroup]]
+        islands: [[leftGroup], [launcher, workspaces, centerRow], [rightGroup]]
 
         // Left: power, time, tray
         RowLayout {
@@ -179,38 +165,26 @@ PanelWindow {
             }
             spacing: Setup.bar.spacing
 
-            PowerButton {
-                id: powerButton
-            }
-            Clock {
-                id: clock
-
-                active: bar.openDrop === "calendar"
-                onClicked: Panels.toggle("calendar")
-            }
-            Tray {
-                id: tray
-
-                pulled: bar.openDrop === "tray" ? bar.trayItem : null
-                onMenuRequested: (trayItem, anchor) => bar.toggleTrayMenu(trayItem, anchor)
-            }
+            BarSlot { id: power; widget: "PowerButton" }
+            BarSlot { id: clock; widget: "Clock" }
+            BarSlot { id: tray; widget: "Tray" }
         }
 
         // Center: launcher key, workspaces, caffeine, status lamps, recording
-        LauncherButton {
-            id: launcherButton
+        BarSlot {
+            id: launcher
 
+            widget: "LauncherButton"
             anchors {
                 right: workspaces.left
                 rightMargin: Setup.bar.spacing
                 verticalCenter: parent.verticalCenter
             }
-            active: bar.openDrop === "launcher"
-            onClicked: Panels.toggle("launcher")
         }
-        Workspaces {
+        BarSlot {
             id: workspaces
 
+            widget: "Workspaces"
             anchors.centerIn: parent
         }
         Row {
@@ -223,15 +197,9 @@ PanelWindow {
             }
             spacing: 8
 
-            CaffeineButton {
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            StatusLamps {
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            RecordingKey {
-                anchors.verticalCenter: parent.verticalCenter
-            }
+            BarSlot { widget: "CaffeineButton"; anchors.verticalCenter: parent.verticalCenter }
+            BarSlot { widget: "StatusLamps"; anchors.verticalCenter: parent.verticalCenter }
+            BarSlot { widget: "RecordingKey"; anchors.verticalCenter: parent.verticalCenter }
         }
 
         // Right: controls
@@ -245,38 +213,36 @@ PanelWindow {
             }
             spacing: Setup.bar.spacing
 
-            NetworkButton {
-                id: networkButton
-                onToggleDrop: Panels.toggle("network")
-            }
-            BluetoothButton {
-                id: bluetoothButton
-                onToggleDrop: Panels.toggle("bluetooth")
-            }
-            AudioButton {
-                id: audioButton
-                onToggleDrop: Panels.toggle("audio")
-            }
-            NotifIndicator {
-                id: notifButton
-
-                active: bar.openDrop === "notifications"
-                onClicked: Panels.toggle("notifications")
-            }
-            // Tell the popups where it is.
-            Binding {
-                target: Notifs
-                property: "slotX"
-                value: background.x + rightGroup.x + notifButton.x + notifButton.width / 2
-            }
-            HealthIndicator {}
-            ControlButton {
-                id: controlButton
-
-                active: bar.openDrop === "control"
-                onClicked: Panels.toggle("control")
-            }
+            BarSlot { id: network; widget: "NetworkButton" }
+            BarSlot { id: bluetooth; widget: "BluetoothButton" }
+            BarSlot { id: audio; widget: "AudioButton" }
+            BarSlot { id: notifications; widget: "NotifIndicator" }
+            BarSlot { widget: "HealthIndicator" }
+            BarSlot { id: control; widget: "ControlButton" }
         }
+
+        // Tell the popups where the notification key is.
+        Binding {
+            target: Notifs
+            property: "slotX"
+            value: background.x + rightGroup.x + notifications.x + notifications.width / 2
+        }
+    }
+
+    // The tray asks for an app's menu; the bar shows it as a drop.
+    Connections {
+        target: tray.item
+        ignoreUnknownSignals: true
+
+        function onMenuRequested(item: var, anchor: Item): void {
+            bar.toggleTrayMenu(item, anchor);
+        }
+    }
+    Binding {
+        when: tray.item !== null
+        target: tray.item
+        property: "pulled"
+        value: bar.openDrop === "tray" ? bar.trayItem : null
     }
 
     Repeater {
@@ -290,7 +256,7 @@ PanelWindow {
             required property var modelData
 
             y: Theme.barHeight - background.seam
-            anchorItem: bar.anchorFor(modelData.name)
+            anchorItem: modelData.name === "tray" ? bar.trayAnchor : modelData.under
             name: modelData.name
             edge: modelData.edge ?? ""
             open: bar.openDrop === modelData.name
@@ -310,7 +276,7 @@ PanelWindow {
         target: "tray"
 
         function menu(app: string): string {
-            return tray.openMenu(app) ? "" : `no tray menu matching "${app}"`;
+            return tray.item?.openMenu(app) ? "" : `no tray menu matching "${app}"`;
         }
     }
 }

@@ -45,6 +45,13 @@ Singleton {
         Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "qs", `${source} is down`, reason]);
     }
 
+    // A file that failed to load (a module, panel or bar widget): report
+    // why, as the QML engine tells it.
+    function reportBroken(source: string, url: url): void {
+        const comp = Qt.createComponent(url, Component.PreferSynchronous);
+        report(source, comp.status === Component.Error ? comp.errorString().trim() : "failed to create (see log)");
+    }
+
     function resolve(source: string): void {
         if (!(source in issues))
             return;

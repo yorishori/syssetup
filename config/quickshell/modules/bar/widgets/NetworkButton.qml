@@ -14,7 +14,7 @@ Skinned {
     readonly property bool online: wired || Network.connected !== null
     readonly property bool hovered: area.containsMouse
 
-    signal toggleDrop
+    readonly property bool active: Panels.isOpen("network")
 
     skin: "NetworkButton"
 
@@ -24,6 +24,6 @@ Skinned {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.toggleDrop()
+        onClicked: Panels.toggle("network")
     }
 }

@@ -1,15 +1,15 @@
 import QtQuick
 import qs.components
+import qs.services
 
 // Opens the launcher with the mouse (`active` while it's open).
 Skinned {
     id: root
 
-    property bool active: false
+    readonly property bool active: Panels.isOpen("launcher")
     readonly property bool hovered: area.containsMouse
     readonly property bool pressed: area.pressed
 
-    signal clicked
 
     skin: "LauncherButton"
 
@@ -20,6 +20,6 @@ Skinned {
         anchors.margins: -4
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
+        onClicked: Panels.toggle("launcher")
     }
 }
