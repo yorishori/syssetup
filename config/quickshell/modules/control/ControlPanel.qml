@@ -116,9 +116,11 @@ Skinned {
         return days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
     }
 
+    // Live readings while open.
+    Live { target: Sysinfo; when: root.open }
+    Live { target: Storage; when: root.open }
+
     onOpenChanged: {
-        Sysinfo.active = open;
-        Storage.active = open;
         if (open) {
             Session.refresh();
             Updates.check(false);

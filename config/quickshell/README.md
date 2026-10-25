@@ -16,7 +16,7 @@ scripts/check.sh                    # structure checks (run before committing)
 ```
 shell.qml      lists the top-level modules; nothing else
 core/          Config, Setup, Theme, Health, ModuleLoader, Icons; helpers for services
-               (Action, DbusMonitor, Paths, objects.js)
+               (Action, DbusMonitor, Live, Paths, objects.js, settings.js)
 services/      the logic: one singleton per area (Audio, Network, Session, …), no UI
 components/    themed widgets with behaviour only (Skinned + a skin name)
 modules/       the windows and panels: services wired to components, no drawing
@@ -121,7 +121,9 @@ session lock goes up, until the lock window's first frame.
   `DbusMonitor` watches a D-Bus name; `Paths.privateDir` is where private
   temp files go). A script longer than a line goes in
   `scripts/<service>-<what>.sh`, run as `["sh", Quickshell.shellPath("scripts/…"), args…]`,
-  so shellcheck (in `check.sh`) sees it. Poll only while something shows the result. A
+  so shellcheck (in `check.sh`) sees it. Poll only while something shows the result:
+  the service counts `users` and polls while there are any, and whatever shows
+  it declares `Live { target: TheService; when: open }`. A
   service that has to run with no UI showing it (a daemon: notifications, idle,
   polkit…) is listed in `modules/daemons/Daemons.qml`, which starts it.
 - **Bar widget**: `modules/bar/widgets/<Name>.qml` (a `Skinned`; one that opens a panel

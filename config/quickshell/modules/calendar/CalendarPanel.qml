@@ -85,8 +85,10 @@ Skinned {
         turned(months);
     }
 
+    // Seconds while open.
+    Live { target: Time; when: root.open }
+
     onOpenChanged: {
-        Time.secondsNeeded = open;
         if (open) {
             viewYear = today.getFullYear();
             viewMonth = today.getMonth();

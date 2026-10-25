@@ -5,12 +5,13 @@ import Quickshell
 import Quickshell.Io
 
 // Hardware and system info. Static facts are read once; live readings (CPU,
-// GPU, RAM usage and temperatures) are only sampled while `active` is set,
-// e.g. while the control center is open.
+// GPU, RAM usage and temperatures) are only sampled while something shows
+// them (a `Live { target: Sysinfo }`, e.g. the control center while open).
 Singleton {
     id: root
 
-    property bool active: false
+    property int users: 0
+    readonly property bool active: users > 0
 
     // Static
     property string os: ""

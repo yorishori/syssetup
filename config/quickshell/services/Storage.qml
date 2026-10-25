@@ -6,12 +6,14 @@ import Quickshell.Io
 import qs.core
 
 // Mounted filesystems (capacity), removable drives that can be mounted, and
-// connected USB devices. Refreshed every 3s while `active` (control center
-// open), so plugging something in shows up right away; idle otherwise.
+// connected USB devices. Refreshed every 3s while something shows them (a
+// `Live { target: Storage }`, e.g. the control center while open), so plugging
+// something in shows up right away; idle otherwise.
 Singleton {
     id: root
 
-    property bool active: false
+    property int users: 0
+    readonly property bool active: users > 0
 
     // [{ device, name, mount, fstype, size, used, avail, removable }]
     property var mounted: []
