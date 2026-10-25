@@ -46,7 +46,9 @@ Skinned {
 
     onOpenChanged: if (open) place()
     onAnchorItemChanged: if (open) place()
-    onWidthChanged: if (open && edge) place()
+    // Also when the contents settle (a panel is built the first time it
+    // opens, so it has no size yet when the drop does).
+    onWidthChanged: if (open) place()
 
     function place(): void {
         const inset = view?.inset ?? 0;

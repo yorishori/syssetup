@@ -5,7 +5,7 @@ import qs.core
 // Loads one panel (a drop's contents, modules/<name>/<Name>Panel.qml) in
 // isolation: it's compiled at runtime rather than referenced as a type, so a
 // broken panel is reported to Health and shows a stand-in, while the bar and
-// every other panel keep working.
+// every other panel keep working. Nothing is built until it first opens.
 //
 // Panels may declare `property bool open` (kept bound to the drop), `signal
 // done` (closes the drop) and `signal fallback`; `bindings` keeps any other
@@ -33,6 +33,10 @@ Item {
     width: implicitWidth
     height: implicitHeight
 
+    // Compiled at startup, so a broken panel is reported straight away;
+    // created the first time it opens, then kept (closing only hides it).
+    property Component component: null
+
     Component.onCompleted: {
         const comp = Qt.createComponent(Qt.resolvedUrl("../../" + path));
         if (comp.status === Component.Error) {
@@ -40,14 +44,22 @@ Item {
             Health.report(name, error);
             return;
         }
+        component = comp;
+        if (open)
+            create();
+    }
 
+    onOpenChanged: if (open && !panel && component) create()
+
+    function create(): void {
         const props = {};
         for (const key in bindings)
             props[key] = Qt.binding(bindings[key]);
-        const obj = comp.createObject(root, props);
+        const obj = component.createObject(root, props);
         if (!obj) {
             error = "failed to create (see log)";
             Health.report(name, error);
+            component = null;
             return;
         }
         if ("open" in obj)
