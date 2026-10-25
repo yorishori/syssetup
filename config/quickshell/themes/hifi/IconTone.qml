@@ -4,13 +4,20 @@ import QtQuick
 // weighted toward the saturated, opaque ones) and how light it is overall
 // (0-1, opaque pixels only). `known` once it's been looked at; until then,
 // or if it can't be read, `color` is invalid and `lightness` 0.5.
+//
+// Theme icons (image://icon/…) are never read: Canvas loads images on Qt's
+// reader thread, and a theme icon loaded there while one loads on the GUI
+// thread crashes Qt 6.12 (QIcon isn't thread-safe;
+// quickshell-mirror/quickshell#1334). For those, a symbolic icon (the light
+// monochrome kind panels get) counts as light; the color stays unknown.
 Canvas {
     id: root
 
     property string source
+    readonly property bool themed: source.startsWith("image://icon/")
     readonly property bool known: found !== null
     readonly property color color: found?.color ?? "transparent"
-    readonly property real lightness: found?.lightness ?? 0.5
+    readonly property real lightness: found?.lightness ?? (themed && source.includes("symbolic") ? 0.9 : 0.5)
     property var found: null
 
     width: 24
@@ -19,13 +26,13 @@ Canvas {
 
     onSourceChanged: {
         found = null;
-        if (source)
+        if (source && !themed)
             loadImage(source);
     }
     onImageLoaded: requestPaint()
     onPaint: {
         const ctx = getContext("2d");
-        if (!source || !isImageLoaded(source))
+        if (!source || themed || !isImageLoaded(source))
             return;
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(source, 0, 0, width, height);
