@@ -83,11 +83,10 @@ QtObject {
             // Hanging from behind the panel (the tray's cables come out of
             // its face).
             behindBar: ["calendar", "keys"],
-            // The lock screen's doors part on unlocking; the lock is held
-            // that long. They close over, and open onto, a snapshot of the
-            // desktop taken as it locks.
-            unlockHold: 700,
-            lockSnapshot: true
+            // The lock screen's doors slam shut over the desktop and part
+            // onto it again: how long each takes (see modules/lock/Lock.qml).
+            lockClose: 660,
+            lockOpen: 640
         },
         // What each display on the panel glows in.
         display: {

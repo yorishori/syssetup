@@ -10,9 +10,11 @@ import qs.core
 // Whether the menu is open lives in Panels ("session").
 //
 // Locking: lock() sets `locked`; the lock module (modules/lock) puts up the
-// lock surface and reports `lockSecure` once the compositor confirms. If that
-// doesn't happen within 1.5s, Health says so: a lock that silently fails is
-// worse than none. Passwords are checked with PAM (/etc/pam.d/login).
+// lock surface (after the theme's closing transition, if it has one) and
+// reports `lockSecure` once the compositor confirms. If that doesn't happen
+// within 2.5s, Health says so: a lock that silently fails is worse than none.
+// lockNow() skips the transition (going to sleep). Passwords are checked with
+// PAM (/etc/pam.d/login).
 //
 // logind: any suspend (menu, `systemctl suspend`, the power button) locks
 // first, held back by a sleep delay inhibitor until the lock is up;
@@ -43,7 +45,7 @@ Singleton {
 
     // Lock first, so the machine wakes up locked.
     function suspend(): void {
-        lock();
+        lockNow();
         suspendDelay.restart();
     }
 
@@ -55,13 +57,23 @@ Singleton {
     property string authMessage: ""
     property int failures: 0
     property string pending: ""
+    // This lock is to go up straight away, without the theme's transition.
+    property bool now: false
 
     function lock(): void {
+        if (!locked)
+            now = false;
         Panels.close();
         authState = "";
         authMessage = "";
         locked = true;
         secureCheck.restart();
+    }
+
+    function lockNow(): void {
+        if (!locked)
+            now = true;
+        lock();
     }
 
     function unlockWith(password: string): void {
@@ -83,7 +95,7 @@ Singleton {
 
     Timer {
         id: secureCheck
-        interval: 1500
+        interval: 2500
         onTriggered: {
             if (root.locked && !root.lockSecure)
                 Health.report("lock", "the screen did not lock (lock module down?)");
@@ -108,11 +120,11 @@ Singleton {
         stdout: SplitParser {
             onRead: line => {
                 if (line.includes(".Manager.PrepareForSleep (true,)")) {
-                    root.lock();
+                    root.lockNow();
                 } else if (line.includes(".Session.Lock ()")) {
                     const path = line.split(":")[0];
                     if (!root.sessionPath || path === root.sessionPath)
-                        root.lock();
+                        root.lockNow();
                 }
             }
         }
