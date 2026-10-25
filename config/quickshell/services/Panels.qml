@@ -5,15 +5,20 @@ import Quickshell
 import Quickshell.Io
 
 // Which panel is open (at most one): the single source of truth shared by
-// the bar (its drops), the clipboard window, bar keys and IPC.
-//
-// Every panel answers `qs ipc call <panel> toggle|open|close`. Most
-// of those handlers live in the panel's service (audio, network, …); the ones
-// without a service of their own are here.
+// the bar (its drops), the clipboard and compose windows, bar keys and IPC
+// (`qs ipc call panel toggle launcher`).
 Singleton {
     id: root
 
     property string current: ""
+
+    // The panels IPC can open (a tray menu opens with `tray menu APP`).
+    readonly property var names: ["session", "calendar", "launcher", "network", "bluetooth", "audio",
+        "notifications", "control", "settings", "keys", "clipboard", "compose"]
+
+    function unknown(name: string): string {
+        return `no panel "${name}"; panels: ${names.join(", ")}`;
+    }
 
     function open(name: string): void {
         current = name;
@@ -41,45 +46,23 @@ Singleton {
         }
     }
 
-    // Panels without a service of their own.
+    // qs ipc call panel <toggle NAME|open NAME|close|current>
     IpcHandler {
-        target: "calendar"
+        target: "panel"
 
-        function toggle(): void { root.toggle("calendar"); }
-        function open(): void { root.open("calendar"); }
-        function close(): void {
-            if (root.isOpen("calendar"))
-                root.close();
+        function toggle(name: string): string {
+            if (!root.names.includes(name))
+                return root.unknown(name);
+            root.toggle(name);
+            return "";
         }
-    }
-
-    IpcHandler {
-        target: "control"
-
-        function toggle(): void { root.toggle("control"); }
-        function open(): void { root.open("control"); }
-        function close(): void {
-            if (root.isOpen("control"))
-                root.close();
+        function open(name: string): string {
+            if (!root.names.includes(name))
+                return root.unknown(name);
+            root.open(name);
+            return "";
         }
-    }
-
-    IpcHandler {
-        target: "settings"
-
-        function toggle(): void { root.toggle("settings"); }
-        function open(): void { root.open("settings"); }
-        function close(): void {
-            if (root.isOpen("settings"))
-                root.close();
-        }
-    }
-
-    // qs ipc call panels <current|close>
-    IpcHandler {
-        target: "panels"
-
-        function current(): string { return root.current || "none"; }
         function close(): void { root.close(); }
+        function current(): string { return root.current || "none"; }
     }
 }

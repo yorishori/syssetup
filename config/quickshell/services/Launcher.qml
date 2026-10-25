@@ -242,16 +242,9 @@ Singleton {
         }
     }
 
-    // qs ipc call launcher <toggle|open|close|search QUERY|windows|apps|list QUERY>
+    // qs ipc call launcher <search QUERY|windows|apps|list QUERY> (opening it: panel)
     IpcHandler {
         target: "launcher"
-
-        function toggle(): void { Panels.toggle("launcher"); }
-        function open(): void { Panels.open("launcher"); }
-        function close(): void {
-            if (Panels.isOpen("launcher"))
-                Panels.close();
-        }
         // Open pre-filled with a query.
         function search(q: string): void {
             Panels.open("launcher");

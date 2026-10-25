@@ -215,17 +215,12 @@ Singleton {
         }
     }
 
-    // qs ipc call session <lock|toggle|open|close|restart>
+    // qs ipc call session <lock|locked|restart>
     IpcHandler {
         target: "session"
 
         function lock(): void { root.lock(); }
+        function locked(): bool { return root.locked; }
         function restart(): void { root.restartShell(); }
-        function toggle(): void { Panels.toggle("session"); }
-        function open(): void { Panels.open("session"); }
-        function close(): void {
-            if (Panels.isOpen("session"))
-                Panels.close();
-        }
     }
 }

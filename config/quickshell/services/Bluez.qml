@@ -115,16 +115,9 @@ Singleton {
         grace: 5000
     }
 
-    // qs ipc call bluetooth <toggle|open|close|status|power on/off|scan|connect NAME|disconnect NAME>
+    // qs ipc call bluetooth <status|power on/off|scan|connect NAME|disconnect NAME>
     IpcHandler {
         target: "bluetooth"
-
-        function toggle(): void { Panels.toggle("bluetooth"); }
-        function open(): void { Panels.open("bluetooth"); }
-        function close(): void {
-            if (Panels.isOpen("bluetooth"))
-                Panels.close();
-        }
 
         function status(): string {
             if (!root.available)

@@ -87,10 +87,6 @@ Singleton {
     })
     readonly property var keycodes: ({ "66": "Caps" })
 
-    function toggle(): void {
-        Panels.toggle("keys");
-    }
-
     function load(): void {
         reader.running = true;
     }
@@ -251,16 +247,9 @@ Singleton {
         }
     }
 
-    // qs ipc call keys <toggle|open|close|list>
+    // qs ipc call keys list
     IpcHandler {
         target: "keys"
-
-        function toggle(): void { root.toggle(); }
-        function open(): void { Panels.open("keys"); }
-        function close(): void {
-            if (root.open)
-                Panels.close();
-        }
         // What the panel shows, as text (rereads the config for next time).
         function list(): string {
             root.load();

@@ -72,7 +72,7 @@ Skinned {
     }
 
     function hide(): void {
-        Clipboard.hide();
+        Panels.close();
     }
     function wipe(): void {
         Clipboard.wipe();

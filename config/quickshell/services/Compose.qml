@@ -30,10 +30,6 @@ Singleton {
         braceleft: "{", bar: "|", braceright: "}", asciitilde: "~"
     })
 
-    function toggle(): void {
-        Panels.toggle("compose");
-    }
-
     function keyChar(name: string): string {
         if (/^[A-Za-z0-9]$/.test(name))
             return name;
@@ -118,16 +114,9 @@ Singleton {
         entries = Object.values(bySeq);
     }
 
-    // qs ipc call compose <toggle|open|close|lookup TEXT>
+    // qs ipc call compose lookup TEXT
     IpcHandler {
         target: "compose"
-
-        function toggle(): void { root.toggle(); }
-        function open(): void { Panels.open("compose"); }
-        function close(): void {
-            if (root.open)
-                Panels.close();
-        }
         function lookup(typed: string): string {
             return root.search(typed).slice(0, 10).map(e => `${e.seq}  →  ${e.result}  ${e.name}`).join("\n") || "no match";
         }

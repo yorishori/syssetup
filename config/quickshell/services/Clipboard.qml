@@ -38,19 +38,6 @@ Singleton {
     property bool cliphistMissing: false
     property bool wtypeMissing: false
 
-    function toggle(): void {
-        Panels.toggle("clipboard");
-    }
-
-    function show(): void {
-        Panels.open("clipboard");
-    }
-
-    function hide(): void {
-        if (open)
-            Panels.close();
-    }
-
     // Fresh history and target window every time it opens.
     onOpenChanged: {
         if (!open)
@@ -279,18 +266,15 @@ Singleton {
         grace: 0
     }
 
-    // qs ipc call clipboard <toggle|open|close|paste N|symbols TAB>
+    // qs ipc call clipboard <paste N|symbols TAB>
     IpcHandler {
         target: "clipboard"
 
-        function toggle(): void { root.toggle(); }
-        function open(): void { root.show(); }
-        function close(): void { root.hide(); }
         function paste(n: int): void { root.pasteIndex(n); }
         // Open on a symbol tab: emoji (default), nerd, symbol, kaomoji.
         function symbols(tab: string): void {
             root.startTab = tab || "emoji";
-            root.show();
+            Panels.open("clipboard");
         }
     }
 }
