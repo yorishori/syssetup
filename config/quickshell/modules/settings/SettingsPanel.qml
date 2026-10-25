@@ -36,7 +36,7 @@ Skinned {
         { label: "Passcode", path: "passcode", type: "int", min: 0, max: 12, suffix: "ch",
           hint: "the lock checks by itself after this many characters (your password's length); 0 = press Enter" },
         { label: "Restart", type: "action", button: "restart", hint: "start Quickshell over",
-          run: () => Session.restartShell() }
+          run: () => root.restart() }
     ]
     // The screens there are to put the shell on.
     readonly property var screens: Quickshell.screens.map(s => s.name)
@@ -58,6 +58,9 @@ Skinned {
     }
     function reset(path: string): void {
         Config.set(path, defaultOf(path));
+    }
+    function restart(): void {
+        Session.restartShell();
     }
     // Open the setup (core/Setup.qml) in the editor.
     function editSetup(): void {
