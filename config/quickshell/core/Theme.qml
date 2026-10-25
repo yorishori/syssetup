@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import "merge.js" as Merge
 
 // The active theme: how the shell looks, never what it does.
 //
@@ -12,7 +13,7 @@ import Quickshell
 //                (see components/Skinned.qml)
 // A skin the theme has no file for comes from themes/glyphs (the shared
 // layouts: the bar drawn as glyphs, the panels); so does one whose file is
-// broken, which Health is told about. scripts/check-theme.sh lists skins
+// broken, which Health is told about. scripts/check.sh lists skins
 // found in neither.
 //
 // Which theme is active is a setting (Config.theme; switching applies live);
@@ -34,7 +35,7 @@ Singleton {
     readonly property QtObject spec: specs[name] ?? specs[names[0]]
 
     // The theme's tokens with your tweaks (Setup.themes.<name>) over them.
-    readonly property var values: Config.merge(spec?.defaults ?? {}, Setup.themes[name] ?? {})
+    readonly property var values: Merge.merge(spec?.defaults ?? {}, Setup.themes[name] ?? {})
 
     readonly property var palette: values.palette
     readonly property var font: values.font

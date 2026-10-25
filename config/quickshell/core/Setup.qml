@@ -7,40 +7,12 @@ import Quickshell
 // this file (it's part of the project). What's changed now and then from the
 // Settings panel lives in Config instead.
 Singleton {
-    // Each theme's tokens, over its own (themes/<name>/Spec.qml), e.g.
-    // cyber: { palette: { accent: "#89b4fa" } }. See core/Theme.qml.
+    // Your tweaks to each theme's tokens, over its own (themes/<name>/Spec.qml:
+    // only what differs). See core/Theme.qml.
     readonly property var themes: ({
         cyber: {
-            palette: {
-                bg: "#11111b",
-                bgAlt: "#181825",
-                shadow: "#11111b",
-                surface: "#313244",
-                border: "#45475a",
-                fg: "#cdd6f4",
-                dim: "#a6adc8",
-                muted: "#6c7086",
-                off: "#99eba0ac",
-                accent: "#89b4fa",
-                ok: "#a6e3a1",
-                warn: "#fab387",
-                error: "#f38ba8"
-            },
-            font: {
-                family: "JetBrainsMono Nerd Font",
-                size: 14
-            },
-            shape: {
-                cut: 6,
-                border: 1
-            },
-            glow: {
-                opacity: 0.6
-            },
-            effects: {
-                scanlines: 0.25,
-                backdrop: 0.45
-            }
+            palette: { accent: "#89b4fa" },
+            font: { size: 14 }
         },
         bubble: {},
         hifi: {}

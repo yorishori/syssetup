@@ -42,8 +42,6 @@ Item {
             width: parent.width
             spacing: 12
 
-            Keys.onEscapePressed: root.control.discard()
-
             SectionTitle {
                 text: root.control.isShot ? "Screenshot" : root.control.kind === "screen" ? "Screen recording" : "Voice memo"
                 code: root.control.isShot ? `${Math.round(root.control.area.width)}×${Math.round(root.control.area.height)}` : root.control.duration(root.control.elapsed)

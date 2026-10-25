@@ -4,7 +4,8 @@ import qs.services
 
 // The admin password prompt's behaviour (the agent lives in
 // services/Polkit): the request, who you authenticate as, the response.
-// Enter authorizes (the skin's field calls `submit`), Escape cancels; a
+// Enter authorizes (the skin's field calls `submit`), Escape cancels (it
+// reaches here from the skin's field); a
 // wrong one sends `denied` and asks again. `refocusRequested` asks the
 // skin to put the keys back in its field (it never lets them go).
 Skinned {
@@ -44,6 +45,8 @@ Skinned {
     function refocus(): void {
         refocusRequested();
     }
+
+    Keys.onEscapePressed: cancel()
 
     onActiveChanged: {
         checking = false;

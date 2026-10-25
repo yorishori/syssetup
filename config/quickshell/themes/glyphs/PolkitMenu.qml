@@ -147,7 +147,6 @@ Item {
                     if (!inputFocused)
                         Qt.callLater(root.refocus);
                 }
-                Keys.onEscapePressed: root.control.cancel()
             }
 
             StyledText {

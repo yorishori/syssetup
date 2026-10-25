@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "merge.js" as Merge
 
 // Settings: what's changed now and then from the Settings panel, and what the
 // shell remembers on its own. Kept out of the project, in
@@ -105,26 +106,6 @@ Singleton {
         printErrors: false
     }
 
-    // Recursively overlay `over` onto `base`; keys unknown to base are ignored,
-    // except under an empty object, which takes whatever is there (the
-    // per-theme tweaks: their keys are the theme's business).
-    function merge(base: var, over: var): var {
-        const out = {};
-        for (const key in base) {
-            const b = base[key], o = over?.[key];
-            const isObject = v => v !== null && typeof v === "object" && !Array.isArray(v);
-            if (o === undefined)
-                out[key] = b;
-            else if (Array.isArray(b))
-                out[key] = Array.isArray(o) ? o : b;
-            else if (isObject(b))
-                out[key] = !isObject(o) ? b : Object.keys(b).length === 0 ? o : merge(b, o);
-            else
-                out[key] = o;
-        }
-        return out;
-    }
-
     // qs ipc call config <get PATH|set PATH JSON|add PATH ITEM|remove PATH ITEM>
     //   config set theme '"bubble"'      config add mutedApps steam
     IpcHandler {
@@ -180,7 +161,7 @@ Singleton {
             if (content === root.writtenText)
                 return;
             try {
-                root.values = root.merge(root.defaults, JSON.parse(content));
+                root.values = Merge.merge(root.defaults, JSON.parse(content));
                 Health.resolve("config");
             } catch (e) {
                 Health.report("config", `settings.json is invalid, keeping previous values: ${e.message}`);
