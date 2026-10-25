@@ -9,32 +9,23 @@ import qs.services
 // that's Setup, in the project (`editSetup` opens it). The skin
 // (SettingsMenu) lays out `items`.
 //
-// Item types: choice (options), screen, text, color (palette: "dark" for
-// background tones), int (min, max, suffix), action (run(); no path).
-// `when: () => bool` shows an item only while it applies.
+// Items are Config.schema's (see core/settings.js), with choice options as
+// { label, value }, plus actions (type "action", run(); no path).
+// `palette: "dark"` offers background tones for a color; `when: () => bool`
+// shows an item only while it applies.
 Skinned {
     id: root
 
     property bool open: false
     property real maxHeight: 900
 
+    // Config's settings that have a label, then the panel's own actions.
     readonly property var items: [
-        { label: "Theme", path: "theme", type: "choice", hint: "how the shell looks",
-          options: Theme.names.map(n => ({ label: Theme.specs[n]?.label ?? n, value: n })) },
-        { label: "Screen", path: "screen", type: "screen", hint: "where the shell lives" },
-        { label: "Wallpaper", path: "wallpaper.path", type: "text", hint: "image file; empty = plain" },
-        { label: "Fit", path: "wallpaper.fit", type: "choice",
-          options: [{ label: "fill", value: "fill" }, { label: "fit", value: "fit" },
-                    { label: "center", value: "center" }, { label: "tile", value: "tile" }],
-          when: () => !!Config.wallpaper.path },
-        { label: "Plain color", path: "wallpaper.color", type: "color", palette: "dark",
-          hint: "the background without a wallpaper", when: () => !Config.wallpaper.path },
-        { label: "Lock after", path: "idle.lock", type: "int", min: 0, max: 120, suffix: "min",
-          hint: "idle time before locking; 0 = never" },
-        { label: "Screen off", path: "idle.screenOff", type: "int", min: 0, max: 120, suffix: "min",
-          hint: "idle time before the display sleeps; 0 = never" },
-        { label: "Passcode", path: "passcode", type: "int", min: 0, max: 12, suffix: "ch",
-          hint: "the lock checks by itself after this many characters (your password's length); 0 = press Enter" },
+        ...Config.schema.filter(s => s.label).map(s => Object.assign({}, s, {
+            options: s.path === "theme"
+                ? Theme.names.map(n => ({ label: Theme.specs[n]?.label ?? n, value: n }))
+                : s.options?.map(o => ({ label: o, value: o }))
+        })),
         { label: "Restart", type: "action", button: "restart", hint: "start Quickshell over",
           run: () => root.restart() }
     ]

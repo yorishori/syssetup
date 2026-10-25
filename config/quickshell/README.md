@@ -55,10 +55,11 @@ or shared component breaks can reach them. Keep it that way.
 
 - **`core/Config.qml`**: what you change now and then, from the Settings panel or
   `qs ipc call config set PATH JSON`. Stored outside the repo in
-  `$XDG_STATE_HOME/quickshell/settings.json`, merged over the defaults in
-  `Config.defaults`, watched and written back (atomically, with a `.bak` once per
-  session). Add a setting by adding it to `defaults` (and to `SettingsPanel.items`
-  if it belongs in the panel).
+  `$XDG_STATE_HOME/quickshell/settings.json`, merged over the defaults,
+  watched and written back (atomically, with a `.bak` once per session). Every
+  setting is one entry in `Config.schema` (path, type, default; a label and
+  hint put it in the Settings panel). A value of the wrong kind, from the file
+  or IPC, isn't taken (types and limits: `core/settings.js`).
 - **`core/Setup.qml`**: how this machine is set up, edited in the repo: per-theme
   token tweaks, bar spacing, launcher entries and terminal, calendar URL, control
   center tools, capture folders.

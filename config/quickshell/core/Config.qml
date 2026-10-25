@@ -4,11 +4,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "objects.js" as Objects
+import "settings.js" as Settings
 
 // Settings: what's changed now and then from the Settings panel, and what the
 // shell remembers on its own. Kept out of the project, in
 // $XDG_STATE_HOME/quickshell/settings.json (~/.local/state/…), merged over the
-// defaults below. How the machine is set up (terminal, launcher entries,
+// defaults in the schema below. How the machine is set up (terminal, launcher entries,
 // calendar, theme tokens…) is Setup's, in the project.
 //
 // The file is watched and re-read on save. If it is missing, defaults are
@@ -20,33 +21,44 @@ import "objects.js" as Objects
 Singleton {
     id: root
 
-    readonly property var defaults: ({
-        theme: "cyber",      // which theme (themes/<name>)
-        screen: "DP-3",      // output name; empty or missing = the first screen
-        wallpaper: {
-            path: "",        // image file ("~/…" ok); empty = plain color
-            fit: "fill",     // fill (crop), fit, center, tile
-            color: "#2c2633" // the plain color; empty = the theme's background
-        },
+    // Every setting: its path, type and default, and for the Settings panel
+    // a label (none: not shown there), hint and limits. See settings.js for
+    // the types. A value of the wrong kind (in settings.json or from IPC)
+    // isn't taken: the default stays and Health is told.
+    readonly property var schema: [
+        // Which theme (themes/<name>); the options are Theme.names.
+        { path: "theme", type: "choice", default: "cyber", label: "Theme", hint: "how the shell looks" },
+        // Output name; empty or missing = the first screen.
+        { path: "screen", type: "screen", default: "DP-3", label: "Screen", hint: "where the shell lives" },
+        // Image file ("~/…" ok); empty = plain color.
+        { path: "wallpaper.path", type: "text", default: "", label: "Wallpaper", hint: "image file; empty = plain" },
+        // fill (crop), fit, center, tile.
+        { path: "wallpaper.fit", type: "choice", default: "fill", options: ["fill", "fit", "center", "tile"],
+          label: "Fit", when: () => !!root.wallpaper.path },
+        // The plain color; empty = the theme's background.
+        { path: "wallpaper.color", type: "color", default: "#2c2633", palette: "dark",
+          label: "Plain color", hint: "the background without a wallpaper", when: () => !root.wallpaper.path },
         // Minutes without input before each; 0 = never. Apps that inhibit
         // idle (fullscreen, games) and playing media hold both off.
-        idle: {
-            lock: 25,
-            screenOff: 30
-        },
-        // The lock screen checks by itself once this many characters are typed
-        // (your password's length); 0 = press Enter.
-        passcode: 4,
+        { path: "idle.lock", type: "int", default: 25, min: 0, max: 120, suffix: "min",
+          label: "Lock after", hint: "idle time before locking; 0 = never" },
+        { path: "idle.screenOff", type: "int", default: 30, min: 0, max: 120, suffix: "min",
+          label: "Screen off", hint: "idle time before the display sleeps; 0 = never" },
+        // The lock screen checks by itself once this many characters are
+        // typed (your password's length); 0 = press Enter.
+        { path: "passcode", type: "int", default: 4, min: 0, max: 12, suffix: "ch",
+          label: "Passcode", hint: "the lock checks by itself after this many characters (your password's length); 0 = press Enter" },
 
         // Remembered by the shell.
-        mutedApps: [],       // apps whose popups are silenced (lowercase names)
+        // Apps whose popups are silenced (lowercase names).
+        { path: "mutedApps", type: "list", default: [] },
         // The last folder each kind of capture was saved to; empty = Setup's.
-        folders: {
-            screenshots: "",
-            recordings: "",
-            voice: ""
-        }
-    })
+        { path: "folders.screenshots", type: "text", default: "" },
+        { path: "folders.recordings", type: "text", default: "" },
+        { path: "folders.voice", type: "text", default: "" }
+    ]
+
+    readonly property var defaults: Settings.defaults(schema)
 
     readonly property string dir: `${Paths.stateHome}/quickshell`
 
@@ -70,8 +82,23 @@ Singleton {
         return Objects.getPath(defaults, path);
     }
 
+    // Why `value` won't do for the setting at `path`, or "" if it will.
+    function problem(path: string, value: var): string {
+        const setting = Settings.find(schema, path);
+        if (!setting)
+            return `unknown setting: ${path}; settings: ${schema.map(s => s.path).join(", ")}`;
+        const why = Settings.problem(setting, value);
+        return why ? `${path} ${why}` : "";
+    }
+
     // Change a setting; applied now, written to settings.json shortly after.
+    // A value that won't do is refused (with a warning).
     function set(path: string, value: var): void {
+        const why = problem(path, value);
+        if (why) {
+            console.warn(`config: ${why}`);
+            return;
+        }
         values = Objects.setPath(values, path, value);
         writeDelay.restart();
     }
@@ -90,6 +117,8 @@ Singleton {
         }
         writtenText = text;
         file.setText(text);
+        // What's written is valid, whatever the file held before.
+        Health.resolve("config");
     }
 
     Timer {
@@ -120,11 +149,9 @@ Singleton {
             } catch (e) {
                 return `not JSON: ${e.message} (strings need quotes: '"text"')`;
             }
-            const current = root.get(path);
-            if (current === undefined)
-                return `unknown setting: ${path}`;
-            if (Array.isArray(current) !== Array.isArray(value) || typeof current !== typeof value)
-                return `${path} takes ${Array.isArray(current) ? "a list" : `a ${typeof current}`}`;
+            const why = root.problem(path, value);
+            if (why)
+                return why;
             root.set(path, value);
             return "ok";
         }
@@ -164,9 +191,10 @@ Singleton {
                 return;
             try {
                 const rejected = [];
-                root.values = Objects.merge(root.defaults, JSON.parse(content), rejected);
+                const merged = Objects.merge(root.defaults, JSON.parse(content), rejected);
+                root.values = Settings.validate(root.schema, merged, rejected);
                 if (rejected.length)
-                    Health.report("config", `settings.json: wrong type for ${rejected.join(", ")}, using the defaults`);
+                    Health.report("config", `settings.json: ${rejected.join(", ")} won't do, using the defaults`);
                 else
                     Health.resolve("config");
             } catch (e) {
