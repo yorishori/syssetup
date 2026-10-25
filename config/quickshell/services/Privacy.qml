@@ -23,6 +23,7 @@ Singleton {
     readonly property var micApps: [...new Set(micStreams.map(n => Audio.nodeName(n)))]
 
     property bool cameraActive: false
+    property bool hasCamera: true
 
     // Screen: shared through the wlr portal (its Pipewire video streams,
     // xdpw…, exist only while sharing), or being recorded by the shell itself.
@@ -37,18 +38,22 @@ Singleton {
     Process {
         id: camera
 
-        command: ["sh", "-c", "fuser /dev/video* >/dev/null 2>&1; echo $?; command -v fuser >/dev/null || echo missing"]
+        // "none" without a camera; else whether one is open, and if fuser is there.
+        command: ["sh", "-c", "ls /dev/video* >/dev/null 2>&1 || { echo none; exit; }; fuser /dev/video* >/dev/null 2>&1; echo $?; command -v fuser >/dev/null || echo missing"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.trim().split("\n");
+                root.hasCamera = lines[0] !== "none";
                 root.cameraActive = lines[0] === "0";
                 root.fuserMissing = lines.includes("missing");
             }
         }
     }
 
+    // Asked every 2 s while there's a camera; without one, only whether one
+    // has been plugged in, every minute.
     Timer {
-        interval: 2000
+        interval: root.hasCamera ? 2000 : 60000
         running: true
         repeat: true
         triggeredOnStart: true

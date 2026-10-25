@@ -55,12 +55,15 @@ Item {
         NumberAnimation { target: root; property: "swell"; to: 1; duration: 600; easing.type: Easing.OutQuad }
         NumberAnimation { target: root; property: "swell"; to: 0; duration: 1400; easing.type: Easing.InOutQuad }
     }
+    // Breathes a few times, then stays lit: the popups' window covers the
+    // screen, so a breath that never stopped would redraw all of it for as
+    // long as a critical notification waits.
     SequentialAnimation on breath {
         running: root.critical
-        loops: Animation.Infinite
+        loops: 5
 
-        NumberAnimation { to: 1; duration: 1400; easing.type: Easing.InOutSine }
         NumberAnimation { to: 0.35; duration: 1400; easing.type: Easing.InOutSine }
+        NumberAnimation { to: 1; duration: 1400; easing.type: Easing.InOutSine }
     }
     Behavior on breath {
         enabled: !root.critical

@@ -24,12 +24,13 @@ Singleton {
         occupied: !w.focused || !!w.lastIpcObject?.representation
     }))
 
-    // Open windows: { toplevel, appClass, title }. Sway reports XWayland
-    // windows' class as their app id.
+    // Open windows: { toplevel, appClass }. Sway reports XWayland windows'
+    // class as their app id. Titles are read from the toplevel where shown,
+    // so a window renaming itself (a terminal, a browser tab) doesn't rebuild
+    // this list and everything bound to it.
     readonly property var windows: ToplevelManager.toplevels.values.map(t => ({
         toplevel: t,
-        appClass: t.appId,
-        title: t.title
+        appClass: t.appId
     }))
 
     // The window that last had focus, as { toplevel, appClass }. Kept while a
