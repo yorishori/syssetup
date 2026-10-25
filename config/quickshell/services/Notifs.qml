@@ -136,17 +136,7 @@ Singleton {
         property string mode: "takeover"
 
         running: true
-        command: ["sh", "-c", `
-            owner() {
-                pid=$(busctl --user call org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus \
-                    GetConnectionUnixProcessID s org.freedesktop.Notifications 2>/dev/null | cut -d' ' -f2)
-                [ -n "$pid" ] && echo "$pid $(cat /proc/$pid/comm)"
-            }
-            if [ "$1" = takeover ] && owner | grep -q ' dunst$'; then
-                pkill -x dunst
-                for i in $(seq 20); do [ -z "$(owner)" ] && break; sleep 0.1; done
-            fi
-            owner`, "sh", mode]
+        command: ["sh", Quickshell.shellPath("scripts/notifs-owner.sh"), mode]
 
         stdout: StdioCollector {
             onStreamFinished: {

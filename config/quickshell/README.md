@@ -21,7 +21,8 @@ services/      the logic: one singleton per area (Audio, Network, Session, …),
 components/    themed widgets with behaviour only (Skinned + a skin name)
 modules/       the windows and panels: services wired to components, no drawing
 themes/        the drawing: one folder per theme, plus glyphs/ (shared skins)
-scripts/       check.sh; gen-symbols.sh (rebuilds assets/symbols.tsv)
+scripts/       check.sh; gen-symbols.sh (rebuilds assets/symbols.tsv); the
+               services' longer shell scripts (<service>-<what>.sh)
 assets/        symbol and kaomoji tables
 ```
 
@@ -114,7 +115,9 @@ session lock goes up, until the lock window's first frame.
   passed as they are (`["sh", "-c", '… "$1"', "sh", value]`), never outside text
   pasted into a command line (`Action` runs one and reports how it went;
   `DbusMonitor` watches a D-Bus name; `Paths.privateDir` is where private
-  temp files go). Poll only while something shows the result. A
+  temp files go). A script longer than a line goes in
+  `scripts/<service>-<what>.sh`, run as `["sh", Quickshell.shellPath("scripts/…"), args…]`,
+  so shellcheck (in `check.sh`) sees it. Poll only while something shows the result. A
   service that has to run with no UI showing it (a daemon: notifications, idle,
   polkit…) is listed in `modules/daemons/Daemons.qml`, which starts it.
 - **Bar widget**: `modules/bar/widgets/<Name>.qml` (a `Skinned`; one that opens a panel

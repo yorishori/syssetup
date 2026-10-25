@@ -16,6 +16,7 @@
 #   Lists    every theme folder is in Theme.names and imported in shell.qml;
 #            every panel in Panels.names is a row in Bar.qml's `panels` or a
 #            module of its own, and every bar panel has its <Name>Panel.qml.
+#   Shell    the scripts in scripts/ pass shellcheck (if it's installed).
 #   Plain    the plain stand-ins (modules/**/Plain*.qml) import only QtQuick
 #            and services, so nothing a theme breaks can reach them. They're
 #            exempt from the styling rules.
@@ -24,7 +25,7 @@
 set -uo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$root"
+cd "$root" || exit 1
 status=0
 
 fail() {
@@ -74,10 +75,18 @@ hits=$(grep -rnE 'Keys\.on[A-Z][A-Za-z]*Pressed' themes --include='*.qml' | grep
 [[ -n "$hits" ]] && fail "$(echo "$hits" | sed 's|$|    <- a skin forwards keys to control.fieldKey, the panel decides|')"
 
 # Plain stand-ins
-for f in $(find modules -name 'Plain*.qml'); do
+for f in modules/*/Plain*.qml; do
     hits=$(grep -nE '^import ' "$f" | grep -vE '^[0-9]+:import (QtQuick|qs\.services)$')
     [[ -n "$hits" ]] && fail "$(echo "$hits" | sed "s|^|$f:|; s|\$|    <- a plain stand-in uses QtQuick and services only|")"
 done
+
+# Shell
+if command -v shellcheck >/dev/null; then
+    hits=$(shellcheck -S warning -f gcc scripts/*.sh)
+    [[ -n "$hits" ]] && fail "$hits"
+else
+    echo "note: shellcheck not installed; scripts/ not checked"
+fi
 
 # Lists: themes
 names=$(grep -oE 'names: \[[^]]*\]' core/Theme.qml | grep -oE '"[a-z]+"' | tr -d '"' | sort)

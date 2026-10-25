@@ -119,11 +119,7 @@ Singleton {
     function save(path: string, alsoCopy: bool): void {
         const target = path.trim() || suggestedName();
         const dir = target.replace(/\/[^\/]*$/, "");
-        finisher.command = ["sh", "-c", `
-            target="$1"; src="$2"
-            mkdir -p "$(dirname "$target")" && mv -f "$src" "$target" || exit 1
-            [ "$3" = copy ] && wl-copy --type image/png < "$target"
-            exit 0`, "sh", Paths.expand(target), file, alsoCopy ? "copy" : ""];
+        finisher.command = ["sh", Quickshell.shellPath("scripts/capture-save.sh"), Paths.expand(target), file, alsoCopy ? "copy" : ""];
         // Remember the folder for next time, once the file is really there.
         finisher.rememberAs = dir && dir !== suggestedDir ? folderKey : "";
         finisher.rememberDir = dir;

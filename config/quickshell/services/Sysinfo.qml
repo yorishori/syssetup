@@ -49,17 +49,7 @@ Singleton {
         id: facts
 
         running: true
-        command: ["sh", "-c", `
-            . /etc/os-release 2>/dev/null; echo "os $PRETTY_NAME"
-            echo "kernel $(uname -r)"
-            [ -d "/usr/lib/modules/$(uname -r)" ] || echo "reboot"
-            echo "cpu $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | sed 's/ with .*//')"
-            if command -v nvidia-smi >/dev/null; then
-                echo "gpu $(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
-            else
-                echo "gpu $(lspci -mm 2>/dev/null | grep -m1 -E '"(VGA|3D|Display)' | awk -F'"' '{print $6}')"
-            fi
-            echo "board $(cut -d' ' -f1 /sys/class/dmi/id/board_vendor 2>/dev/null) $(cat /sys/class/dmi/id/board_name 2>/dev/null)"`]
+        command: ["sh", Quickshell.shellPath("scripts/sysinfo-facts.sh")]
         stdout: StdioCollector {
             onStreamFinished: {
                 root.rebootPending = false;
@@ -91,17 +81,7 @@ Singleton {
     Process {
         id: live
 
-        command: ["sh", "-c", `
-            head -1 /proc/stat
-            grep -E '^(MemTotal|MemAvailable):' /proc/meminfo | tr -s ' ' | cut -d' ' -f1,2
-            for h in /sys/class/hwmon/hwmon*; do
-                case "$(cat $h/name)" in k10temp|coretemp|zenpower) echo "cputemp $(cat $h/temp1_input)"; break;; esac
-            done
-            if command -v nvidia-smi >/dev/null; then
-                echo "nvidia $(nvidia-smi --query-gpu=utilization.gpu,temperature.gpu,memory.used,memory.total --format=csv,noheader,nounits | head -1)"
-            else
-                for c in /sys/class/drm/card*/device/gpu_busy_percent; do [ -r "$c" ] && echo "amdgpu $(cat $c)" && break; done
-            fi`]
+        command: ["sh", Quickshell.shellPath("scripts/sysinfo-live.sh")]
         stdout: StdioCollector {
             onStreamFinished: {
                 let memAvail = 0;

@@ -89,16 +89,7 @@ Singleton {
             return;
         restoreText = text;
         copier.paste = true;
-        copier.command = ["sh", "-c", `
-            d="$1"; mkdir -p "$d" && chmod 700 "$d"
-            t=$(wl-paste --list-types 2>/dev/null | head -1)
-            if [ -n "$t" ]; then
-                wl-paste --no-newline --type "$t" > "$d/saved" 2>/dev/null
-                printf "%s" "$t" > "$d/type"
-            else
-                rm -f "$d/saved" "$d/type"
-            fi
-            printf "%s" "$2" | wl-copy`, "sh", restoreDir, text];
+        copier.command = ["sh", Quickshell.shellPath("scripts/clipboard-swap.sh"), restoreDir, text];
         copier.running = true;
     }
 
@@ -181,14 +172,7 @@ Singleton {
             const ids = root.entries.filter(e => e.image).slice(0, 40).map(e => e.id);
             if (ids.length === 0 || running)
                 return;
-            command = ["sh", "-c", `
-                dir="$1"; shift
-                mkdir -p "$dir" && chmod 700 "$dir"
-                for id in "$@"; do
-                    f="$dir/$id"
-                    [ -s "$f" ] || printf "%s\\t" "$id" | cliphist decode > "$f" 2>/dev/null
-                    [ -s "$f" ] && echo "$id"
-                done`, "sh", root.thumbDir, ...ids];
+            command = ["sh", Quickshell.shellPath("scripts/clipboard-thumbs.sh"), root.thumbDir, ...ids];
             running = true;
         }
 
@@ -234,13 +218,7 @@ Singleton {
         id: restoreDelay
         interval: 500
         onTriggered: {
-            Quickshell.execDetached(["sh", "-c", `
-                d="$1"
-                # Put the previous clipboard back; if it was empty, leave it empty.
-                if [ -f "$d/saved" ]; then wl-copy --type "$(cat "$d/type")" < "$d/saved"; else wl-copy --clear; fi
-                rm -f "$d/saved" "$d/type"
-                sleep 0.3
-                cliphist list | awk -F '\t' -v t="$2" '$2 == t { print; exit }' | cliphist delete`, "sh", root.restoreDir, root.restoreText]);
+            Quickshell.execDetached(["sh", Quickshell.shellPath("scripts/clipboard-restore.sh"), root.restoreDir, root.restoreText]);
             root.restoreText = "";
         }
     }
