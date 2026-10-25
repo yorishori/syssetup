@@ -25,15 +25,15 @@ Singleton {
 
     // Shell IPC calls ("$qs <target> <function>").
     readonly property var shellActions: ({
-        "launcher toggle": "Launcher",
-        "clipboard toggle": "Clipboard history",
+        "panel toggle launcher": "Launcher",
+        "panel toggle clipboard": "Clipboard history",
         "clipboard symbols emoji": "Emoji and symbols",
-        "notifications toggle": "Notifications",
-        "control toggle": "Control center",
-        "session toggle": "Session menu",
+        "panel toggle notifications": "Notifications",
+        "panel toggle control": "Control center",
+        "panel toggle session": "Session menu",
         "session lock": "Lock",
-        "compose toggle": "Compose",
-        "keys toggle": "This cheat sheet",
+        "panel toggle compose": "Compose",
+        "panel toggle keys": "This cheat sheet",
         "capture screenshot": "Screenshot",
         "capture record": "Record screen",
         "capture voice": "Record voice memo",
@@ -41,7 +41,7 @@ Singleton {
         "audio up": "Volume up",
         "audio down": "Volume down",
         "audio mute": "Mute",
-        "media toggle": "Play / pause",
+        "media playpause": "Play / pause",
         "media next": "Next track",
         "media previous": "Previous track"
     })
@@ -117,8 +117,8 @@ Singleton {
         const ipc = command.match(/^exec\s+qs\b.*?\bipc\s+call\s+(.+)$/);
         if (ipc) {
             const call = ipc[1].trim();
-            const [target, fn] = call.split(/\s+/);
-            return shellActions[call] ?? (fn === "toggle" ? target.charAt(0).toUpperCase() + target.slice(1) : call);
+            const [target, fn, name] = call.split(/\s+/);
+            return shellActions[call] ?? (target === "panel" && fn === "toggle" && name ? name.charAt(0).toUpperCase() + name.slice(1) : call);
         }
         for (const [pattern, label] of swayActions) {
             const m = command.match(pattern);

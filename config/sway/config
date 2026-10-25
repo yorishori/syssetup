@@ -99,14 +99,14 @@ exec_always swaymsg -m -t subscribe '["window"]' | jq --unbuffered -r 'select(.c
 # ── 6. Keys ─────────────────────────────────────────────────────────────────
 
 # Shell panels
-bindsym $mod+space  $qs launcher toggle
-bindsym $mod+v      $qs clipboard toggle
-bindsym $mod+c      $qs control toggle
-bindsym $mod+Escape $qs session toggle
+bindsym $mod+space  $qs panel toggle launcher
+bindsym $mod+v      $qs panel toggle clipboard
+bindsym $mod+c      $qs panel toggle control
+bindsym $mod+Escape $qs panel toggle session
 bindsym $mod+l      $qs session lock
-bindsym $mod+F1     $qs keys toggle
+bindsym $mod+F1     $qs panel toggle keys
 # Caps Lock (keycode 66)
-bindcode 66         $qs compose toggle
+bindcode 66         $qs panel toggle compose
 
 # Capture
 bindsym Print       $qs capture screenshot
@@ -118,7 +118,7 @@ bindsym $mod+Print  $qs capture stop
 bindsym --locked XF86AudioRaiseVolume $qs audio up
 bindsym --locked XF86AudioLowerVolume $qs audio down
 bindsym --locked XF86AudioMute        $qs audio mute
-bindsym --locked XF86AudioPlay        $qs media toggle
+bindsym --locked XF86AudioPlay        $qs media playpause
 bindsym --locked XF86AudioNext        $qs media next
 bindsym --locked XF86AudioPrev        $qs media previous
 
