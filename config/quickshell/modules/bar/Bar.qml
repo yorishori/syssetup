@@ -23,26 +23,39 @@ PanelWindow {
     // show is open).
     readonly property string openDrop: panels.some(p => p.name === Panels.current) ? Panels.current : ""
 
-    // The drops, in the order they're declared: the panel each one holds
-    // (modules/<name>/<Name>Panel.qml), the bar slot it hangs under, `edge`
-    // to pin it flush to a screen edge instead, `blur` to darken and blur the
-    // rest of the screen behind it, and `bindings` for panel properties kept
-    // bound. Themes that show the session menu full screen (SessionScreen)
-    // have no drop for it.
+    // The drops: Panels' bar panels (see Panels.registry), each under the
+    // slot of the widget it names, plus the tray's menu, under the app's icon.
+    // `bindings` are panel properties kept bound. Themes that show the session
+    // menu full screen (SessionScreen) have no drop for it.
     readonly property real tallest: bar.height - Theme.barHeight - 60
     readonly property var panels: [
-        { name: "session", under: power, edge: "left", blur: true },
-        { name: "calendar", under: clock },
-        { name: "tray", bindings: { item: () => bar.trayItem } },  // under the app's icon
-        { name: "launcher", under: workspaces, blur: true },
-        { name: "network", under: network },
-        { name: "bluetooth", under: bluetooth },
-        { name: "audio", under: audio },
-        { name: "notifications", under: notifications },
-        { name: "control", under: control, edge: "right", blur: true, bindings: { maxHeight: () => bar.tallest } },
-        { name: "settings", under: workspaces, blur: true, bindings: { maxHeight: () => bar.tallest } },
-        { name: "keys", under: workspaces, blur: true, bindings: { maxHeight: () => bar.tallest } }
+        ...Panels.registry.filter(p => p.host === "bar").map(p => Object.assign({}, p, {
+            under: slotFor(p.under),
+            bindings: p.tall ? { maxHeight: () => bar.tallest } : {}
+        })),
+        { name: "tray", bindings: { item: () => bar.trayItem } }
     ].filter(p => p.name !== "session" || !Theme.sessionScreen)
+
+    // The BarSlot holding `widget`.
+    function slotFor(widget: string): Item {
+        const find = item => {
+            for (const child of item.children) {
+                if (child.widget !== undefined) {
+                    if (child.widget === widget)
+                        return child;
+                } else {
+                    const found = find(child);
+                    if (found)
+                        return found;
+                }
+            }
+            return null;
+        };
+        const slot = find(background);
+        if (!slot)
+            console.warn(`bar: no slot for widget "${widget}"`);
+        return slot;
+    }
 
     // The open drop, for the input mask.
     readonly property Item activeDrop: {
@@ -165,8 +178,8 @@ PanelWindow {
             }
             spacing: Setup.bar.spacing
 
-            BarSlot { id: power; widget: "PowerButton" }
-            BarSlot { id: clock; widget: "Clock" }
+            BarSlot { widget: "PowerButton" }
+            BarSlot { widget: "Clock" }
             BarSlot { id: tray; widget: "Tray" }
         }
 
@@ -213,12 +226,12 @@ PanelWindow {
             }
             spacing: Setup.bar.spacing
 
-            BarSlot { id: network; widget: "NetworkButton" }
-            BarSlot { id: bluetooth; widget: "BluetoothButton" }
-            BarSlot { id: audio; widget: "AudioButton" }
+            BarSlot { widget: "NetworkButton" }
+            BarSlot { widget: "BluetoothButton" }
+            BarSlot { widget: "AudioButton" }
             BarSlot { id: notifications; widget: "NotifIndicator" }
             BarSlot { widget: "HealthIndicator" }
-            BarSlot { id: control; widget: "ControlButton" }
+            BarSlot { widget: "ControlButton" }
         }
 
         // Tell the popups where the notification key is.

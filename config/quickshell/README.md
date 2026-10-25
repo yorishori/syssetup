@@ -126,9 +126,10 @@ session lock goes up, until the lock window's first frame.
   line in `Bar.qml`, and a skin in `themes/glyphs` (and any theme drawing it its
   own way).
 - **Bar panel**: `modules/<name>/<Name>Panel.qml` (optional `property bool open`,
-  `signal done` to close), a row in `Bar.qml`'s `panels` (`under`, `edge`, `blur`,
-  `bindings`), the name in `Panels.names`, and its `<Name>Menu` skin
-  (`check.sh` checks the two lists against each other).
+  `signal done` to close), an entry in `Panels.registry` (`label`, `host: "bar"`,
+  the widget it hangs `under`, `edge`, `blur`, `tall`), and its `<Name>Menu` skin.
+  IPC, the bar and the keys cheat sheet all read the registry; `check.sh` checks
+  the file and the widget exist.
 - **Module** (its own window): a file under `modules/`, an import of its folder and
   a `ModuleLoader` line in `shell.qml`. Use `Display.primary` for the screen and a
   `qs-…` layer namespace.
@@ -157,7 +158,8 @@ session lock goes up, until the lock window's first frame.
 | others          | `health list`, `tray menu APP`, `wallpaper set PATH \| get`, `idle status \| caffeinate`, `keys list`, `compose lookup TEXT`, `symbols search TAB Q \| refresh`, `updates status \| check`, `polkit status \| cancel`, `privacy status`, `events status` |
 
 Panels: session, calendar, launcher, network, bluetooth, audio, notifications,
-control, settings, keys, clipboard, compose.
+control, settings, keys, clipboard, compose (`Panels.registry`; `qs ipc call panel
+toggle x` lists them).
 
 ## Sway
 

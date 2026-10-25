@@ -23,17 +23,11 @@ Singleton {
     property string error: ""
     readonly property int count: groups.reduce((n, g) => n + g.binds.length, 0)
 
-    // Shell IPC calls ("$qs <target> <function>").
+    // Shell IPC calls ("$qs <target> <function>"); `panel toggle NAME` is
+    // named by Panels.registry.
     readonly property var shellActions: ({
-        "panel toggle launcher": "Launcher",
-        "panel toggle clipboard": "Clipboard history",
         "clipboard symbols emoji": "Emoji and symbols",
-        "panel toggle notifications": "Notifications",
-        "panel toggle control": "Control center",
-        "panel toggle session": "Session menu",
         "session lock": "Lock",
-        "panel toggle compose": "Compose",
-        "panel toggle keys": "This cheat sheet",
         "capture screenshot": "Screenshot",
         "capture record": "Record screen",
         "capture voice": "Record voice memo",
@@ -118,7 +112,8 @@ Singleton {
         if (ipc) {
             const call = ipc[1].trim();
             const [target, fn, name] = call.split(/\s+/);
-            return shellActions[call] ?? (target === "panel" && fn === "toggle" && name ? name.charAt(0).toUpperCase() + name.slice(1) : call);
+            const panel = target === "panel" && fn === "toggle" ? Panels.registry.find(p => p.name === name) : null;
+            return shellActions[call] ?? panel?.label ?? call;
         }
         for (const [pattern, label] of swayActions) {
             const m = command.match(pattern);

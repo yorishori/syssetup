@@ -14,8 +14,9 @@
 #   Keys     skins decide no keys: they forward their field's keys to the
 #            panel (Keys.onPressed → control.fieldKey), nothing else.
 #   Lists    every theme folder is in Theme.names and imported in shell.qml;
-#            every panel in Panels.names is a row in Bar.qml's `panels` or a
-#            module of its own, and every bar panel has its <Name>Panel.qml.
+#            every panel in Panels.registry has what its host needs: a bar
+#            panel its <Name>Panel.qml and a BarSlot to hang under, a window
+#            panel its module in shell.qml.
 #   Shell    the scripts in scripts/ pass shellcheck (if it's installed).
 #   Plain    the plain stand-ins (modules/**/Plain*.qml) import only QtQuick
 #            and services, so nothing a theme breaks can reach them. They're
@@ -96,19 +97,26 @@ for theme in $folders glyphs; do
     grep -qE "^import qs\.themes\.$theme\b" shell.qml || fail "shell.qml: no import qs.themes.$theme (the folder isn't known without it)"
 done
 
-# Lists: panels
-ipc=$(tr '\n' ' ' < services/Panels.qml | grep -oE 'names: \[[^]]*\]' | grep -oE '"[a-z]+"' | tr -d '"' | sort)
-bar=$(sed -n '/property var panels: \[/,/^    \]/p' modules/bar/Bar.qml | grep -oE '\{ name: "[a-z]+"' | grep -oE '"[a-z]+"' | tr -d '"' | sort)
-for panel in $ipc; do
-    grep -qx "$panel" <<<"$bar" \
-        || grep -qE "path: \"modules/$panel/" shell.qml \
-        || fail "services/Panels.qml: \"$panel\" is neither in Bar.qml's panels nor a module in shell.qml"
-done
-for panel in $bar; do
-    [[ "$panel" == tray ]] || grep -qx "$panel" <<<"$ipc" || fail "modules/bar/Bar.qml: panel \"$panel\" is missing from Panels.names (IPC can't open it)"
-    file="modules/$panel/${panel^}Panel.qml"
-    [[ -f "$file" ]] || fail "modules/bar/Bar.qml: panel \"$panel\" has no $file"
-done
+# Lists: panels (Panels.registry, one entry per line)
+while read -r entry; do
+    name=$(grep -oE 'name: "[a-z]+"' <<<"$entry" | cut -d'"' -f2)
+    host=$(grep -oE 'host: "[a-z]+"' <<<"$entry" | cut -d'"' -f2)
+    under=$(grep -oE 'under: "[A-Za-z]+"' <<<"$entry" | cut -d'"' -f2)
+    case "$host" in
+    bar)
+        file="modules/$name/${name^}Panel.qml"
+        [[ -f "$file" ]] || fail "services/Panels.qml: panel \"$name\" has no $file"
+        grep -qE "widget: \"$under\"" modules/bar/Bar.qml \
+            || fail "services/Panels.qml: panel \"$name\" hangs under \"$under\", which is no BarSlot widget in modules/bar/Bar.qml"
+        ;;
+    window)
+        grep -qE "path: \"modules/$name/" shell.qml || fail "services/Panels.qml: panel \"$name\" has no module in shell.qml"
+        ;;
+    *)
+        fail "services/Panels.qml: panel \"$name\" has no host (bar or window)"
+        ;;
+    esac
+done < <(grep -E '^\s*\{ name: "[a-z]+",' services/Panels.qml)
 
 [[ $status -eq 0 ]] && echo "ok: $(ls themes/*/Spec.qml | wc -l) themes, $(echo "$skins" | wc -l) skins each"
 exit $status
