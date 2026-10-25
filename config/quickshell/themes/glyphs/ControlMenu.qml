@@ -100,7 +100,7 @@ Item {
 
                 C.SectionTitle {
                     text: "System"
-                    code: `${root.control.session.hostname} · up ${root.control.session.uptimeText}`
+                    code: `${root.control.hostname} · up ${root.control.uptimeText}`
                 }
                 C.IconButton {
                     size: 24
@@ -110,39 +110,39 @@ Item {
             }
             Fact {
                 label: "CPU"
-                value: root.control.system.cpu
+                value: root.control.cpuName
             }
             Level {
-                value: root.control.system.cpuUsage
-                extra: root.control.system.cpuTemp >= 0 ? `${root.control.system.cpuTemp}°` : ""
+                value: root.control.cpuUsage
+                extra: root.control.cpuTemp >= 0 ? `${root.control.cpuTemp}°` : ""
             }
             Fact {
                 label: "GPU"
-                value: root.control.system.gpu.replace(/^NVIDIA /, "")
+                value: root.control.gpuName
             }
             Level {
-                value: root.control.system.gpuUsage
-                extra: root.control.system.gpuTemp >= 0 ? `${root.control.system.gpuTemp}°` : ""
+                value: root.control.gpuUsage
+                extra: root.control.gpuTemp >= 0 ? `${root.control.gpuTemp}°` : ""
             }
             Fact {
                 label: "RAM"
-                value: `${root.control.system.gib(root.control.system.memUsed)} / ${root.control.system.gib(root.control.system.memTotal)} GiB`
-                    + (root.control.system.gpuMemTotal > 0 ? `  · VRAM ${(root.control.system.gpuMemUsed / 1024).toFixed(1)} / ${(root.control.system.gpuMemTotal / 1024).toFixed(0)}` : "")
+                value: `${root.control.gib(root.control.memUsed)} / ${root.control.gib(root.control.memTotal)} GiB`
+                    + (root.control.gpuMemTotal > 0 ? `  · VRAM ${(root.control.gpuMemUsed / 1024).toFixed(1)} / ${(root.control.gpuMemTotal / 1024).toFixed(0)}` : "")
             }
             Level {
-                value: root.control.system.memTotal > 0 ? root.control.system.memUsed / root.control.system.memTotal : 0
+                value: root.control.memTotal > 0 ? root.control.memUsed / root.control.memTotal : 0
             }
             Fact {
                 label: "board"
-                value: root.control.system.board
+                value: root.control.board
             }
             Fact {
                 label: "kernel"
-                value: root.control.system.kernel
+                value: root.control.kernel
 
                 trailing: C.Tag {
                     text: "reboot pending"
-                    visible: root.control.system.rebootPending
+                    visible: root.control.rebootPending
                 }
             }
 
@@ -154,17 +154,17 @@ Item {
 
                 C.SectionTitle {
                     text: "Updates"
-                    code: root.control.updates.checking ? "" : root.control.updates.count > 0 ? String(root.control.updates.count).padStart(2, "0") : "--"
+                    code: root.control.updatesChecking ? "" : root.control.updateCount > 0 ? String(root.control.updateCount).padStart(2, "0") : "--"
                 }
                 C.IconButton {
                     size: 24
                     icon: "\u{F0450}"
-                    enabled: !root.control.updates.checking
-                    iconColor: root.control.updates.checking ? Theme.palette.accent : Theme.palette.fg
+                    enabled: !root.control.updatesChecking
+                    iconColor: root.control.updatesChecking ? Theme.palette.accent : Theme.palette.fg
                     onClicked: root.control.checkUpdates()
 
                     NumberAnimation on iconRotation {
-                        running: root.control.updates.checking
+                        running: root.control.updatesChecking
                         loops: Animation.Infinite
                         from: 0
                         to: 360
@@ -177,11 +177,11 @@ Item {
             Item {
                 id: repoReadouts
 
-                readonly property var repos: Object.keys(root.control.updates.counts)
+                readonly property var repos: Object.keys(root.control.updateCounts)
 
                 Layout.fillWidth: true
                 implicitHeight: 44
-                visible: !root.control.updates.failed
+                visible: !root.control.updatesFailed
 
                 Repeater {
                     model: repoReadouts.repos
@@ -189,7 +189,7 @@ Item {
                     Column {
                         required property string modelData
                         required property int index
-                        readonly property int n: root.control.updates.counts[modelData]
+                        readonly property int n: root.control.updateCounts[modelData]
 
                         x: index * repoReadouts.width / repoReadouts.repos.length
                         width: repoReadouts.width / repoReadouts.repos.length
@@ -208,9 +208,9 @@ Item {
                         C.StyledText {
                             width: parent.width
                             horizontalAlignment: Text.AlignHCenter
-                            text: root.control.updates.checking ? "··" : String(parent.n).padStart(2, "0")
-                            color: parent.n > 0 && !root.control.updates.checking ? Theme.palette.accent : Theme.palette.surface
-                            glow: parent.n > 0 && !root.control.updates.checking
+                            text: root.control.updatesChecking ? "··" : String(parent.n).padStart(2, "0")
+                            color: parent.n > 0 && !root.control.updatesChecking ? Theme.palette.accent : Theme.palette.surface
+                            glow: parent.n > 0 && !root.control.updatesChecking
                             font.pixelSize: 22
                             font.bold: true
                         }
@@ -224,16 +224,16 @@ Item {
 
                 C.StyledText {
                     Layout.fillWidth: true
-                    text: root.control.updates.checking ? "checking…"
-                        : root.control.updates.failed ? "-- check failed (offline?) --"
-                        : root.control.updates.count === 0 ? "-- up to date --"
-                        : `last upgrade ${root.control.ago(root.control.updates.lastUpgrade)}`
+                    text: root.control.updatesChecking ? "checking…"
+                        : root.control.updatesFailed ? "-- check failed (offline?) --"
+                        : root.control.updateCount === 0 ? "-- up to date --"
+                        : `last upgrade ${root.control.ago(root.control.lastUpgrade)}`
                     color: Theme.palette.muted
                     font.pixelSize: Theme.font.size - 2
                 }
                 C.TextButton {
-                    text: `\u{F06B0}  update${root.control.updates.aurHelper ? " (" + root.control.updates.aurHelper + ")" : ""}`
-                    visible: root.control.updates.count > 0 && !root.control.updates.checking
+                    text: `\u{F06B0}  update${root.control.aurHelper ? " (" + root.control.aurHelper + ")" : ""}`
+                    visible: root.control.updateCount > 0 && !root.control.updatesChecking
                     onClicked: {
                         root.control.upgrade();
                     }
@@ -244,18 +244,18 @@ Item {
             C.SectionTitle {
                 Layout.topMargin: 6
                 text: "Storage"
-                code: String(root.control.storage.mounted.length + root.control.storage.network.length).padStart(2, "0")
+                code: String(root.control.mounted.length + root.control.shares.length).padStart(2, "0")
             }
             C.StyledText {
                 Layout.leftMargin: 8
-                text: Theme.caps("err") + " " + root.control.storage.error
+                text: Theme.caps("err") + " " + root.control.storageError
                 color: Theme.palette.error
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
-                visible: root.control.storage.error !== ""
+                visible: root.control.storageError !== ""
             }
             Repeater {
-                model: root.control.storage.mounted
+                model: root.control.mounted
 
                 ColumnLayout {
                     id: disk
@@ -287,7 +287,7 @@ Item {
                             elide: Text.ElideRight
                         }
                         C.StyledText {
-                            text: `${root.control.storage.human(disk.modelData.avail)} free`
+                            text: `${root.control.sizeText(disk.modelData.avail)} free`
                             color: disk.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
                             font.pixelSize: Theme.font.size - 2
                             font.bold: true
@@ -308,12 +308,12 @@ Item {
                     }
                     Level {
                         value: disk.usage
-                        extra: root.control.storage.human(disk.modelData.size)
+                        extra: root.control.sizeText(disk.modelData.size)
                     }
                 }
             }
             Repeater {
-                model: root.control.storage.mountable
+                model: root.control.mountable
 
                 RowLayout {
                     required property var modelData
@@ -328,7 +328,7 @@ Item {
                     }
                     C.StyledText {
                         Layout.fillWidth: true
-                        text: `${modelData.name} · ${modelData.fstype} · ${root.control.storage.human(modelData.size)}`
+                        text: `${modelData.name} · ${modelData.fstype} · ${root.control.sizeText(modelData.size)}`
                         color: Theme.palette.dim
                         elide: Text.ElideRight
                     }
@@ -341,7 +341,7 @@ Item {
 
             // Network shares (systemd mount/automount units)
             Repeater {
-                model: root.control.storage.network
+                model: root.control.shares
 
                 ColumnLayout {
                     id: share
@@ -376,7 +376,7 @@ Item {
                             elide: Text.ElideRight
                         }
                         C.StyledText {
-                            text: `${root.control.storage.human(share.modelData.avail)} free`
+                            text: `${root.control.sizeText(share.modelData.avail)} free`
                             color: share.usage >= 0.85 ? Theme.palette.warn : Theme.palette.dim
                             font.pixelSize: Theme.font.size - 2
                             font.bold: true
@@ -403,7 +403,7 @@ Item {
                     }
                     Level {
                         value: share.usage
-                        extra: root.control.storage.human(share.modelData.size)
+                        extra: root.control.sizeText(share.modelData.size)
                         visible: share.mounted && share.modelData.size > 0
                     }
                     C.StyledText {
@@ -420,14 +420,14 @@ Item {
             C.SectionTitle {
                 Layout.topMargin: 6
                 text: "USB"
-                code: String(root.control.storage.usb.length).padStart(2, "0")
+                code: String(root.control.usb.length).padStart(2, "0")
             }
             C.Placeholder {
                 text: "-- nothing connected --"
-                visible: root.control.storage.usb.length === 0
+                visible: root.control.usb.length === 0
             }
             Repeater {
-                model: root.control.storage.usb
+                model: root.control.usb
 
                 RowLayout {
                     required property var modelData

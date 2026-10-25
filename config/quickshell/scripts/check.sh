@@ -17,6 +17,9 @@
 #            every panel in Panels.registry has what its host needs: a bar
 #            panel its <Name>Panel.qml and a BarSlot to hang under, a window
 #            panel its module in shell.qml.
+#   Services a panel passes a skin values, never a whole service
+#            (`property var x: Audio` in modules/): the skin would reach into
+#            the service, past the layering.
 #   Shell    the scripts in scripts/ pass shellcheck (if it's installed).
 #   Plain    the plain stand-ins (modules/**/Plain*.qml) import only QtQuick
 #            and services, so nothing a theme breaks can reach them. They're
@@ -80,6 +83,11 @@ for f in modules/*/Plain*.qml; do
     hits=$(grep -nE '^import ' "$f" | grep -vE '^[0-9]+:import (QtQuick|qs\.services)$')
     [[ -n "$hits" ]] && fail "$(echo "$hits" | sed "s|^|$f:|; s|\$|    <- a plain stand-in uses QtQuick and services only|")"
 done
+
+# Services handed to skins
+services=$(find services -maxdepth 1 -name '*.qml' -printf '%f\n' | sed 's/\.qml$//' | paste -sd'|')
+hits=$(grep -rnE "property var [A-Za-z]+: ($services)\s*$" modules --include='*.qml')
+[[ -n "$hits" ]] && fail "$(echo "$hits" | sed 's|$|    <- pass the skin the values it shows, not the service|')"
 
 # Shell
 if command -v shellcheck >/dev/null; then

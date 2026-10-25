@@ -26,9 +26,6 @@ Item {
 
     required property M.ControlPanel control
 
-    readonly property var sys: control.system
-    readonly property var upd: control.updates
-    readonly property var disks: control.storage
     readonly property color silk: Theme.values.display?.silk ?? Theme.palette.dim
     readonly property color red: Theme.values.display?.clock ?? Theme.palette.error
     readonly property color ink: "#2a2119"
@@ -66,23 +63,23 @@ Item {
 
                     PanelMeter {
                         name: "CPU"
-                        detail: root.sys.cpu
-                        value: root.sys.cpuUsage
-                        reading: root.sys.cpuTemp >= 0 ? `${root.sys.cpuTemp}°C` : ""
-                        hot: root.sys.cpuTemp >= 85
+                        detail: root.control.cpuName
+                        value: root.control.cpuUsage
+                        reading: root.control.cpuTemp >= 0 ? `${root.control.cpuTemp}°C` : ""
+                        hot: root.control.cpuHot
                     }
                     PanelMeter {
                         name: "GPU"
-                        detail: root.sys.gpu.replace(/^NVIDIA /, "")
-                        value: root.sys.gpuUsage
-                        reading: root.sys.gpuTemp >= 0 ? `${root.sys.gpuTemp}°C` : ""
-                        hot: root.sys.gpuTemp >= 85
+                        detail: root.control.gpuName
+                        value: root.control.gpuUsage
+                        reading: root.control.gpuTemp >= 0 ? `${root.control.gpuTemp}°C` : ""
+                        hot: root.control.gpuHot
                     }
                     PanelMeter {
                         name: "RAM"
-                        detail: `${root.sys.gib(root.sys.memUsed)} / ${root.sys.gib(root.sys.memTotal)} GiB`
-                        value: root.sys.memTotal > 0 ? root.sys.memUsed / root.sys.memTotal : 0
-                        reading: root.sys.gpuMemTotal > 0 ? `VRAM ${(root.sys.gpuMemUsed / 1024).toFixed(1)}/${(root.sys.gpuMemTotal / 1024).toFixed(0)}` : ""
+                        detail: `${root.control.gib(root.control.memUsed)} / ${root.control.gib(root.control.memTotal)} GiB`
+                        value: root.control.memTotal > 0 ? root.control.memUsed / root.control.memTotal : 0
+                        reading: root.control.gpuMemTotal > 0 ? `VRAM ${(root.control.gpuMemUsed / 1024).toFixed(1)}/${(root.control.gpuMemTotal / 1024).toFixed(0)}` : ""
                     }
 
                     // The nameplate, riveted on.
@@ -133,11 +130,11 @@ Item {
 
                             Repeater {
                                 model: [
-                                    ["host", root.control.session.hostname],
-                                    ["os", root.sys.os],
-                                    ["up", root.control.session.uptimeText],
-                                    ["board", root.sys.board],
-                                    ["kernel", root.sys.kernel]
+                                    ["host", root.control.hostname],
+                                    ["os", root.control.os],
+                                    ["up", root.control.uptimeText],
+                                    ["board", root.control.board],
+                                    ["kernel", root.control.kernel]
                                 ]
 
                                 Item {
@@ -190,7 +187,7 @@ Item {
 
                     Timer {
                         interval: 70
-                        running: root.upd.checking && root.control.open
+                        running: root.control.updatesChecking && root.control.open
                         repeat: true
                         onTriggered: updatesSection.roll = (updatesSection.roll + 1) % 100
                     }
@@ -202,7 +199,7 @@ Item {
                         Item {
                             id: counts
 
-                            readonly property var repos: Object.keys(root.upd.counts)
+                            readonly property var repos: Object.keys(root.control.updateCounts)
 
                             width: Math.max(1, repos.length) * 62 + 16
                             height: 74
@@ -236,8 +233,8 @@ Item {
                                         id: repo
 
                                         required property string modelData
-                                        readonly property int n: root.upd.checking ? updatesSection.roll : Math.min(99, root.upd.counts[modelData])
-                                        readonly property bool lit: root.upd.checking || n > 0
+                                        readonly property int n: root.control.updatesChecking ? updatesSection.roll : Math.min(99, root.control.updateCounts[modelData])
+                                        readonly property bool lit: root.control.updatesChecking || n > 0
 
                                         width: 62
                                         spacing: 4
@@ -280,10 +277,10 @@ Item {
                                 Text {
                                     width: counts.width - 16
                                     horizontalAlignment: Text.AlignHCenter
-                                    text: (root.upd.checking ? "checking"
-                                        : root.upd.failed ? "check failed"
-                                        : root.upd.count === 0 ? "up to date"
-                                        : `last upgrade ${root.control.ago(root.upd.lastUpgrade)}`).toUpperCase()
+                                    text: (root.control.updatesChecking ? "checking"
+                                        : root.control.updatesFailed ? "check failed"
+                                        : root.control.updateCount === 0 ? "up to date"
+                                        : `last upgrade ${root.control.ago(root.control.lastUpgrade)}`).toUpperCase()
                                     color: root.red
                                     font.family: Theme.font.family
                                     font.pixelSize: 9
@@ -308,7 +305,7 @@ Item {
                                 PushSwitch {
                                     anchors.verticalCenter: parent.verticalCenter
                                     icon: "\u{F0450}"
-                                    latched: root.upd.checking
+                                    latched: root.control.updatesChecking
                                     onPushed: root.control.checkUpdates()
                                 }
                                 Silk {
@@ -318,8 +315,8 @@ Item {
                             }
                             C.TextButton {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: `update${root.upd.aurHelper ? " · " + root.upd.aurHelper : ""}`
-                                enabled: root.upd.count > 0 && !root.upd.checking
+                                text: `update${root.control.aurHelper ? " · " + root.control.aurHelper : ""}`
+                                enabled: root.control.updateCount > 0 && !root.control.updatesChecking
                                 onClicked: root.control.upgrade()
                             }
                         }
@@ -357,8 +354,8 @@ Item {
                             C.StyledText {
                                 x: 8
                                 y: 6
-                                text: root.disks.usb.length === 0 ? "nothing connected"
-                                    : `${root.disks.usb.length} device${root.disks.usb.length === 1 ? "" : "s"}`
+                                text: root.control.usb.length === 0 ? "nothing connected"
+                                    : `${root.control.usb.length} device${root.control.usb.length === 1 ? "" : "s"}`
                                 caps: true
                                 color: Theme.palette.accent
                                 glow: true
@@ -376,7 +373,7 @@ Item {
                                 clip: true
                                 boundsBehavior: Flickable.StopAtBounds
                                 snapMode: ListView.SnapToItem
-                                model: root.disks.usb
+                                model: root.control.usb
 
                                 Behavior on contentY {
                                     NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
@@ -509,15 +506,15 @@ Item {
 
                     Text {
                         width: parent.width
-                        text: `ERR ${root.disks.error}`
+                        text: `ERR ${root.control.storageError}`
                         wrapMode: Text.Wrap
                         color: Theme.palette.error
                         font.family: Theme.font.family
                         font.pixelSize: 10
-                        visible: root.disks.error !== ""
+                        visible: root.control.storageError !== ""
                     }
                     Repeater {
-                        model: root.disks.mounted
+                        model: root.control.mounted
 
                         DriveCaddy {
                             id: disk
@@ -525,9 +522,9 @@ Item {
                             required property var modelData
 
                             label: modelData.mount
-                            detail: `${modelData.name} · ${modelData.fstype} · ${root.disks.human(modelData.size)}`
+                            detail: `${modelData.name} · ${modelData.fstype} · ${root.control.sizeText(modelData.size)}`
                             usage: modelData.size > 0 ? modelData.used / modelData.size : 0
-                            reading: `${root.disks.human(modelData.avail)} free`
+                            reading: `${root.control.sizeText(modelData.avail)} free`
 
                             C.IconButton {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -543,7 +540,7 @@ Item {
                         }
                     }
                     Repeater {
-                        model: root.disks.mountable
+                        model: root.control.mountable
 
                         DriveCaddy {
                             id: loose
@@ -552,7 +549,7 @@ Item {
 
                             out: true
                             label: modelData.name
-                            detail: `${modelData.fstype} · ${root.disks.human(modelData.size)}`
+                            detail: `${modelData.fstype} · ${root.control.sizeText(modelData.size)}`
 
                             C.TextButton {
                                 anchors.verticalCenter: parent.verticalCenter
@@ -562,7 +559,7 @@ Item {
                         }
                     }
                     Repeater {
-                        model: root.disks.network
+                        model: root.control.shares
 
                         Column {
                             id: share
@@ -579,7 +576,7 @@ Item {
                                 link: share.mounted ? Theme.palette.ok : share.modelData.state === "failed" ? Theme.palette.error
                                     : share.modelData.state === "idle" ? Theme.palette.warn : Qt.alpha(Theme.palette.muted, 0.01)
                                 usage: share.mounted && share.modelData.size > 0 ? share.modelData.used / share.modelData.size : -1
-                                reading: share.mounted && share.modelData.size > 0 ? `${root.disks.human(share.modelData.avail)} free`
+                                reading: share.mounted && share.modelData.size > 0 ? `${root.control.sizeText(share.modelData.avail)} free`
                                     : share.modelData.state === "failed" ? "failed" : share.modelData.state === "idle" ? "idle" : "off"
 
                                 C.TextButton {

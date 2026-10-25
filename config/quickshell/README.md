@@ -82,7 +82,10 @@ Skinned {                               Rectangle {
   file falls back the same way and is reported. A theme only needs files for the
   skins it draws its own way.
 - **Panels** are skinned too (`modules/<name>/<Name>Panel.qml` → `<Name>Menu`): the
-  panel exposes state and functions, the skin lays it out. Keys typed into a skin's
+  panel exposes state and functions, the skin lays it out. The state is typed
+  values the skin shows (`cpuHot`, `gpuName`, `sizeText(bytes)`), never a whole
+  service (`check.sh` refuses `property var x: Sysinfo`), so renaming something
+  in a service doesn't break themes, and decisions stay in the panel. Keys typed into a skin's
   text field go to the panel (`Keys.onPressed: event => event.accepted =
   root.control.fieldKey(event.key, event.modifiers)`, or `TextField.keyFilter`);
   the panel decides what they do. Skins handle no other keys.

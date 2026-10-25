@@ -17,14 +17,52 @@ Skinned {
     // gets focus.
     signal done
 
-    // What it shows: CPU, GPU, memory, board, kernel (Sysinfo); pending
-    // updates per repository (Updates); disks, shares and USB devices
-    // (Storage); the hostname and uptime (Session); your tools (Setup.tools:
-    // [{ label, command }]).
-    readonly property var system: Sysinfo
-    readonly property var updates: Updates
-    readonly property var storage: Storage
-    readonly property var session: Session
+    // What the skin shows. The services stay private to the panel: a skin
+    // reads these, so renaming something in a service changes this file, not
+    // every theme.
+
+    // The machine (Sysinfo). Usage is 0..1; temperatures °C (-1 = unknown);
+    // memory KiB, VRAM MiB.
+    readonly property string os: Sysinfo.os
+    readonly property string kernel: Sysinfo.kernel
+    readonly property bool rebootPending: Sysinfo.rebootPending
+    readonly property string board: Sysinfo.board
+    readonly property string cpuName: Sysinfo.cpu
+    readonly property string gpuName: Sysinfo.gpu.replace(/^NVIDIA /, "")
+    readonly property real cpuUsage: Sysinfo.cpuUsage
+    readonly property real gpuUsage: Sysinfo.gpuUsage
+    readonly property int cpuTemp: Sysinfo.cpuTemp
+    readonly property int gpuTemp: Sysinfo.gpuTemp
+    // Hot enough to say so.
+    readonly property int hotTemp: 85
+    readonly property bool cpuHot: cpuTemp >= hotTemp
+    readonly property bool gpuHot: gpuTemp >= hotTemp
+    readonly property real memUsed: Sysinfo.memUsed
+    readonly property real memTotal: Sysinfo.memTotal
+    readonly property real gpuMemUsed: Sysinfo.gpuMemUsed
+    readonly property real gpuMemTotal: Sysinfo.gpuMemTotal
+
+    // Pending updates (Updates). `updateCounts`: { core, extra, multilib, aur }.
+    readonly property bool updatesChecking: Updates.checking
+    readonly property bool updatesFailed: Updates.failed
+    readonly property int updateCount: Updates.count
+    readonly property var updateCounts: Updates.counts
+    readonly property string aurHelper: Updates.aurHelper
+    readonly property string lastUpgrade: Updates.lastUpgrade  // ISO date, "" = never
+
+    // Disks, shares and USB devices (Storage); see Storage for each list's
+    // fields. `storageError` is the last mount/eject failure.
+    readonly property var mounted: Storage.mounted
+    readonly property var mountable: Storage.mountable
+    readonly property var shares: Storage.network
+    readonly property var usb: Storage.usb
+    readonly property string storageError: Storage.error
+
+    // This machine (Session).
+    readonly property string hostname: Session.hostname
+    readonly property string uptimeText: Session.uptimeText
+
+    // Your tools (Setup.tools: [{ label, command }]).
     readonly property var tools: Setup.tools
 
     skin: "ControlMenu"
@@ -57,6 +95,14 @@ Skinned {
     }
     function connect(mountPoint: string): void {
         Storage.connect(mountPoint);
+    }
+
+    // Sizes as the skin shows them: "1.5G", memory as "7.8" (GiB).
+    function sizeText(bytes: real): string {
+        return Storage.human(bytes);
+    }
+    function gib(kib: real): string {
+        return Sysinfo.gib(kib);
     }
 
     function percent(v: real): string {
