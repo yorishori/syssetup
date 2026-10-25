@@ -1,29 +1,28 @@
 import QtQuick
-import qs.core
+import qs.components
 import qs.services
 
-// Bell: dim when empty, accent with a count when something is waiting,
-// dim red and crossed out in do-not-disturb. Click: open the notification
-// center, right click: toggle do-not-disturb.
-BarLabel {
+// Notifications waiting (`count`), and do-not-disturb. Click opens the
+// notification center (`active` while it's open), right click toggles
+// do-not-disturb.
+Skinned {
     id: root
 
     property bool active: false
     readonly property int count: Notifs.list.length
+    readonly property bool dnd: Notifs.dnd
+    readonly property bool hovered: area.containsMouse
 
     signal clicked
 
-    text: Notifs.dnd ? "\u{F009B}" : count > 0 ? `\u{F009A} ${count}` : "\u{F009A}"
-    lit: active || (!Notifs.dnd && count > 0)
-    color: Notifs.dnd ? Theme.palette.off : lit ? Theme.palette.accent : Theme.palette.dim
-
-    Behavior on color {
-        ColorAnimation { duration: 150 }
-    }
+    skin: "NotifIndicator"
 
     MouseArea {
+        id: area
+
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: mouse => {
             if (mouse.button === Qt.RightButton)

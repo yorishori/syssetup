@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.core
 
-// Read-only calendar events from a CalDAV server (Config.calendar.url).
+// Read-only calendar events from a CalDAV server (Setup.calendar.url).
 //
 // No sync and no polling: load(from, to) queries the server for that range
 // only, when the calendar asks (on open / month change). Recurring events are
@@ -16,7 +16,7 @@ import qs.core
 Singleton {
     id: root
 
-    readonly property string url: Config.calendar.url
+    readonly property string url: Setup.calendar.url
     readonly property string origin: (url.match(/^https?:\/\/[^\/]+/) ?? [""])[0]
 
     // idle, offline, unauthorized, ready
@@ -138,7 +138,7 @@ Singleton {
                         const name = (r.match(/<(?:\w+:)?displayname>([^<]*)</) ?? [])[1] || href;
                         found.push({ href: absolute(href), name, color: "" });
                     }
-                    const palette = Config.calendar.colors;
+                    const palette = Setup.calendar.colors;
                     root.calendars = found.map((c, i) => Object.assign(c, { color: palette[i % palette.length] }));
                     root.state = "ready";
                     if (root.range)

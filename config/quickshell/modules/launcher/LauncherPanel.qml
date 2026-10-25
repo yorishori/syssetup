@@ -1,54 +1,84 @@
 import QtQuick
-import QtQuick.Layouts
-import Quickshell.Widgets
 import qs.components
-import qs.core
 import qs.services
 
-// The launcher: "go somewhere or run something". Tabs and quick-action keys
-// on top, then the prompt, then results.
+// The launcher: "go somewhere or run something". The skin (LauncherMenu)
+// lays it out: the modes and quick-action keys, the prompt, the results.
 //
-//   SEARCH   apps, open windows, your entries (config.json → launcher.entries),
+//   SEARCH   apps, open windows, your entries (Setup → launcher.entries),
 //            math, web
 //   WINDOWS  every open window; Enter focuses it
 //   APPS     every app in a scrollable list
 //
 // Enter runs the selection (focuses an app that's already open), Shift+Enter
-// opens a new instance. Arrows move, Tab switches tabs, Escape goes back to
+// opens a new instance. Arrows move, Tab switches modes, Escape goes back to
 // search, then closes. (Symbols and emoji live in the clipboard panel, SUPER+V.)
-ColumnLayout {
+//
+// The skin's prompt calls setQuery as it's typed, follows `query` when it's
+// set from outside (IPC), and takes the keyboard on focusRequested.
+Skinned {
     id: root
 
     property bool open: false
 
     signal done
+    signal focusRequested
+    // A result was run, just before the launcher closes.
+    signal ran(int modifiers)
 
     property int selected: 0
     readonly property var results: Launcher.results
+    readonly property string query: Launcher.query
     readonly property string mode: Launcher.mode
     readonly property var modes: ["search", "windows", "apps"]
     readonly property bool listed: mode !== "search"  // a scrollable list of everything
+    readonly property int windowCount: Wm.windows.length
+    readonly property string prompt: mode === "search" ? ">" : `${mode}>`
+    readonly property string placeholder: ({ search: "apps · windows · 2+2 · web", windows: "filter windows", apps: "filter apps" })[mode]
+    // What Enter does to a result, by its kind.
+    readonly property var verbs: ({ calc: "copy", window: "focus", app: "run", custom: "cmd", web: "web" })
+    readonly property var hints: [
+        ["↵", mode === "windows" ? "focus" : "run"],
+        ...(mode === "windows" ? [] : [["⇧↵", "new"]]),
+        ["↑↓", "move"], ["⇥", "tab"],
+        ["esc", mode === "search" ? "close" : "back"]
+    ]
+    // Quick actions; `busy` ones wait while a capture is running.
+    readonly property bool capturing: Capture.busy
+    readonly property var actions: [
+        { name: "screenshot", icon: "\u{F0E51}", run: () => Capture.screenshot() },
+        { name: "record", icon: "\u{F044A}", busy: true, run: () => Capture.recordScreen() },
+        { name: "voice", icon: "\u{F036C}", busy: true, run: () => { Panels.close(); Capture.recordVoice(); } },
+        { name: "clipboard", icon: "\u{F0147}", run: () => Clipboard.show() },
+        { name: "settings", icon: "\u{F0493}", run: () => Panels.open("settings") }
+    ]
 
-    width: 560
-    spacing: 10
+    skin: "LauncherMenu"
 
     function setMode(m: string): void {
         if (Launcher.mode === m)
             return;
         Launcher.mode = m;
-        field.text = "";
+        Launcher.query = "";
         selected = 0;
-        field.focusInput();
+        focusRequested();
     }
 
     function switchTab(step: int): void {
         setMode(modes[(modes.indexOf(mode) + step + modes.length) % modes.length]);
     }
 
+    function setQuery(text: string): void {
+        if (Launcher.query !== text)
+            Launcher.query = text;
+        selected = 0;
+    }
+
     function run(index: int, modifiers: int): void {
         const result = results[index];
         if (!result)
             return;
+        ran(modifiers);
         result.run((modifiers & Qt.ShiftModifier) !== 0);
         done();
     }
@@ -69,205 +99,17 @@ ColumnLayout {
     onOpenChanged: {
         selected = 0;
         if (open) {
-            field.focusInput();
+            focusRequested();
         } else {
             Launcher.query = "";
             Launcher.mode = "search";
-            field.text = "";
         }
     }
     onResultsChanged: selected = Math.min(selected, Math.max(0, results.length - 1))
-    onSelectedChanged: {
-        if (listed)
-            list.positionViewAtIndex(selected, ListView.Contain);
-    }
-
-    // The query and mode can also be set from outside (IPC); keep the field
-    // and tabs in sync.
-    Connections {
-        target: Launcher
-
-        function onQueryChanged(): void {
-            if (field.text !== Launcher.query)
-                field.text = Launcher.query;
-        }
-        function onModeChanged(): void {
-            tabs.current = root.modes.indexOf(Launcher.mode);
-        }
-    }
 
     Keys.onUpPressed: move(-1)
     Keys.onDownPressed: move(1)
     Keys.onTabPressed: switchTab(1)
     Keys.onBacktabPressed: switchTab(-1)
     Keys.onEscapePressed: back()
-
-    // ── Tabs, then the quick-action keys ─────────────────────────────────────
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 10
-
-        Tabs {
-            id: tabs
-
-            tabs: ["Search", `Windows ${Wm.windows.length}`, "Apps"]
-            onCurrentChanged: root.setMode(root.modes[current])
-        }
-
-        // Quick actions as bare glyph keys, to keep the top row to one line.
-        Repeater {
-            model: [
-                { icon: "\u{F0E51}", run: () => Capture.screenshot() },
-                { icon: "\u{F044A}", busy: true, run: () => Capture.recordScreen() },
-                { icon: "\u{F036C}", busy: true, run: () => { Panels.close(); Capture.recordVoice(); } },
-                { icon: "\u{F0147}", run: () => Clipboard.show() },
-                { icon: "\u{F0493}", run: () => Panels.open("settings") }
-            ]
-
-            IconButton {
-                required property var modelData
-
-                size: 26
-                icon: modelData.icon
-                iconColor: Theme.palette.dim
-                // Screen and voice recording wait while a capture is running.
-                enabled: !(modelData.busy && Capture.busy)
-                opacity: enabled ? 1 : 0.4
-                onClicked: modelData.run()
-            }
-        }
-    }
-
-    // ── Prompt ───────────────────────────────────────────────────────────────
-    TextField {
-        id: field
-
-        Layout.fillWidth: true
-        prompt: root.mode === "search" ? ">" : `${root.mode}>`
-        placeholder: ({ search: "apps · windows · 2+2 · web", windows: "filter windows", apps: "filter apps" })[root.mode]
-
-        onTextChanged: {
-            if (Launcher.query !== text)
-                Launcher.query = text;
-            root.selected = 0;
-        }
-        onAccepted: modifiers => root.run(root.selected, modifiers)
-    }
-
-    // One result: [icon] name  detail  TAG
-    component ResultRow: ListRow {
-        id: row
-
-        required property var modelData
-        required property int index
-        readonly property bool lit: modelData.kind === "calc" || modelData.kind === "window"
-
-        width: ListView.view ? ListView.view.width : implicitWidth
-        implicitHeight: 32
-        current: root.selected === index
-        onEntered: root.selected = index
-        onClicked: mouse => root.run(index, mouse.modifiers)
-
-        Item {
-            implicitWidth: 20
-            implicitHeight: 20
-
-            IconImage {
-                anchors.fill: parent
-                source: row.modelData.icon
-                visible: row.modelData.icon !== ""
-            }
-            StyledText {
-                anchors.centerIn: parent
-                text: row.modelData.glyph
-                color: row.lit ? Theme.palette.accent : Theme.palette.dim
-                font.bold: true
-                font.pixelSize: Theme.font.size + 2
-                visible: row.modelData.icon === ""
-            }
-        }
-        StyledText {
-            Layout.maximumWidth: 260
-            text: row.modelData.kind === "web" ? `"${row.modelData.name}"` : row.modelData.name
-            color: row.modelData.kind === "calc" ? Theme.palette.accent : row.current ? Theme.palette.fg : Theme.palette.dim
-            glow: row.modelData.kind === "calc"
-            font.bold: row.current || row.modelData.kind === "calc"
-            elide: Text.ElideRight
-        }
-        StyledText {
-            Layout.fillWidth: true
-            text: row.modelData.detail
-            color: Theme.palette.muted
-            font.pixelSize: Theme.font.size - 1
-            elide: Text.ElideRight
-        }
-        StyledText {
-            text: ({ calc: "copy", window: "focus", app: "run", custom: "cmd", web: "web" })[row.modelData.kind] ?? ""
-            caps: true
-            color: row.lit ? Theme.palette.accent : Theme.palette.muted
-            font.pixelSize: Theme.font.size - 3
-            font.bold: true
-            tracking: 1.5
-        }
-    }
-
-    // ── Search ───────────────────────────────────────────────────────────────
-    ColumnLayout {
-        Layout.fillWidth: true
-        spacing: 0
-        visible: root.mode === "search"
-
-        Placeholder {
-            text: "-- no matches --"
-            visible: root.results.length === 0 && Launcher.query.trim() !== ""
-        }
-        Repeater {
-            model: root.mode === "search" ? root.results : []
-            ResultRow {}
-        }
-    }
-
-    // ── Windows / apps: everything, scrollable ───────────────────────────────
-    Item {
-        Layout.fillWidth: true
-        Layout.preferredHeight: list.height
-        visible: root.listed
-
-        ListView {
-            id: list
-
-            width: parent.width
-            height: Math.min(count, 10) * 32
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            model: root.listed ? root.results : []
-            delegate: ResultRow {}
-        }
-        ScrollLamp {
-            view: list
-        }
-    }
-    Placeholder {
-        text: Launcher.query.trim() !== "" ? "-- no matches --" : `-- no ${root.mode} --`
-        visible: root.listed && root.results.length === 0
-    }
-
-    // ── Key hints ────────────────────────────────────────────────────────────
-    RowLayout {
-        Layout.fillWidth: true
-        Layout.topMargin: 2
-        spacing: 14
-
-        Divider {
-            Layout.fillWidth: true
-        }
-        KeyHints {
-            hints: [
-                ["↵", root.mode === "windows" ? "focus" : "run"],
-                ...(root.mode === "windows" ? [] : [["⇧↵", "new"]]),
-                ["↑↓", "move"], ["⇥", "tab"],
-                ["esc", root.mode === "search" ? "close" : "back"]
-            ]
-        }
-    }
 }

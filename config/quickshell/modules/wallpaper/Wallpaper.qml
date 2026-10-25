@@ -5,7 +5,7 @@ import Quickshell.Wayland
 import qs.core
 import qs.services
 
-// Wallpaper: config.json → wallpaper.path on every screen (a second monitor
+// Wallpaper: Config → wallpaper.path on every screen (a second monitor
 // gets it too, so it's never a black hole). Changing it crossfades. No image,
 // or one that can't be loaded, leaves a plain color: wallpaper.color, or the
 // console color when that's empty.

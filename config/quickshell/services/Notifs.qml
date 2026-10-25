@@ -20,6 +20,9 @@ Singleton {
 
     // Currently shown as popups, newest first.
     property var popups: []
+    // Where the bar's notification counter is across the screen (its
+    // middle), for popups that come out of the bar under it; -1 without one.
+    property real slotX: -1
 
     // Do not disturb: no popups (critical ones still show). With `dndUntil`
     // set (ms since epoch) it switches itself off at that time.
@@ -27,8 +30,8 @@ Singleton {
     property real dndUntil: 0
 
     // Apps whose popups are silenced (lowercase names); they still land in the
-    // history. Saved in config.json → notifications.mutedApps.
-    readonly property var mutedApps: Config.notifications.mutedApps
+    // history. Kept in Config (mutedApps).
+    readonly property var mutedApps: Config.mutedApps
 
     // Arrival time per notification id (ms since epoch).
     property var received: ({})
@@ -58,7 +61,7 @@ Singleton {
 
     function toggleApp(app: string): void {
         const key = app.toLowerCase();
-        Config.set("notifications.mutedApps", isMuted(app) ? mutedApps.filter(a => a !== key) : [...mutedApps, key]);
+        Config.set("mutedApps", isMuted(app) ? mutedApps.filter(a => a !== key) : [...mutedApps, key]);
     }
 
     // Who owns the bus name: "<pid> <process name>", or "" if nobody.
@@ -84,7 +87,7 @@ Singleton {
     function popupTimeout(n: Notification): real {
         if (n.urgency === NotificationUrgency.Critical || n.expireTimeout === 0)
             return 0;
-        return n.expireTimeout > 0 ? n.expireTimeout : Config.notifications.timeout;
+        return n.expireTimeout > 0 ? n.expireTimeout : Setup.popupTimeout;
     }
 
     // Ends a timed do-not-disturb.

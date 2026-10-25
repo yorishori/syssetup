@@ -7,6 +7,7 @@ Skinned {
     id: root
 
     property string label
+    property string key: ""  // the action's name, for skins that dress each differently
     property string glyph
     property int number
     property bool current: false

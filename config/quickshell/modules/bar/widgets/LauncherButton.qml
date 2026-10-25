@@ -1,22 +1,17 @@
 import QtQuick
-import qs.core
+import qs.components
 
-// Opens the launcher with the mouse. Glows while the launcher is open.
-BarLabel {
+// Opens the launcher with the mouse (`active` while it's open).
+Skinned {
     id: root
 
     property bool active: false
+    readonly property bool hovered: area.containsMouse
+    readonly property bool pressed: area.pressed
 
     signal clicked
 
-    text: "\u{F08C7}"
-    lit: active
-    color: active ? Theme.palette.accent : area.containsMouse ? Theme.palette.fg : Theme.palette.dim
-    font.pixelSize: Theme.font.size + 3
-
-    Behavior on color {
-        ColorAnimation { duration: 150 }
-    }
+    skin: "LauncherButton"
 
     MouseArea {
         id: area

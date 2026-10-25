@@ -27,6 +27,86 @@ Singleton {
 
     readonly property PwNode output: Pipewire.defaultAudioSink
     readonly property PwNode input: Pipewire.defaultAudioSource
+
+    // One node per device, in a steady order: a device's profile can give it
+    // several sinks or sources (Pro Audio, HDMI), which are one choice here.
+    // A device stands for the default when that's one of its nodes, else for
+    // its preferred node. Nodes without a device stand for themselves.
+    readonly property var outputDevices: perDevice(outputs, output)
+    readonly property var inputDevices: perDevice(inputs, input)
+
+    function deviceOf(node: PwNode): string {
+        return node?.properties["device.id"] ?? "";
+    }
+
+    function priority(node: PwNode): int {
+        return Number(node?.properties["priority.session"]) || 0;
+    }
+
+    function perDevice(list: var, current: PwNode): var {
+        const groups = [];
+        const byKey = {};
+        for (const node of list) {
+            const key = deviceOf(node) || `node ${node.id}`;
+            if (!(key in byKey)) {
+                byKey[key] = groups.length;
+                groups.push([]);
+            }
+            groups[byKey[key]].push(node);
+        }
+        return groups.map(nodes => nodes.includes(current) ? current
+            : nodes.reduce((best, n) => priority(n) > priority(best) ? n : best));
+    }
+
+    // The best node of a device in a list.
+    function nodeOn(list: var, device: string): PwNode {
+        return list.filter(n => deviceOf(n) === device)
+            .reduce((best, n) => !best || priority(n) > priority(best) ? n : best, null);
+    }
+
+    // A profile switch recreates the device's node, and meanwhile WirePlumber
+    // may make another device the default. For a few seconds after one, the
+    // default is put back on the switched device as soon as its new node is
+    // there.
+    property string holdOutput: ""
+    property string holdInput: ""
+
+    function hold(kind: string, device: string): void {
+        if (kind === "output")
+            holdOutput = device;
+        else
+            holdInput = device;
+        holdTimer.restart();
+        keep();
+    }
+
+    function keep(): void {
+        if (holdOutput !== "" && deviceOf(output) !== holdOutput) {
+            const node = nodeOn(outputs, holdOutput);
+            if (node)
+                Pipewire.preferredDefaultAudioSink = node;
+        }
+        if (holdInput !== "" && deviceOf(input) !== holdInput) {
+            const node = nodeOn(inputs, holdInput);
+            if (node)
+                Pipewire.preferredDefaultAudioSource = node;
+        }
+    }
+
+    onOutputsChanged: keep()
+    onOutputChanged: keep()
+    onInputsChanged: keep()
+    onInputChanged: keep()
+
+    Timer {
+        id: holdTimer
+
+        interval: 4000
+        onTriggered: {
+            root.holdOutput = "";
+            root.holdInput = "";
+        }
+    }
     readonly property bool ready: Pipewire.ready && !!output?.audio
 
     // Master (default output) shortcuts.
@@ -53,8 +133,14 @@ Singleton {
 
     // Profiles of the devices behind the default output and input:
     // { list: [{ index, label, current }] (best first), current, switching, set(index) }.
-    readonly property DeviceProfiles outputProfiles: DeviceProfiles { node: root.output }
-    readonly property DeviceProfiles inputProfiles: DeviceProfiles { node: root.input }
+    readonly property DeviceProfiles outputProfiles: DeviceProfiles {
+        node: root.output
+        kind: "output"
+    }
+    readonly property DeviceProfiles inputProfiles: DeviceProfiles {
+        node: root.input
+        kind: "input"
+    }
 
     // "High Fidelity Playback (A2DP Sink, codec LDAC)" -> "A2DP LDAC"; others as is.
     function profileLabel(description: string): string {
@@ -80,6 +166,7 @@ Singleton {
         id: profiles
 
         required property PwNode node
+        required property string kind  // "output" or "input"
         readonly property string device: node?.properties["device.id"] ?? ""
         property var list: []
         readonly property var current: list.find(p => p.current) ?? null
@@ -102,6 +189,7 @@ Singleton {
         function set(index: int): void {
             if (device === "" || writer.running)
                 return;
+            root.hold(kind, device);
             writer.command = ["wpctl", "set-profile", device, String(index)];
             writer.running = true;
         }

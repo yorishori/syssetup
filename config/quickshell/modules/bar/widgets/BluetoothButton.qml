@@ -1,35 +1,43 @@
 import QtQuick
-import qs.core
+import qs.components
 import qs.services
 
-// Bluetooth at a glance: dim when on, lit (connected glyph) while a device is
-// connected, dim red when off, pulsing while scanning. Click opens the drop.
-BarLabel {
+// Bluetooth: on or off, a device connected, scanning. Click opens the
+// Bluetooth drop; a skin with a power switch (`toggleArea`, in this item's
+// coordinates) turns it on and off when that's clicked. The skin may hide it
+// without an adapter (`shown`).
+Skinned {
     id: root
+
+    readonly property bool available: Bluez.available
+    readonly property bool on: Bluez.enabled
+    readonly property bool connected: Bluez.connected.length > 0
+    readonly property bool discovering: Bluez.discovering
+    readonly property bool hovered: area.containsMouse
+    readonly property rect toggleArea: view?.toggleArea ?? Qt.rect(0, 0, 0, 0)
+    readonly property bool overToggle: hovered && inToggle(area.mouseX, area.mouseY)
 
     signal toggleDrop
 
-    visible: Bluez.available
-    text: !Bluez.enabled ? "\u{F00B2}" : Bluez.connected.length > 0 ? "\u{F00B1}" : "\u{F00AF}"
-    lit: Bluez.enabled && Bluez.connected.length > 0
-    color: !Bluez.enabled ? Theme.palette.off : lit ? Theme.palette.accent : Theme.palette.dim
-
-    Behavior on color {
-        ColorAnimation { duration: 200 }
+    function inToggle(x: real, y: real): bool {
+        const r = toggleArea;
+        return available && x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height;
     }
 
-    SequentialAnimation on opacity {
-        running: Bluez.discovering
-        loops: Animation.Infinite
-        alwaysRunToEnd: true
-
-        NumberAnimation { to: 0.35; duration: 600; easing.type: Easing.InOutSine }
-        NumberAnimation { to: 1; duration: 600; easing.type: Easing.InOutSine }
-    }
+    skin: "BluetoothButton"
+    visible: view?.shown ?? true
 
     MouseArea {
+        id: area
+
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.toggleDrop()
+        onClicked: mouse => {
+            if (root.inToggle(mouse.x, mouse.y))
+                Bluez.setEnabled(!root.on);
+            else
+                root.toggleDrop();
+        }
     }
 }

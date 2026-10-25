@@ -1,8 +1,6 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
-import qs.components
 import qs.core
 import qs.services
 
@@ -182,34 +180,14 @@ PanelWindow {
         }
     }
 
-    // ── The outlined area, set apart from the rest ───────────────────────────
+    // ── The outlined area, set apart from the rest, its size, how to choose ──
     Selection {
         anchors.fill: parent
         area: win.hasShown ? win.shown : Qt.rect(0, 0, 0, 0)
+        moving: win.dragging
+        marking: win.marking
+        kind: Capture.kind
         visible: win.ready
-    }
-
-    // Size readout
-    Tag {
-        x: win.shown.x
-        y: win.shown.y > 28 ? win.shown.y - height - 6 : win.shown.y + 6
-        text: `${Math.round(win.shown.width)}×${Math.round(win.shown.height)}`
-        fill: Theme.palette.accent
-        visible: win.ready && win.hasShown && !win.marking
-    }
-
-    // How to select, shown the whole time until the shot or recording starts.
-    Tag {
-        anchors {
-            top: parent.top
-            topMargin: 48
-            horizontalCenter: parent.horizontalCenter
-        }
-        text: Capture.kind === "screenshot" ? "click a window · drag a region · enter for the screen" : "record: click a window · drag a region · enter for the screen"
-        fill: Theme.palette.surface
-        textColor: Theme.palette.fg
-        size: Theme.font.size - 1
-        visible: win.ready && !win.marking
     }
 
     // ── Selecting ────────────────────────────────────────────────────────────
@@ -280,85 +258,21 @@ PanelWindow {
         }
     }
 
-    // Tool strip: below the selection if there's room, else above, else inside.
-    Item {
-        id: strip
-
-        readonly property rect sel: Capture.selection
-
-        x: win.clamp(sel.x + sel.width / 2 - width / 2, 12, win.width - width - 12)
-        y: sel.y + sel.height + height + 16 < win.height ? sel.y + sel.height + 12
-            : sel.y - height - 12 > 0 ? sel.y - height - 12
-            : sel.y + sel.height - height - 12
-        width: tools.implicitWidth + 24
-        height: tools.implicitHeight + 16
+    // The tools, round the selection.
+    MarkTools {
+        anchors.fill: parent
         visible: win.marking
-
-        Card {
-            anchors.fill: parent
-        }
-
-        RowLayout {
-            id: tools
-
-            anchors.centerIn: parent
-            spacing: 4
-
-            Repeater {
-                model: win.tools
-
-                IconButton {
-                    required property var modelData
-                    required property int index
-
-                    icon: modelData.glyph
-                    lit: win.tool === modelData.key
-                    onClicked: win.tool = modelData.key
-                }
-            }
-            Divider {
-                implicitHeight: 20
-                vertical: true
-            }
-            Repeater {
-                model: win.inks
-
-                Item {
-                    required property color modelData
-
-                    implicitWidth: 22
-                    implicitHeight: 22
-
-                    Swatch {
-                        anchors.centerIn: parent
-                        width: 16
-                        height: 16
-                        color: parent.modelData
-                        selected: Qt.colorEqual(win.ink, parent.modelData)
-                        onClicked: win.ink = parent.modelData
-                    }
-                }
-            }
-            Divider {
-                implicitHeight: 20
-                vertical: true
-            }
-            IconButton {
-                icon: "\u{F054C}"
-                enabled: win.marks.length > 0
-                opacity: enabled ? 1 : 0.35
-                onClicked: win.undo()
-            }
-            TextButton {
-                text: "done"
-                lit: true
-                onClicked: win.finish()
-            }
-            TextButton {
-                text: "cancel"
-                onClicked: Capture.cancel()
-            }
-        }
+        area: Capture.selection
+        tools: win.tools
+        tool: win.tool
+        inks: win.inks
+        ink: win.ink
+        canUndo: win.marks.length > 0
+        onToolPicked: key => win.tool = key
+        onInkPicked: ink => win.ink = ink
+        onUndone: win.undo()
+        onDone: win.finish()
+        onCancelled: Capture.cancel()
     }
 
     // ── Keys ─────────────────────────────────────────────────────────────────

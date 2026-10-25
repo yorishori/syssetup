@@ -19,11 +19,14 @@ import "widgets"
 PanelWindow {
     id: bar
 
-    // The open bar panel, "" when none (or when a non-bar panel is open).
-    readonly property string openDrop: Panels.barPanels.includes(Panels.current) ? Panels.current : ""
+    // The open bar panel, "" when none (or when a panel the bar doesn't
+    // show is open).
+    readonly property string openDrop: panels.some(p => p.name === Panels.current) ? Panels.current : ""
 
     // Drops, in the order they're declared. `edge` pins one flush to a screen
-    // edge; `blur` darkens and blurs the rest of the screen behind it.
+    // edge; `blur` darkens and blurs the rest of the screen behind it. Themes
+    // that show the session menu full screen (SessionScreen) have no drop
+    // for it.
     readonly property var panels: [
         { name: "session", edge: "left", blur: true },
         { name: "calendar" },
@@ -33,10 +36,10 @@ PanelWindow {
         { name: "bluetooth" },
         { name: "audio" },
         { name: "notifications" },
-        { name: "control", edge: "right", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } },
-        { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } },
-        { name: "keys", blur: true, bindings: { maxHeight: () => bar.height - Config.bar.height - 60 } }
-    ]
+        { name: "control", edge: "right", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
+        { name: "settings", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } },
+        { name: "keys", blur: true, bindings: { maxHeight: () => bar.height - Theme.barHeight - 60 } }
+    ].filter(p => p.name !== "session" || !Theme.sessionScreen)
 
     // The bar key each drop hangs under.
     function anchorFor(name: string): Item {
@@ -94,7 +97,7 @@ PanelWindow {
         right: true
     }
     implicitHeight: screen?.height ?? 1080
-    exclusiveZone: Config.bar.height
+    exclusiveZone: Theme.barHeight
     color: "transparent"
     WlrLayershell.namespace: "qs-bar"
     // Fullscreen windows cover the top layer, so an open drop moves up to the
@@ -146,10 +149,12 @@ PanelWindow {
     }
 
     // Closes the drop when clicking anywhere outside it (Sway). The click
-    // doesn't reach the window underneath.
+    // doesn't reach the window underneath. Under everything, drops that
+    // hang behind the bar included.
     MouseArea {
         id: outsideClick
 
+        z: -2
         anchors.fill: parent
         enabled: bar.catchOutside
         acceptedButtons: Qt.AllButtons
@@ -167,6 +172,7 @@ PanelWindow {
     // layer_effects on "qs-bar", see README). Transparent otherwise, so
     // nothing is blurred.
     Backdrop {
+        z: -2
         anchors.fill: parent
         shown: bar.panels.some(p => p.blur && p.name === bar.openDrop)
     }
@@ -179,7 +185,7 @@ PanelWindow {
             left: parent.left
             right: parent.right
         }
-        height: Config.bar.height
+        height: Theme.barHeight
         // The groups of keys, for themes that draw them apart.
         islands: [[leftGroup], [launcherButton, workspaces, centerRow], [rightGroup]]
 
@@ -190,9 +196,9 @@ PanelWindow {
             anchors {
                 left: parent.left
                 verticalCenter: parent.verticalCenter
-                leftMargin: Config.bar.padding
+                leftMargin: Setup.bar.padding
             }
-            spacing: Config.bar.spacing
+            spacing: Setup.bar.spacing
 
             PowerButton {
                 id: powerButton
@@ -206,17 +212,18 @@ PanelWindow {
             Tray {
                 id: tray
 
+                pulled: bar.openDrop === "tray" ? bar.trayItem : null
                 onMenuRequested: (trayItem, anchor) => bar.toggleTrayMenu(trayItem, anchor)
             }
         }
 
-        // Center: launcher key, workspaces, recording indicator
+        // Center: launcher key, workspaces, caffeine, status lamps, recording
         LauncherButton {
             id: launcherButton
 
             anchors {
                 right: workspaces.left
-                rightMargin: Config.bar.spacing
+                rightMargin: Setup.bar.spacing
                 verticalCenter: parent.verticalCenter
             }
             active: bar.openDrop === "launcher"
@@ -232,7 +239,7 @@ PanelWindow {
 
             anchors {
                 left: workspaces.right
-                leftMargin: Config.bar.spacing
+                leftMargin: Setup.bar.spacing
                 verticalCenter: parent.verticalCenter
             }
             spacing: 8
@@ -240,14 +247,12 @@ PanelWindow {
             CaffeineButton {
                 anchors.verticalCenter: parent.verticalCenter
             }
-            // Idling: no input, nothing holding it off.
-            BarLabel {
+            StatusLamps {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "\u{F04B2}"
-                visible: Idle.idle
             }
-            PrivacyIndicator {}
-            RecordingKey {}
+            RecordingKey {
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
 
         // Right: controls
@@ -257,9 +262,9 @@ PanelWindow {
             anchors {
                 right: parent.right
                 verticalCenter: parent.verticalCenter
-                rightMargin: Config.bar.padding
+                rightMargin: Setup.bar.padding
             }
-            spacing: Config.bar.spacing
+            spacing: Setup.bar.spacing
 
             NetworkButton {
                 id: networkButton
@@ -278,6 +283,12 @@ PanelWindow {
 
                 active: bar.openDrop === "notifications"
                 onClicked: Panels.toggle("notifications")
+            }
+            // Tell the popups where it is.
+            Binding {
+                target: Notifs
+                property: "slotX"
+                value: background.x + rightGroup.x + notifButton.x + notifButton.width / 2
             }
             HealthIndicator {}
             ControlButton {
@@ -299,8 +310,9 @@ PanelWindow {
 
             required property var modelData
 
-            y: Config.bar.height - background.seam
+            y: Theme.barHeight - background.seam
             anchorItem: bar.anchorFor(modelData.name)
+            name: modelData.name
             edge: modelData.edge ?? ""
             open: bar.openDrop === modelData.name
 
