@@ -29,7 +29,10 @@ Singleton {
 
     readonly property bool busy: state !== "idle"
     readonly property bool recording: state === "recording"
-    readonly property string tmpDir: `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/qs-capture`
+    // Private: the session's runtime dir, else the shell's cache (never /tmp,
+    // which anyone can write to).
+    readonly property string tmpDir: Quickshell.env("XDG_RUNTIME_DIR")
+        ? `${Quickshell.env("XDG_RUNTIME_DIR")}/qs-capture` : `${Quickshell.cacheDir}/capture`
 
     // Folder and file name the prompt suggests.
     readonly property string folderKey: kind === "screenshot" ? "screenshots" : kind === "screen" ? "recordings" : "voice"
@@ -188,26 +191,9 @@ Singleton {
     Process {
         id: windowList
 
-        command: Wm.sway ? ["swaymsg", "-r", "-t", "get_tree"]
-            : ["sh", "-c", "hyprctl monitors -j; echo '---'; hyprctl clients -j"]
+        command: ["swaymsg", "-r", "-t", "get_tree"]
         stdout: StdioCollector {
-            onStreamFinished: {
-                if (Wm.sway) {
-                    root.windows = root.swayWindows(text);
-                    return;
-                }
-                try {
-                    const [monitorsJson, clientsJson] = text.split("\n---\n");
-                    const mon = JSON.parse(monitorsJson).find(m => m.name === Display.primary?.name);
-                    const visible = [mon?.activeWorkspace?.id, mon?.specialWorkspace?.id].filter(id => id);
-                    root.windows = JSON.parse(clientsJson)
-                        .filter(c => c.mapped && !c.hidden && visible.includes(c.workspace.id))
-                        .map(c => ({ x: c.at[0] - mon.x, y: c.at[1] - mon.y, w: c.size[0], h: c.size[1] }))
-                        .reverse();  // topmost first (roughly: floating windows come last in the list)
-                } catch (e) {
-                    root.windows = [];
-                }
-            }
+            onStreamFinished: root.windows = root.swayWindows(text)
         }
     }
 

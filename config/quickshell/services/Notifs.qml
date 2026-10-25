@@ -167,16 +167,9 @@ Singleton {
             : "notification server failed to register"
     }
 
-    // qs ipc call notifications <toggle|open|close|dnd|mute APP|clear|list>
+    // qs ipc call notifications <dnd|mute APP|clear|list>
     IpcHandler {
         target: "notifications"
-
-        function toggle(): void { Panels.toggle("notifications"); }
-        function open(): void { Panels.open("notifications"); }
-        function close(): void {
-            if (Panels.isOpen("notifications"))
-                Panels.close();
-        }
 
         function dnd(): string {
             root.setDnd(!root.dnd, 0);

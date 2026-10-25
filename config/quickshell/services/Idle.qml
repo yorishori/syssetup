@@ -6,7 +6,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.core
 
-// Idle, instead of swayidle or hypridle: lock after idle.lock minutes without input, turn
+// Idle, instead of swayidle: lock after idle.lock minutes without input, turn
 // the display off after idle.screenOff minutes (back on at the first input).
 // Apps that inhibit idle (fullscreen windows, games) hold both off, and so does
 // any playing media player (windowed browser video asks over D-Bus, which

@@ -2,48 +2,35 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
-import Quickshell.Hyprland
 import Quickshell.I3
 import Quickshell.Wayland
 import qs.core
 
-// Window manager state and actions. The only file that talks to the
-// compositor, with a Sway and a Hyprland backend picked at startup from the
-// environment. Windows come from the foreign-toplevel protocol, which both
-// support.
+// Window manager state and actions: the only file that talks to Sway (over
+// its IPC). Windows come from the foreign-toplevel protocol.
 Singleton {
     id: root
 
-    readonly property bool sway: !!Quickshell.env("SWAYSOCK")
-    readonly property bool hyprland: !sway && !!Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE")
-    readonly property bool available: sway || hyprland
+    readonly property bool available: !!Quickshell.env("SWAYSOCK")
 
-    readonly property int activeWorkspace: sway ? I3.focusedWorkspace?.number ?? 0
-        : hyprland ? Hyprland.focusedWorkspace?.id ?? 0 : 0
+    readonly property int activeWorkspace: I3.focusedWorkspace?.number ?? 0
 
-    // Regular workspaces only, as [{ id, occupied }]. Hyprland's special
-    // workspaces have negative ids; Sway's scratchpad and named-only
-    // workspaces have no number.
-    readonly property var workspaces: sway
-        ? I3.workspaces.values.filter(w => w.number > 0).map(w => ({
-            id: w.number,
-            // Sway removes a workspace once it's empty and unfocused, so only
-            // the focused one can exist without windows.
-            occupied: !w.focused || !!w.lastIpcObject?.representation
-        }))
-        : hyprland
-        ? Hyprland.workspaces.values.filter(w => w.id > 0).map(w => ({
-            id: w.id,
-            occupied: w.toplevels.values.length > 0
-        }))
-        : []
+    // Numbered workspaces only, as [{ id, occupied }] (the scratchpad and
+    // named-only workspaces have no number).
+    readonly property var workspaces: I3.workspaces.values.filter(w => w.number > 0).map(w => ({
+        id: w.number,
+        // Sway removes a workspace once it's empty and unfocused, so only the
+        // focused one can exist without windows.
+        occupied: !w.focused || !!w.lastIpcObject?.representation
+    }))
 
-    // Open windows: { toplevel, appClass, title }. Sway reports XWayland
-    // windows' class as their app id.
+    // Open windows: { toplevel, appClass }. Sway reports XWayland windows'
+    // class as their app id. Titles are read from the toplevel where shown,
+    // so a window renaming itself (a terminal, a browser tab) doesn't rebuild
+    // this list and everything bound to it.
     readonly property var windows: ToplevelManager.toplevels.values.map(t => ({
         toplevel: t,
-        appClass: t.appId,
-        title: t.title
+        appClass: t.appId
     }))
 
     // The window that last had focus, as { toplevel, appClass }. Kept while a
@@ -87,36 +74,25 @@ Singleton {
     }
 
     function focusWorkspace(id: int): void {
-        if (sway)
-            I3.dispatch(`workspace number ${id}`);
-        else if (hyprland)
-            Hyprland.dispatch(Hyprland.usingLua ? `hl.dsp.focus({ workspace = ${id} })` : `workspace ${id}`);
+        I3.dispatch(`workspace number ${id}`);
     }
 
     // Display power, all monitors.
     function dpms(on: bool): void {
-        const action = on ? "on" : "off";
-        if (sway)
-            I3.dispatch(`output * power ${action}`);
-        else if (hyprland)
-            Hyprland.dispatch(Hyprland.usingLua ? `hl.dsp.dpms({ action = "${action}" })` : `dpms ${action}`);
+        I3.dispatch(`output * power ${on ? "on" : "off"}`);
     }
 
     // Sway sends no workspace event when windows come and go, so refresh the
     // workspaces (and with them `occupied`) on window events.
-    Loader {
-        active: root.sway
-
-        sourceComponent: I3IpcListener {
-            subscriptions: ["window"]
-            onIpcEvent: I3.refreshWorkspaces()
-        }
+    I3IpcListener {
+        subscriptions: ["window"]
+        onIpcEvent: I3.refreshWorkspaces()
     }
 
     HealthCheck {
         source: "wm"
         ok: root.available
-        reason: "neither SWAYSOCK nor HYPRLAND_INSTANCE_SIGNATURE is set, not running under Sway or Hyprland"
+        reason: "SWAYSOCK isn't set: not running under Sway"
         grace: 0
     }
 }

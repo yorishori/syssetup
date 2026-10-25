@@ -52,11 +52,11 @@ Singleton {
             player.previous();
     }
 
-    // qs ipc call media <toggle|next|previous|get>
+    // qs ipc call media <playpause|next|previous|get>
     IpcHandler {
         target: "media"
 
-        function toggle(): void { root.togglePlaying(); }
+        function playpause(): void { root.togglePlaying(); }
         function next(): void { root.next(); }
         function previous(): void { root.previous(); }
         function get(): string {

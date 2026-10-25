@@ -158,10 +158,7 @@ Item {
                     font.letterSpacing: 4
                     clip: true
                     onTextChanged: root.control.typed = text
-                    Keys.onLeftPressed: root.control.move(-1)
-                    Keys.onRightPressed: root.control.move(1)
-                    Keys.onReturnPressed: root.control.insertSelected()
-                    Keys.onEnterPressed: root.control.insertSelected()
+                    Keys.onPressed: event => event.accepted = root.control.fieldKey(event.key, event.modifiers)
 
                     Text {
                         anchors.fill: parent

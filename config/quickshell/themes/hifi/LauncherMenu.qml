@@ -116,242 +116,6 @@ Item {
         easing.type: Easing.InOutCubic
     }
 
-    // A section of the faceplate, outlined in silkscreen.
-    component Frame: Rectangle {
-        radius: 4
-        color: "transparent"
-        border.width: 1
-        border.color: Qt.alpha(root.silk, 0.55)
-    }
-
-    // The paper of a title strip, red rules along its edges.
-    component Card: Rectangle {
-        radius: 1.5
-        border.width: 1
-        border.color: Qt.darker(root.card, 1.6)
-        gradient: Gradient {
-            GradientStop { position: 0; color: root.card }
-            GradientStop { position: 1; color: Qt.darker(root.card, 1.08) }
-        }
-
-        Rectangle {
-            x: 6
-            y: 3
-            width: parent.width - 12
-            height: 1.5
-            color: root.rule
-            opacity: 0.8
-        }
-        Rectangle {
-            x: 6
-            y: parent.height - 4.5
-            width: parent.width - 12
-            height: 1.5
-            color: root.rule
-            opacity: 0.8
-        }
-    }
-
-    // The MODE dial: a three-way rotary, the modes printed round it. Click it
-    // for the next, right click for the previous, scroll, or click a mode.
-    component ModeDial: Item {
-        id: dial
-
-        readonly property int index: root.control.modes.indexOf(root.control.mode)
-        readonly property var angles: [-58, 0, 58]
-        property real angle: angles[Math.max(0, index)]
-
-        width: 168
-        height: 66
-
-        Behavior on angle {
-            SpringAnimation { spring: 6; damping: 0.45; epsilon: 0.2 }
-        }
-
-        // The modes, each by its stop.
-        Repeater {
-            model: root.control.modes
-
-            Item {
-                id: stop
-
-                required property int index
-                required property string modelData
-                readonly property real a: dial.angles[index] * Math.PI / 180
-
-                Rectangle {
-                    x: dial.width / 2 + Math.sin(stop.a) * 24 - 1.5
-                    y: 42 - Math.cos(stop.a) * 24 - 1.5
-                    width: 3
-                    height: 3
-                    radius: 1.5
-                    color: Qt.alpha(Theme.palette.fg, 0.4)
-                }
-                C.StyledText {
-                    id: name
-
-                    x: stop.index === 0 ? dial.width / 2 - 30 - width
-                        : stop.index === 2 ? dial.width / 2 + 30
-                        : (dial.width - width) / 2
-                    y: stop.index === 1 ? 0 : 14
-                    text: stop.modelData === "windows" ? `windows ${root.control.windowCount}` : stop.modelData
-                    caps: true
-                    color: root.silk
-                    font.pixelSize: 9
-                    font.bold: true
-                    tracking: 1
-
-                    MouseArea {
-                        anchors {
-                            fill: parent
-                            margins: -4
-                        }
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.control.setMode(stop.modelData)
-                    }
-                }
-            }
-        }
-        // The knob.
-        Item {
-            x: (dial.width - 34) / 2
-            y: 25
-            width: 34
-            height: 34
-
-            RectangularShadow {
-                anchors.fill: parent
-                radius: width / 2
-                offset.y: 2
-                blur: 4
-                color: Qt.alpha(Theme.palette.shadow, Theme.values.effects?.shadow ?? 0)
-            }
-            Rectangle {
-                anchors.fill: parent
-                radius: width / 2
-                border.width: 1
-                border.color: Theme.palette.shadow
-                gradient: Gradient {
-                    GradientStop { position: 0; color: knobArea.containsMouse ? Qt.lighter(Theme.palette.surface, 1.6) : Qt.lighter(Theme.palette.surface, 1.3) }
-                    GradientStop { position: 1; color: Qt.darker(Theme.palette.surface, 1.7) }
-                }
-            }
-            Item {
-                anchors.fill: parent
-                rotation: dial.angle
-
-                Rectangle {
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    y: 3
-                    width: 3
-                    height: 12
-                    radius: 1.5
-                    color: Theme.palette.fg
-                }
-            }
-
-            MouseArea {
-                id: knobArea
-
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.LeftButton | Qt.RightButton
-                cursorShape: Qt.PointingHandCursor
-                onClicked: mouse => root.control.switchTab(mouse.button === Qt.RightButton ? -1 : 1)
-                onWheel: wheel => root.control.switchTab(wheel.angleDelta.y > 0 ? -1 : 1)
-            }
-        }
-    }
-
-    // A jukebox selector key: an ivory cap, the same stock as the strips,
-    // in a chrome bezel. It goes in when pressed; `lit`, it's held in and
-    // the bulbs behind it light its edges. Dead when not `live`.
-    component JukeKey: Item {
-        id: key
-
-        property string icon
-        property real glyphSize: 15
-        property bool live: true
-        property bool lit: false
-        readonly property bool down: lit || keyArea.pressed
-
-        signal clicked(int modifiers)
-
-        opacity: live || lit ? 1 : 0.45
-
-        // The bezel.
-        Rectangle {
-            anchors.fill: parent
-            radius: 4
-            border.width: 1
-            border.color: "black"
-            gradient: Gradient {
-                GradientStop { position: 0; color: "#eceef1" }
-                GradientStop { position: 0.4; color: "#86888e" }
-                GradientStop { position: 0.65; color: "#c6c8cd" }
-                GradientStop { position: 1; color: "#4c4e53" }
-            }
-        }
-        Rectangle {
-            id: pit
-
-            anchors {
-                fill: parent
-                margins: 3
-            }
-            radius: 2
-            color: "#0c0b0a"
-        }
-        RectangularShadow {
-            anchors.fill: cap
-            radius: 2
-            blur: 8
-            spread: 1
-            color: Qt.alpha("#ffb85c", 0.8)
-            visible: key.lit
-        }
-        // The cap, standing proud of the bezel until it's pushed in.
-        Rectangle {
-            id: cap
-
-            x: pit.x + 2
-            y: pit.y + 1 + (key.down ? 2 : 0)
-            width: pit.width - 4
-            height: pit.height - 4
-            radius: 2
-            border.width: 1
-            border.color: Qt.darker(root.card, 1.9)
-            gradient: Gradient {
-                GradientStop { position: 0; color: key.lit ? "#fff1cf" : keyArea.containsMouse && key.live ? Qt.lighter(root.card, 1.06) : root.card }
-                GradientStop { position: 0.8; color: key.lit ? "#ffd48a" : Qt.darker(root.card, key.down ? 1.12 : 1.05) }
-                GradientStop { position: 1; color: Qt.darker(root.card, key.down ? 1.25 : 1.4) }
-            }
-
-            Behavior on y {
-                NumberAnimation { duration: 60 }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                anchors.verticalCenterOffset: -1
-                text: key.icon
-                color: root.ink
-                font.family: Theme.font.family
-                font.pixelSize: key.glyphSize
-            }
-        }
-
-        MouseArea {
-            id: keyArea
-
-            anchors.fill: parent
-            enabled: key.live
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: mouse => key.clicked(mouse.modifiers)
-        }
-    }
-
     // One title strip: the result's icon and name, what it is, and what
     // SELECT does to it in red.
     component Strip: Item {
@@ -420,7 +184,9 @@ Item {
                 blur: 2
                 color: Qt.alpha("black", 0.4)
             }
-            Card {
+            RecordCard {
+                card: root.card
+                rule: root.rule
                 anchors.fill: parent
             }
             // The bulbs either side, lighting the paper from its ends.
@@ -526,10 +292,11 @@ Item {
             Layout.fillWidth: true
             implicitHeight: 82
 
-            Frame {
+            SilkFrame {
                 anchors.fill: parent
             }
             ModeDial {
+                control: root.control
                 x: 6
                 y: 8
             }
@@ -650,7 +417,9 @@ Item {
                                 Repeater {
                                     model: root.slots
 
-                                    Card {
+                                    RecordCard {
+                                        card: root.card
+                                        rule: root.rule
                                         required property int index
 
                                         width: inside.width - 32
@@ -826,7 +595,7 @@ Item {
                 Layout.fillHeight: true
                 implicitWidth: 84
 
-                Frame {
+                SilkFrame {
                     anchors.fill: parent
                 }
                 Column {
@@ -838,6 +607,8 @@ Item {
                         model: root.control.actions
 
                         JukeKey {
+                            card: root.card
+                            ink: root.ink
                             required property var modelData
 
                             width: 46
@@ -857,6 +628,8 @@ Item {
                     spacing: 7
 
                     JukeKey {
+                        card: root.card
+                        ink: root.ink
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: 64
                         height: 58

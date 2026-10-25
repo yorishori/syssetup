@@ -62,6 +62,19 @@ Skinned {
     function close(): void {
         Panels.close();
     }
+    // Keys in the skin's text field that aren't typing: Left/Right move
+    // through the results, Enter inserts. True when taken.
+    function fieldKey(key: int, modifiers: int): bool {
+        if (key === Qt.Key_Left || key === Qt.Key_Right) {
+            move(key === Qt.Key_Left ? -1 : 1);
+            return true;
+        }
+        if (key === Qt.Key_Return || key === Qt.Key_Enter) {
+            insertSelected();
+            return true;
+        }
+        return false;
+    }
 
     Connections {
         target: Compose

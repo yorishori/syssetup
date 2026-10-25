@@ -45,7 +45,7 @@ PanelWindow {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: Clipboard.hide()
+            onClicked: Panels.close()
         }
     }
 

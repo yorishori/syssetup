@@ -9,15 +9,18 @@ import qs.services
 // it), passcode lamps when Config.passcode is set, and power keys (reboot and
 // power off need a second press within 3 s). The skin (LockScreen) draws it,
 // with the field; `unlock` checks what's typed in it.
+//
+// `phase` is where the lock is (see Lock): "locked" on the lock surface;
+// "closing", "locked" or "opening" on the transition's overlay, which is
+// for show only (`interactive` false: nothing typed there counts).
 Skinned {
     id: root
 
     property bool primary: true
     readonly property int passcode: Config.passcode
     property string armed: ""  // power key waiting for its second press
-    // The screen as it was just before locking, if the theme asked for one
-    // (see Lock): an image url, or empty.
-    property url snapshot
+    property string phase: "locked"
+    property bool interactive: true
 
     readonly property string user: Quickshell.env("USER") ?? ""
     readonly property string hostname: Session.hostname
@@ -25,8 +28,8 @@ Skinned {
     readonly property string authMessage: Session.authMessage
     readonly property int failures: Session.failures
     readonly property date now: Time.now
-    // Unlocked, the view still up a moment while it opens (see Lock).
-    readonly property bool unlocking: !Session.locked
+    // Unlocked, the lock screen opening onto the desktop.
+    readonly property bool unlocking: phase === "opening"
 
     // A wrong password (shake, clear the field); locked or unlocked (clear
     // it); put the keys back in the field.
@@ -38,12 +41,13 @@ Skinned {
 
     // (This view only exists while the screen is locked.)
     function refocus(): void {
-        if (primary)
+        if (primary && interactive)
             refocusRequested();
     }
 
     function unlock(password: string): void {
-        Session.unlockWith(password);
+        if (interactive)
+            Session.unlockWith(password);
     }
 
     // Typing goes straight into the prompt, no click needed. The field's own
@@ -55,6 +59,8 @@ Skinned {
     onWindowActiveChanged: refocus()
 
     function power(action: string): void {
+        if (!interactive)
+            return;
         if (action === "sleep") {
             Session.suspend();
         } else if (armed === action) {

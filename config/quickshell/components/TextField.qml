@@ -19,13 +19,12 @@ Skinned {
     readonly property bool flashing: saved.running
     readonly property real inputHeight: input.implicitHeight
 
-    // When set, Left/Right don't move the text cursor but emit horizontal()
-    // (e.g. to move through a grid of results).
-    property bool captureHorizontal: false
+    // Sees each key before the field does: (key, modifiers) => true when it
+    // takes it (a panel's fieldKey, so arrows can move through results).
+    property var keyFilter: null
     property bool submitOnEnter: false
 
     signal accepted(int modifiers)
-    signal horizontal(int step)
     signal editingFinished  // Enter pressed or focus left
 
     function focusInput(): void {
@@ -63,18 +62,7 @@ Skinned {
         font.family: Theme.font.family
         font.pixelSize: Theme.font.size
         clip: true
-        Keys.onLeftPressed: event => {
-            if (root.captureHorizontal)
-                root.horizontal(-1);
-            else
-                event.accepted = false;
-        }
-        Keys.onRightPressed: event => {
-            if (root.captureHorizontal)
-                root.horizontal(1);
-            else
-                event.accepted = false;
-        }
+        Keys.onPressed: event => event.accepted = root.keyFilter?.(event.key, event.modifiers) ?? false
         onEditingFinished: root.editingFinished()
         Keys.onReturnPressed: event => root.enter(event.modifiers)
         Keys.onEnterPressed: event => root.enter(event.modifiers)

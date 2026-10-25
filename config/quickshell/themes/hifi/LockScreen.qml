@@ -24,7 +24,20 @@ Item {
     property real shut: 0
     property real jolt: 0
 
-    Component.onCompleted: slam.start()
+    // Where the lock is (see modules/lock/Lock.qml): the doors slam shut
+    // over the desktop, stay shut, or part onto it.
+    function follow(): void {
+        if (control.phase === "closing") {
+            slam.start();
+        } else if (control.phase === "opening") {
+            slam.stop();
+            shut = 1;
+            open.start();
+        } else if (!slam.running) {
+            shut = 1;
+        }
+    }
+    Component.onCompleted: follow()
 
     Connections {
         target: root.control
@@ -39,11 +52,8 @@ Item {
         function onRefocusRequested(): void {
             field.forceActiveFocus();
         }
-        function onUnlockingChanged(): void {
-            if (root.control.unlocking) {
-                slam.stop();
-                open.start();
-            }
+        function onPhaseChanged(): void {
+            root.follow();
         }
     }
     // The bolts drawn (a knock), then the doors part.
@@ -68,18 +78,6 @@ Item {
         NumberAnimation { target: root; property: "jolt"; to: -0.6; duration: 60 }
         NumberAnimation { target: root; property: "jolt"; to: 0.3; duration: 60 }
         NumberAnimation { target: root; property: "jolt"; to: 0; duration: 80 }
-    }
-
-    // The room behind the doors: the desktop as it was when it locked.
-    Rectangle {
-        anchors.fill: parent
-        color: Theme.palette.shadow
-    }
-    Image {
-        anchors.fill: parent
-        source: root.control.snapshot
-        visible: status === Image.Ready
-        cache: false
     }
 
     // Clicking anywhere puts the focus back in the panel.

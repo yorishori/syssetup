@@ -33,8 +33,11 @@ Skinned {
         Launcher.runInTerminal(command);
         done();
     }
+    // The mount point is outside text (a drive's label), so never part of a
+    // command line.
     function inspect(mountPoint: string): void {
-        run(`ncdu -x '${mountPoint}'`);
+        Launcher.execInTerminal(["ncdu", "-x", mountPoint]);
+        done();
     }
     function upgrade(): void {
         Updates.upgrade();

@@ -15,7 +15,7 @@ Skinned {
     readonly property bool playing: Media.playing
     readonly property bool hovered: area.containsMouse
 
-    signal toggleDrop
+    readonly property bool active: Panels.isOpen("audio")
 
     skin: "AudioButton"
 
@@ -30,7 +30,7 @@ Skinned {
             if (mouse.button === Qt.MiddleButton)
                 Audio.toggleMute();
             else
-                root.toggleDrop();
+                Panels.toggle("audio");
         }
         onWheel: wheel => Audio.changeVolume(wheel.angleDelta.y > 0 ? 0.05 : -0.05)
     }

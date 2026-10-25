@@ -7,8 +7,8 @@ W.BarLabel {
     required property W.PowerButton control
 
     text: "\u{F0425}"
-    lit: control.open
-    color: control.open ? Theme.palette.accent : control.hovered ? Theme.palette.fg : Theme.palette.dim
+    lit: control.active
+    color: control.active ? Theme.palette.accent : control.hovered ? Theme.palette.fg : Theme.palette.dim
 
     Behavior on color {
         ColorAnimation { duration: 150 }

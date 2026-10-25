@@ -1,15 +1,15 @@
 import QtQuick
 import qs.components
+import qs.services
 
 // Opens the control center (`active` while it's open).
 Skinned {
     id: root
 
-    property bool active: false
+    readonly property bool active: Panels.isOpen("control")
     readonly property bool hovered: area.containsMouse
     readonly property bool pressed: area.pressed
 
-    signal clicked
 
     skin: "ControlButton"
 
@@ -20,6 +20,6 @@ Skinned {
         anchors.margins: -4
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
+        onClicked: Panels.toggle("control")
     }
 }

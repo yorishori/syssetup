@@ -49,7 +49,7 @@ Skinned {
         { name: "screenshot", icon: "\u{F0E51}", run: () => Capture.screenshot() },
         { name: "record", icon: "\u{F044A}", busy: true, run: () => Capture.recordScreen() },
         { name: "voice", icon: "\u{F036C}", busy: true, run: () => { Panels.close(); Capture.recordVoice(); } },
-        { name: "clipboard", icon: "\u{F0147}", run: () => Clipboard.show() },
+        { name: "clipboard", icon: "\u{F0147}", run: () => Panels.open("clipboard") },
         { name: "settings", icon: "\u{F0493}", run: () => Panels.open("settings") }
     ]
 

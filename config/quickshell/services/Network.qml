@@ -206,16 +206,9 @@ Singleton {
         reason: "systemd-networkd is not reachable"
     }
 
-    // qs ipc call network <toggle|open|close|status|scan|wifi on/off|connect NAME|disconnect>
+    // qs ipc call network <status|scan|wifi on/off|connect NAME|disconnect>
     IpcHandler {
         target: "network"
-
-        function toggle(): void { Panels.toggle("network"); }
-        function open(): void { Panels.open("network"); }
-        function close(): void {
-            if (Panels.isOpen("network"))
-                Panels.close();
-        }
 
         function status(): string {
             const wifi = !root.iwdRunning ? "iwd not running"

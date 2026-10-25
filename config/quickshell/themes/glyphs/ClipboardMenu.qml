@@ -234,10 +234,8 @@ Item {
                 Layout.fillWidth: true
                 prompt: root.control.onHistory ? "clip>" : "sym>"
                 placeholder: root.control.onHistory ? "filter history" : "arrow, smile, cod-git, table flip…"
-                captureHorizontal: !root.control.onHistory
+                keyFilter: root.control.fieldKey
                 onTextChanged: root.control.setQuery(text)
-                onAccepted: modifiers => root.control.pick(root.control.selected, modifiers)
-                onHorizontal: step => root.control.move(step)
             }
 
             KeyHints {

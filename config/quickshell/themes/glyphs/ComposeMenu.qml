@@ -141,10 +141,8 @@ Item {
                 Layout.fillWidth: true
                 prompt: "compose>"
                 placeholder: "type a sequence, or a name"
-                captureHorizontal: true
+                keyFilter: root.control.fieldKey
                 onTextChanged: root.control.typed = text
-                onAccepted: root.control.insertSelected()
-                onHorizontal: step => root.control.move(step)
             }
 
             KeyHints {

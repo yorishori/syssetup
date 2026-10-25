@@ -7,6 +7,6 @@ EStop {
     required property W.PowerButton control
 
     size: 42
-    open: control.hovered || control.open
+    open: control.hovered || control.active
     pressed: control.pressed
 }

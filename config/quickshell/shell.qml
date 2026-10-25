@@ -26,7 +26,9 @@ import qs.modules.session
 import qs.modules.settings
 import qs.modules.keys
 // Themes are loaded by path too (core/Theme.qml); the imports only make
-// their folders known, the names are never used.
+// their folders known, the names are never used. themes/glyphs holds the
+// skins every theme falls back on.
+import qs.themes.glyphs as SharedSkins
 import qs.themes.cyber as CyberTheme
 import qs.themes.bubble as BubbleTheme
 import qs.themes.hifi as HifiTheme

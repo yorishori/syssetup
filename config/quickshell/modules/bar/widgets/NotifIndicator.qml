@@ -8,12 +8,11 @@ import qs.services
 Skinned {
     id: root
 
-    property bool active: false
+    readonly property bool active: Panels.isOpen("notifications")
     readonly property int count: Notifs.list.length
     readonly property bool dnd: Notifs.dnd
     readonly property bool hovered: area.containsMouse
 
-    signal clicked
 
     skin: "NotifIndicator"
 
@@ -28,7 +27,7 @@ Skinned {
             if (mouse.button === Qt.RightButton)
                 Notifs.setDnd(!Notifs.dnd, 0);
             else
-                root.clicked();
+                Panels.toggle("notifications");
         }
     }
 }

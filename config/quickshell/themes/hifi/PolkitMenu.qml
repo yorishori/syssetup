@@ -83,7 +83,6 @@ Item {
             if (!activeFocus)
                 Qt.callLater(root.refocus);
         }
-        Keys.onEscapePressed: root.control.cancel()
     }
 
     Item {

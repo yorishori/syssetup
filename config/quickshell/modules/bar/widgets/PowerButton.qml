@@ -6,7 +6,7 @@ import qs.services
 Skinned {
     id: root
 
-    readonly property bool open: Panels.isOpen("session")
+    readonly property bool active: Panels.isOpen("session")
     readonly property bool hovered: area.containsMouse
     readonly property bool pressed: area.pressed
 

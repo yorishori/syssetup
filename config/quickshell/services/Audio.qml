@@ -240,16 +240,9 @@ Singleton {
         reason: Pipewire.ready ? "no default output device" : "cannot connect to Pipewire"
     }
 
-    // qs ipc call audio <toggle|open|close|up|down|mute|set N|get>
+    // qs ipc call audio <up|down|mute|set N|get>
     IpcHandler {
         target: "audio"
-
-        function toggle(): void { Panels.toggle("audio"); }
-        function open(): void { Panels.open("audio"); }
-        function close(): void {
-            if (Panels.isOpen("audio"))
-                Panels.close();
-        }
 
         function up(): void { root.changeVolume(0.05); }
         function down(): void { root.changeVolume(-0.05); }

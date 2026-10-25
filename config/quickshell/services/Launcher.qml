@@ -38,9 +38,15 @@ Singleton {
     readonly property var apps: DesktopEntries.applications.values
         .filter(a => !a.noDisplay)
         .sort((a, b) => a.name.localeCompare(b.name))
-    readonly property var results: mode === "apps" ? buildApps(query.trim().toLowerCase(), apps, Wm.windows)
-        : mode === "windows" ? buildWindows(query.trim().toLowerCase(), Wm.windows)
-        : build(query.trim(), calcResult, apps, customEntries, Wm.windows)
+    // Only worked out while the launcher is open (IPC's list asks directly).
+    readonly property bool open: Panels.isOpen("launcher")
+    readonly property var results: open ? resultsFor(query) : []
+
+    function resultsFor(q: string): var {
+        return mode === "apps" ? buildApps(q.trim().toLowerCase(), apps, Wm.windows)
+            : mode === "windows" ? buildWindows(q.trim().toLowerCase(), Wm.windows)
+            : build(q.trim(), q === query ? calcResult : "", apps, customEntries, Wm.windows);
+    }
 
     // ── Matching ─────────────────────────────────────────────────────────────
 
@@ -143,11 +149,11 @@ Singleton {
             const app = w.appClass ? DesktopEntries.heuristicLookup(w.appClass) : null;
             return { w, app, name: app?.name || w.appClass || "window" };
         })
-            .filter(({ w, name }) => !q || [name, w.appClass, w.title].some(t => t && t.toLowerCase().includes(q)))
+            .filter(({ w, name }) => !q || [name, w.appClass, w.toplevel.title].some(t => t && t.toLowerCase().includes(q)))
             .map(({ w, app, name }) => ({
                 kind: "window",
                 name,
-                detail: w.toplevel?.title ?? w.title ?? "",  // live, so renames show
+                detail: w.toplevel.title ?? "",
                 icon: Icons.url(app?.icon || (w.appClass ?? "").toLowerCase()),
                 glyph: "\u{F05AF}",
                 run: () => Wm.focusWindow(w)
@@ -162,16 +168,23 @@ Singleton {
         return {
             kind: win ? "window" : "app",
             name: app.name,
-            detail: win ? win.title : (app.genericName || app.comment || ""),
+            detail: win ? win.toplevel.title : (app.genericName || app.comment || ""),
             icon: Icons.url(app.icon),
             glyph: "",
             run: newInstance => win && !newInstance ? Wm.focusWindow(win) : launch()
         };
     }
 
-    // Run a shell command in the configured terminal (Setup → launcher.terminal).
+    // Run a shell command line in the configured terminal (Setup →
+    // launcher.terminal). Only for command lines you wrote yourself (Setup);
+    // anything carrying outside text goes through execInTerminal.
     function runInTerminal(command: string): void {
-        Quickshell.execDetached([...terminal, "sh", "-c", command]);
+        execInTerminal(["sh", "-c", command]);
+    }
+
+    // Run a program in the terminal, its arguments passed as they are.
+    function execInTerminal(args: var): void {
+        Quickshell.execDetached([...terminal, ...args]);
     }
 
     function customResult(entry: var): var {
@@ -235,16 +248,9 @@ Singleton {
         }
     }
 
-    // qs ipc call launcher <toggle|open|close|search QUERY|windows|apps|list QUERY>
+    // qs ipc call launcher <search QUERY|windows|apps|list QUERY> (opening it: panel)
     IpcHandler {
         target: "launcher"
-
-        function toggle(): void { Panels.toggle("launcher"); }
-        function open(): void { Panels.open("launcher"); }
-        function close(): void {
-            if (Panels.isOpen("launcher"))
-                Panels.close();
-        }
         // Open pre-filled with a query.
         function search(q: string): void {
             Panels.open("launcher");
@@ -259,8 +265,7 @@ Singleton {
             root.mode = "apps";
         }
         function list(q: string): string {
-            root.query = q;
-            return root.results.map(r => `${r.kind.padEnd(6)} ${r.name}${r.detail ? "  (" + r.detail + ")" : ""}`).join("\n");
+            return root.resultsFor(q).map(r => `${r.kind.padEnd(6)} ${r.name}${r.detail ? "  (" + r.detail + ")" : ""}`).join("\n");
         }
     }
 }

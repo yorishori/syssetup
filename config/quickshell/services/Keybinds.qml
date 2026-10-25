@@ -25,15 +25,15 @@ Singleton {
 
     // Shell IPC calls ("$qs <target> <function>").
     readonly property var shellActions: ({
-        "launcher toggle": "Launcher",
-        "clipboard toggle": "Clipboard history",
+        "panel toggle launcher": "Launcher",
+        "panel toggle clipboard": "Clipboard history",
         "clipboard symbols emoji": "Emoji and symbols",
-        "notifications toggle": "Notifications",
-        "control toggle": "Control center",
-        "session toggle": "Session menu",
+        "panel toggle notifications": "Notifications",
+        "panel toggle control": "Control center",
+        "panel toggle session": "Session menu",
         "session lock": "Lock",
-        "compose toggle": "Compose",
-        "keys toggle": "This cheat sheet",
+        "panel toggle compose": "Compose",
+        "panel toggle keys": "This cheat sheet",
         "capture screenshot": "Screenshot",
         "capture record": "Record screen",
         "capture voice": "Record voice memo",
@@ -41,7 +41,7 @@ Singleton {
         "audio up": "Volume up",
         "audio down": "Volume down",
         "audio mute": "Mute",
-        "media toggle": "Play / pause",
+        "media playpause": "Play / pause",
         "media next": "Next track",
         "media previous": "Previous track"
     })
@@ -87,15 +87,7 @@ Singleton {
     })
     readonly property var keycodes: ({ "66": "Caps" })
 
-    function toggle(): void {
-        Panels.toggle("keys");
-    }
-
     function load(): void {
-        if (!Wm.sway) {
-            error = "only Sway's binds can be read";
-            return;
-        }
         reader.running = true;
     }
 
@@ -125,8 +117,8 @@ Singleton {
         const ipc = command.match(/^exec\s+qs\b.*?\bipc\s+call\s+(.+)$/);
         if (ipc) {
             const call = ipc[1].trim();
-            const [target, fn] = call.split(/\s+/);
-            return shellActions[call] ?? (fn === "toggle" ? target.charAt(0).toUpperCase() + target.slice(1) : call);
+            const [target, fn, name] = call.split(/\s+/);
+            return shellActions[call] ?? (target === "panel" && fn === "toggle" && name ? name.charAt(0).toUpperCase() + name.slice(1) : call);
         }
         for (const [pattern, label] of swayActions) {
             const m = command.match(pattern);
@@ -255,16 +247,9 @@ Singleton {
         }
     }
 
-    // qs ipc call keys <toggle|open|close|list>
+    // qs ipc call keys list
     IpcHandler {
         target: "keys"
-
-        function toggle(): void { root.toggle(); }
-        function open(): void { Panels.open("keys"); }
-        function close(): void {
-            if (root.open)
-                Panels.close();
-        }
         // What the panel shows, as text (rereads the config for next time).
         function list(): string {
             root.load();

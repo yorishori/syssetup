@@ -6,11 +6,10 @@ import qs.services
 Skinned {
     id: root
 
-    property bool active: false
+    readonly property bool active: Panels.isOpen("calendar")
     readonly property date now: Time.now
     readonly property bool hovered: area.containsMouse
 
-    signal clicked
 
     skin: "Clock"
 
@@ -20,6 +19,6 @@ Skinned {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: root.clicked()
+        onClicked: Panels.toggle("calendar")
     }
 }

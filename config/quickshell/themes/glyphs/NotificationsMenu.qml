@@ -115,7 +115,7 @@ Item {
                 boundsBehavior: Flickable.StopAtBounds
                 model: root.control.history
 
-                delegate: Entry {
+                delegate: C.Entry {
                     id: entry
 
                     required property var modelData

@@ -225,20 +225,7 @@ Item {
                     font.italic: true
                     clip: true
                     onTextChanged: root.control.setQuery(text)
-                    Keys.onLeftPressed: event => {
-                        if (root.control.onHistory)
-                            event.accepted = false;
-                        else
-                            root.control.move(-1);
-                    }
-                    Keys.onRightPressed: event => {
-                        if (root.control.onHistory)
-                            event.accepted = false;
-                        else
-                            root.control.move(1);
-                    }
-                    Keys.onReturnPressed: event => root.control.pick(root.control.selected, event.modifiers)
-                    Keys.onEnterPressed: event => root.control.pick(root.control.selected, event.modifiers)
+                    Keys.onPressed: event => event.accepted = root.control.fieldKey(event.key, event.modifiers)
 
                     Text {
                         anchors.fill: parent

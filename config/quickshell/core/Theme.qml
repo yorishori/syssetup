@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import "merge.js" as Merge
 
 // The active theme: how the shell looks, never what it does.
 //
@@ -10,9 +11,10 @@ import Quickshell
 //                of its own)
 //   <Skin>.qml   one skin per themed widget, drawing it from its `control`
 //                (see components/Skinned.qml)
-// Every theme provides every skin (scripts/check-theme.sh lists gaps). Skins
-// shared by several themes live in a folder without a Spec.qml (themes/glyphs:
-// the bar drawn as glyphs), and a theme's own skin file just points there.
+// A skin the theme has no file for comes from themes/glyphs (the shared
+// layouts: the bar drawn as glyphs, the panels); so does one whose file is
+// broken, which Health is told about. scripts/check.sh lists skins
+// found in neither.
 //
 // Which theme is active is a setting (Config.theme; switching applies live);
 // your tweaks to each one's tokens are part of the setup (Setup.themes:
@@ -33,7 +35,7 @@ Singleton {
     readonly property QtObject spec: specs[name] ?? specs[names[0]]
 
     // The theme's tokens with your tweaks (Setup.themes.<name>) over them.
-    readonly property var values: Config.merge(spec?.defaults ?? {}, Setup.themes[name] ?? {})
+    readonly property var values: Merge.merge(spec?.defaults ?? {}, Setup.themes[name] ?? {})
 
     readonly property var palette: values.palette
     readonly property var font: values.font
@@ -69,8 +71,25 @@ Singleton {
         return font.caps ? text.toUpperCase() : text;
     }
 
+    // Where skins come from when the theme has none of its own.
+    readonly property string shared: "glyphs"
+    // { "<theme>/<skin>": url }, resolved once each.
+    property var skinUrls: ({})
+
     function skinUrl(skin: string): url {
-        return Qt.resolvedUrl(`../themes/${name}/${skin}.qml`);
+        const key = `${name}/${skin}`;
+        if (key in skinUrls)
+            return skinUrls[key];
+        let url = Qt.resolvedUrl(`../themes/${name}/${skin}.qml`);
+        const comp = Qt.createComponent(url, Component.PreferSynchronous);
+        if (comp.status === Component.Error) {
+            const error = comp.errorString().trim();
+            if (!error.endsWith("File not found"))
+                Qt.callLater(() => Health.report("theme", `${key}.qml is broken, using the shared skin: ${error}`));
+            url = Qt.resolvedUrl(`../themes/${shared}/${skin}.qml`);
+        }
+        skinUrls[key] = url;
+        return url;
     }
 
     onNameChanged: Health.resolve("theme")

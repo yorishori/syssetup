@@ -17,7 +17,7 @@ Skinned {
     readonly property rect toggleArea: view?.toggleArea ?? Qt.rect(0, 0, 0, 0)
     readonly property bool overToggle: hovered && inToggle(area.mouseX, area.mouseY)
 
-    signal toggleDrop
+    readonly property bool active: Panels.isOpen("bluetooth")
 
     function inToggle(x: real, y: real): bool {
         const r = toggleArea;
@@ -37,7 +37,7 @@ Skinned {
             if (root.inToggle(mouse.x, mouse.y))
                 Bluez.setEnabled(!root.on);
             else
-                root.toggleDrop();
+                Panels.toggle("bluetooth");
         }
     }
 }

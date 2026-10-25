@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import qs.core
+import qs.services
 
 // The window notification popups show in: the whole primary screen, over
 // everything, click-through but for what the skin shows (PopupStack).

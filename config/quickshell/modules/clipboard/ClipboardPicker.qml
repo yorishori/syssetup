@@ -49,6 +49,21 @@ Skinned {
             selected = Math.max(0, Math.min(entries.length - 1, selected + step));
     }
 
+    // Keys in the skin's text field that aren't typing: Left/Right move
+    // through the symbol grid (on the history they move the text cursor),
+    // Enter picks (Shift: copy only). True when taken.
+    function fieldKey(key: int, modifiers: int): bool {
+        if ((key === Qt.Key_Left || key === Qt.Key_Right) && !onHistory) {
+            move(key === Qt.Key_Left ? -1 : 1);
+            return true;
+        }
+        if (key === Qt.Key_Return || key === Qt.Key_Enter) {
+            pick(selected, modifiers);
+            return true;
+        }
+        return false;
+    }
+
     function switchTab(step: int): void {
         current = (current + step + tabs.length) % tabs.length;
     }
@@ -72,7 +87,7 @@ Skinned {
     }
 
     function hide(): void {
-        Clipboard.hide();
+        Panels.close();
     }
     function wipe(): void {
         Clipboard.wipe();
