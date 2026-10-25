@@ -47,9 +47,14 @@ Singleton {
         reader.running = true;
     }
 
+    // A copy, paste or clipboard restore is under way. They share one process
+    // and the restore state, so a second request waits its turn by being
+    // ignored rather than overwriting the first one halfway.
+    readonly property bool busy: copier.running || pasteDelay.running || restoreDelay.running
+
     // Copy the entry; with `paste`, also paste it into the remembered window.
     function pick(entry: var, paste: bool): void {
-        if (!entry)
+        if (!entry || busy)
             return;
         hide();
         copier.paste = paste;
@@ -60,7 +65,7 @@ Singleton {
     // Copy arbitrary text (a symbol, an emoji); with `paste`, also paste it
     // into the remembered window.
     function insert(text: string, paste: bool): void {
-        if (!text)
+        if (!text || busy)
             return;
         hide();
         copier.paste = paste;
@@ -82,7 +87,7 @@ Singleton {
     readonly property string restoreDir: `${thumbDir}/restore`
 
     function insertRestoring(text: string): void {
-        if (!text)
+        if (!text || busy)
             return;
         restoreText = text;
         copier.paste = true;

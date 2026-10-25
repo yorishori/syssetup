@@ -69,7 +69,7 @@ Singleton {
                     const value = space < 0 ? "" : line.slice(space + 1).trim();
                     if (key === "reboot")
                         root.rebootPending = true;
-                    else if (key in root)
+                    else if (["os", "kernel", "cpu", "gpu", "board"].includes(key))
                         root[key] = value;
                 }
             }

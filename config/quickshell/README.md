@@ -111,20 +111,24 @@ session lock goes up, until the lock window's first frame.
 - **Service**: `services/<Name>.qml`, `pragma Singleton`, imports only `qs.core`. Report
   failures with `HealthCheck { source; ok; reason }`. Run commands with arguments
   passed as they are (`["sh", "-c", '… "$1"', "sh", value]`), never outside text
-  pasted into a command line. Poll only while something shows the result.
+  pasted into a command line. Poll only while something shows the result. A
+  service that has to run with no UI showing it (a daemon: notifications, idle,
+  polkit…) is listed in `modules/daemons/Daemons.qml`, which starts it.
 - **Bar widget**: `modules/bar/widgets/<Name>.qml` (a `Skinned`; one that opens a panel
   does `Panels.toggle(name)` and exposes `active`), a `BarSlot { widget: "<Name>" }`
   line in `Bar.qml`, and a skin in `themes/glyphs` (and any theme drawing it its
   own way).
 - **Bar panel**: `modules/<name>/<Name>Panel.qml` (optional `property bool open`,
   `signal done` to close), a row in `Bar.qml`'s `panels` (`under`, `edge`, `blur`,
-  `bindings`), the name in `Panels.names`, and its `<Name>Menu` skin.
+  `bindings`), the name in `Panels.names`, and its `<Name>Menu` skin
+  (`check.sh` checks the two lists against each other).
 - **Module** (its own window): a file under `modules/`, an import of its folder and
   a `ModuleLoader` line in `shell.qml`. Use `Display.primary` for the screen and a
   `qs-…` layer namespace.
 - **Theme**: `themes/<name>/Spec.qml`, an entry in `Theme.names`, an import in
   `shell.qml`, skins for whatever it draws differently, and (optionally) your
-  tweaks in `Setup.themes`.
+  tweaks in `Setup.themes` (`check.sh` checks the folders, `Theme.names` and the
+  imports agree).
 
 ## IPC
 

@@ -121,8 +121,11 @@ Singleton {
             } catch (e) {
                 return `not JSON: ${e.message} (strings need quotes: '"text"')`;
             }
-            if (root.get(path) === undefined)
+            const current = root.get(path);
+            if (current === undefined)
                 return `unknown setting: ${path}`;
+            if (Array.isArray(current) !== Array.isArray(value) || typeof current !== typeof value)
+                return `${path} takes ${Array.isArray(current) ? "a list" : `a ${typeof current}`}`;
             root.set(path, value);
             return "ok";
         }
@@ -161,8 +164,12 @@ Singleton {
             if (content === root.writtenText)
                 return;
             try {
-                root.values = Merge.merge(root.defaults, JSON.parse(content));
-                Health.resolve("config");
+                const rejected = [];
+                root.values = Merge.merge(root.defaults, JSON.parse(content), rejected);
+                if (rejected.length)
+                    Health.report("config", `settings.json: wrong type for ${rejected.join(", ")}, using the defaults`);
+                else
+                    Health.resolve("config");
             } catch (e) {
                 Health.report("config", `settings.json is invalid, keeping previous values: ${e.message}`);
             }

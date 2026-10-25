@@ -83,6 +83,7 @@ Singleton {
         authState = "checking";
         authMessage = "";
         if (!pam.start()) {
+            pending = "";
             authState = "failed";
             authMessage = "could not start PAM";
         }

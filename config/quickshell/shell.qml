@@ -6,6 +6,7 @@ import qs.core
 // Module imports only let Quickshell discover the files; nothing is compiled
 // until ModuleLoader / the bar's PanelLoader loads it, so one broken module or
 // panel can't stop the others.
+import qs.modules.daemons
 import qs.modules.wallpaper
 import qs.modules.bar
 import qs.modules.notifications
@@ -35,6 +36,8 @@ import qs.themes.hifi as HifiTheme
 
 // Entry point. Only lists modules; each one is loaded in isolation.
 ShellRoot {
+    // Background services (notifications, idle, polkit, logind); no windows.
+    ModuleLoader { name: "daemons"; path: "modules/daemons/Daemons.qml"; needsScreen: false }
     ModuleLoader { name: "wallpaper"; path: "modules/wallpaper/Wallpaper.qml" }
     ModuleLoader { name: "bar"; path: "modules/bar/Bar.qml" }
     ModuleLoader { name: "session"; path: "modules/session/SessionScreen.qml" }
