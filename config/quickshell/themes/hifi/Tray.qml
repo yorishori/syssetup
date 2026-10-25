@@ -1,10 +1,11 @@
 import QtQuick
 import QtQuick.Effects
+import Quickshell.Widgets
 import qs.core
 import qs.modules.bar.widgets as W
 
 // A jack field labelled AUX: a row of sockets, always there; each running
-// tray app is a plug in one, with an old sticker of its icon on the cap. Plugs push in as apps start; sockets
+// tray app is a plug in one, with its icon on the cap. Plugs push in as apps start; sockets
 // are added if there are more apps than sockets.
 Row {
     id: root
@@ -143,10 +144,10 @@ Row {
                         GradientStop { position: 1; color: Qt.darker(Theme.palette.surface, 1.5) }
                     }
                 }
-                Sticker {
-                    anchors.centerIn: parent
+                IconImage {
+                    anchors.centerIn: cap
+                    implicitSize: 16
                     source: plug.modelData.icon
-                    seed: plug.index
                 }
             }
         }

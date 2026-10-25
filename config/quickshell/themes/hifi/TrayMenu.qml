@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Shapes
+import Quickshell.Widgets
 import qs.core
 import qs.modules.tray as M
 
@@ -319,6 +320,8 @@ Item {
                 }
             }
             Rectangle {
+                id: plugCap
+
                 y: 8
                 width: 26
                 height: 26
@@ -330,11 +333,10 @@ Item {
                     GradientStop { position: 1; color: Qt.darker(Theme.palette.surface, 1.5) }
                 }
             }
-            Sticker {
-                x: 1
-                y: 9
+            IconImage {
+                anchors.centerIn: plugCap
+                implicitSize: 16
                 source: root.control.icon
-                seed: Math.max(0, root.control.slot)
             }
         }
     }
