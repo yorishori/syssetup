@@ -169,9 +169,16 @@ Singleton {
         };
     }
 
-    // Run a shell command in the configured terminal (Setup → launcher.terminal).
+    // Run a shell command line in the configured terminal (Setup →
+    // launcher.terminal). Only for command lines you wrote yourself (Setup);
+    // anything carrying outside text goes through execInTerminal.
     function runInTerminal(command: string): void {
-        Quickshell.execDetached([...terminal, "sh", "-c", command]);
+        execInTerminal(["sh", "-c", command]);
+    }
+
+    // Run a program in the terminal, its arguments passed as they are.
+    function execInTerminal(args: var): void {
+        Quickshell.execDetached([...terminal, ...args]);
     }
 
     function customResult(entry: var): var {

@@ -4,6 +4,11 @@ import qs.core
 
 // All text goes through here. Text isn't skinned (it's everywhere and carries
 // layout); the theme styles it through tokens instead:
+//
+// Plain text unless asked otherwise: much of what's shown comes from outside
+// (notifications, window titles, calendar events), and Qt would otherwise
+// guess markup in it and load the images it names.
+//
 //   glow      emphasis for lit things (cyber: a phosphor halo in the text's color)
 //   caps      a label: capitals when the theme sets labels that way
 //   tracking  letter spacing for labels, scaled by the theme
@@ -14,6 +19,7 @@ Text {
     property bool caps: false
     property real tracking: 0
 
+    textFormat: Text.PlainText
     color: Theme.palette.fg
     font.family: Theme.font.family
     font.pixelSize: Theme.font.size

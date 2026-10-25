@@ -64,7 +64,7 @@ Skinned {
     }
     // Open the setup (core/Setup.qml) in the editor.
     function editSetup(): void {
-        Launcher.runInTerminal(`nvim '${Quickshell.shellPath("core/Setup.qml")}'`);
+        Launcher.execInTerminal(["nvim", Quickshell.shellPath("core/Setup.qml")]);
         Panels.close();
     }
 

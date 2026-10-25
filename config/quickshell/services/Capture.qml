@@ -29,7 +29,10 @@ Singleton {
 
     readonly property bool busy: state !== "idle"
     readonly property bool recording: state === "recording"
-    readonly property string tmpDir: `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/qs-capture`
+    // Private: the session's runtime dir, else the shell's cache (never /tmp,
+    // which anyone can write to).
+    readonly property string tmpDir: Quickshell.env("XDG_RUNTIME_DIR")
+        ? `${Quickshell.env("XDG_RUNTIME_DIR")}/qs-capture` : `${Quickshell.cacheDir}/capture`
 
     // Folder and file name the prompt suggests.
     readonly property string folderKey: kind === "screenshot" ? "screenshots" : kind === "screen" ? "recordings" : "voice"

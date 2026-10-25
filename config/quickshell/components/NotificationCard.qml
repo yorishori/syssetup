@@ -86,7 +86,9 @@ Card {
 
             StyledText {
                 Layout.fillWidth: true
-                text: root.notif?.body ?? ""
+                // Basic markup, but no images: they'd be fetched from wherever
+                // the sender points.
+                text: (root.notif?.body ?? "").replace(/<img\b[^>]*>/gi, "")
                 textFormat: Text.StyledText
                 wrapMode: Text.Wrap
                 maximumLineCount: 4

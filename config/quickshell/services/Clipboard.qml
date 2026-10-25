@@ -29,7 +29,9 @@ Singleton {
 
     // Decoded thumbnails: { id: "file:///…" }
     property var thumbs: ({})
-    readonly property string thumbDir: `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/qs-clipboard`
+    // Private: the session's runtime dir, else the shell's cache (never /tmp).
+    readonly property string thumbDir: Quickshell.env("XDG_RUNTIME_DIR")
+        ? `${Quickshell.env("XDG_RUNTIME_DIR")}/qs-clipboard` : `${Quickshell.cacheDir}/clipboard`
 
     // The window that had focus when the history opened: { toplevel, appClass }
     property var target: null

@@ -705,6 +705,7 @@ Item {
                                 width: parent.width - x - 14
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: entry.modelData.summary + (entry.modelData.location ? `  · ${entry.modelData.location}` : "")
+                                textFormat: Text.PlainText
                                 elide: Text.ElideRight
                                 color: Qt.darker(entry.modelData.color, 1.6)
                                 font.family: Theme.font.family
