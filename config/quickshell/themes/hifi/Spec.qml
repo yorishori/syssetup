@@ -20,7 +20,7 @@ QtObject {
     readonly property var defaults: ({
         // Anodized gunmetal and black glass, lit by LEDs and a teal VFD.
         palette: {
-            bg: "#2a2c31",       // faceplate: the anodized metal (bar, panels)
+            bg: "#2a2c31",       // faceplate: the anodized metal (panels)
             bgAlt: "#111214",    // black glass: recessed displays and wells
             shadow: "#060607",   // deep shadow; text on lit surfaces
             surface: "#3b3e45",  // keycaps; unlit segments
