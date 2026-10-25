@@ -32,8 +32,9 @@ Singleton {
     readonly property string tmpDir: `${Quickshell.env("XDG_RUNTIME_DIR") || "/tmp"}/qs-capture`
 
     // Folder and file name the prompt suggests.
-    readonly property string suggestedDir: kind === "screenshot" ? Config.capture.screenshots
-        : kind === "screen" ? Config.capture.recordings : Config.capture.voice
+    readonly property string folderKey: kind === "screenshot" ? "screenshots" : kind === "screen" ? "recordings" : "voice"
+    // The last folder this kind went to, else Setup's.
+    readonly property string suggestedDir: Config.folders[folderKey] || Setup.capture[folderKey]
     readonly property string extension: kind === "screenshot" ? "png" : kind === "screen" ? "mp4" : "ogg"
 
     function stamp(): string {
@@ -124,9 +125,8 @@ Singleton {
             exit 0`, "sh", target.replace(/^~(?=\/|$)/, home), file, alsoCopy ? "copy" : ""];
         finisher.running = true;
         // Remember the folder for next time.
-        const key = kind === "screenshot" ? "screenshots" : kind === "screen" ? "recordings" : "voice";
-        if (dir && dir !== Config.capture[key])
-            Config.set(`capture.${key}`, dir);
+        if (dir && dir !== suggestedDir)
+            Config.set(`folders.${folderKey}`, dir);
         state = "idle";
     }
 

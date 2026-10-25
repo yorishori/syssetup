@@ -112,16 +112,4 @@ QtObject {
             backdrop: 0.5        // darkening behind big panels, 0 = off
         }
     })
-
-    // Settings → Appearance, for this theme (paths inside theme.hifi).
-    readonly property var settings: [
-        { label: "Display", path: "palette.accent", type: "color", hint: "the glass displays and lit keys" },
-        { label: "Warning", path: "palette.warn", type: "color", hint: "needs attention" },
-        { label: "Font size", path: "font.size", type: "int", min: 10, max: 18, suffix: "px" },
-        { label: "Roundness", path: "shape.radius", type: "int", min: 0, max: 10, suffix: "px", hint: "plates, keycaps and wells" },
-        { label: "Grain", path: "effects.texture", type: "level", hint: "brushed metal on the plates" },
-        { label: "Glow", path: "glow.opacity", type: "level", hint: "bloom of lit displays and LEDs" },
-        { label: "Shadow", path: "effects.shadow", type: "level", hint: "depth of plates and keys" },
-        { label: "Backdrop", path: "effects.backdrop", type: "level", hint: "darkening behind big panels" }
-    ]
 }

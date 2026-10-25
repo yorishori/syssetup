@@ -33,7 +33,7 @@ Item {
             right: parent.right
             // Just under the bar.
             topMargin: root.control.barHeight + 6
-            rightMargin: Config.bar.padding
+            rightMargin: Setup.bar.padding
         }
         width: 360
         height: parent.height - anchors.topMargin

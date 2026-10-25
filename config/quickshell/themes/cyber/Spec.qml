@@ -66,15 +66,4 @@ QtObject {
             backdrop: 0.45       // darkening behind big panels, 0 = off
         }
     })
-
-    // Settings → Appearance, for this theme (paths inside theme.cyber).
-    readonly property var settings: [
-        { label: "Accent", path: "palette.accent", type: "color", hint: "lit, active, in use" },
-        { label: "Warning", path: "palette.warn", type: "color", hint: "needs attention" },
-        { label: "Font size", path: "font.size", type: "int", min: 10, max: 18, suffix: "px" },
-        { label: "Corner cut", path: "shape.cut", type: "int", min: 0, max: 14, suffix: "px" },
-        { label: "Glow", path: "glow.opacity", type: "level", hint: "halo on lit things" },
-        { label: "Scanlines", path: "effects.scanlines", type: "level" },
-        { label: "Backdrop", path: "effects.backdrop", type: "level", hint: "darkening behind big panels" }
-    ]
 }

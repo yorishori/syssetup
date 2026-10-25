@@ -20,7 +20,7 @@ Skinned {
 
     readonly property date today: Time.now
     readonly property date now: Time.nowSeconds
-    readonly property int weekStart: Config.calendar.weekStart
+    readonly property int weekStart: Setup.calendar.weekStart
     property int viewYear: today.getFullYear()
     property int viewMonth: today.getMonth()
     readonly property bool onToday: viewYear === today.getFullYear() && viewMonth === today.getMonth()

@@ -196,9 +196,9 @@ PanelWindow {
             anchors {
                 left: parent.left
                 verticalCenter: parent.verticalCenter
-                leftMargin: Config.bar.padding
+                leftMargin: Setup.bar.padding
             }
-            spacing: Config.bar.spacing
+            spacing: Setup.bar.spacing
 
             PowerButton {
                 id: powerButton
@@ -223,7 +223,7 @@ PanelWindow {
 
             anchors {
                 right: workspaces.left
-                rightMargin: Config.bar.spacing
+                rightMargin: Setup.bar.spacing
                 verticalCenter: parent.verticalCenter
             }
             active: bar.openDrop === "launcher"
@@ -239,7 +239,7 @@ PanelWindow {
 
             anchors {
                 left: workspaces.right
-                leftMargin: Config.bar.spacing
+                leftMargin: Setup.bar.spacing
                 verticalCenter: parent.verticalCenter
             }
             spacing: 8
@@ -262,9 +262,9 @@ PanelWindow {
             anchors {
                 right: parent.right
                 verticalCenter: parent.verticalCenter
-                rightMargin: Config.bar.padding
+                rightMargin: Setup.bar.padding
             }
-            spacing: Config.bar.spacing
+            spacing: Setup.bar.spacing
 
             NetworkButton {
                 id: networkButton

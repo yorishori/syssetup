@@ -5,7 +5,7 @@ import qs.services
 // The launcher: "go somewhere or run something". The skin (LauncherMenu)
 // lays it out: the modes and quick-action keys, the prompt, the results.
 //
-//   SEARCH   apps, open windows, your entries (config.json → launcher.entries),
+//   SEARCH   apps, open windows, your entries (Setup → launcher.entries),
 //            math, web
 //   WINDOWS  every open window; Enter focuses it
 //   APPS     every app in a scrollable list

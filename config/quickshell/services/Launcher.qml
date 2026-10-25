@@ -13,7 +13,7 @@ import qs.core
 //   calc    - the query looks like math: qalc's answer (Enter copies it)
 //   window  - an app that's already open: Enter focuses it
 //   app     - a desktop entry: Enter launches it
-//   custom  - an entry from config.json → launcher.entries
+//   custom  - an entry from Setup → launcher.entries
 //   web     - always last: search the web for the query
 // Every result has run(newInstance); newInstance (Shift+Enter) launches an
 // app even if it's already open.
@@ -23,10 +23,10 @@ Singleton {
     property string query: ""
     property string mode: "search"
 
-    // From config.json → launcher.
-    readonly property var terminal: Config.launcher.terminal
-    readonly property string searchUrl: Config.launcher.search
-    readonly property var customEntries: Config.launcher.entries.filter(e => e.name && e.command)
+    // From Setup → launcher.
+    readonly property var terminal: Setup.launcher.terminal
+    readonly property string searchUrl: Setup.launcher.search
+    readonly property var customEntries: Setup.launcher.entries.filter(e => e.name && e.command)
 
     property string calcResult: ""
     property bool qalcMissing: false
@@ -169,7 +169,7 @@ Singleton {
         };
     }
 
-    // Run a shell command in the configured terminal (config.json → launcher.terminal).
+    // Run a shell command in the configured terminal (Setup → launcher.terminal).
     function runInTerminal(command: string): void {
         Quickshell.execDetached([...terminal, "sh", "-c", command]);
     }

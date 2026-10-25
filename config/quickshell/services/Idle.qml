@@ -19,7 +19,7 @@ Singleton {
 
     readonly property int lockAfter: Config.idle.lock ?? 0          // minutes
     readonly property int screenOffAfter: Config.idle.screenOff ?? 0  // minutes
-    readonly property int indicatorAfter: Config.idle.indicator ?? 0  // seconds
+    readonly property int indicatorAfter: Setup.idleIndicator  // seconds
     property bool screenOff: false
     property bool caffeinated: false
     readonly property bool held: caffeinated || Media.playingPlayer !== null

@@ -6,14 +6,14 @@ import qs.services
 
 // What the lock screen shows (used by Lock.qml for each screen): the time;
 // on the primary screen also the password prompt (focus always returns to
-// it), passcode lamps when lock.passcode is set, and power keys (reboot and
+// it), passcode lamps when Config.passcode is set, and power keys (reboot and
 // power off need a second press within 3 s). The skin (LockScreen) draws it,
 // with the field; `unlock` checks what's typed in it.
 Skinned {
     id: root
 
     property bool primary: true
-    readonly property int passcode: Config.lock.passcode
+    readonly property int passcode: Config.passcode
     property string armed: ""  // power key waiting for its second press
     // The screen as it was just before locking, if the theme asked for one
     // (see Lock): an image url, or empty.

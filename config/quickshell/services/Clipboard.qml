@@ -133,7 +133,7 @@ Singleton {
 
     function isTerminal(appClass: string): bool {
         const cls = appClass.toLowerCase();
-        return Config.clipboard.terminals.some(t => cls === t.toLowerCase());
+        return Setup.terminals.some(t => cls === t.toLowerCase());
     }
 
     // Types the shortcut into whichever window has focus, which by now is

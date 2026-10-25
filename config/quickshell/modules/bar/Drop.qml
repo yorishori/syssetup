@@ -60,7 +60,7 @@ Skinned {
         }
         if (!anchorItem)
             return;
-        const margin = (view?.overhang ?? 0) + Config.bar.padding;
+        const margin = (view?.overhang ?? 0) + Setup.bar.padding;
         const center = anchorItem.mapToItem(parent, anchorItem.width / 2, 0).x;
         x = Math.max(margin, Math.min(parent.width - width - margin, center - width / 2));
     }

@@ -4,108 +4,68 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// User settings from config.json, merged over the defaults below.
+// Settings: what's changed now and then from the Settings panel, and what the
+// shell remembers on its own. Kept out of the project, in
+// $XDG_STATE_HOME/quickshell/settings.json (~/.local/state/…), merged over the
+// defaults below. How the machine is set up (terminal, launcher entries,
+// calendar, theme tokens…) is Setup's, in the project.
 //
-// The file is watched and re-read on save. If it is missing, defaults are used.
-// If it is invalid, the last good config stays active and Health is told why.
+// The file is watched and re-read on save. If it is missing, defaults are used
+// (and, once, what an older config.json in the shell's folder had). If it is
+// invalid, the last good settings stay and Health is told why.
 //
-// set(path, value) changes a setting (the settings panel uses it): it applies
-// immediately, and the file is rewritten shortly after the last change
-// (atomically; the previous file is kept once per session as config.json.bak).
-// Hand edits keep working alongside.
+// set(path, value) changes a setting: it applies immediately, and the file is
+// rewritten shortly after the last change (atomically; the previous file is
+// kept once per session as settings.json.bak).
 Singleton {
     id: root
 
     readonly property var defaults: ({
-        screen: "",  // output name, e.g. "DP-3"; empty = first screen
-        // The look: which theme (themes/<name>), and your tweaks to each one's
-        // tokens, e.g. cyber: { palette: { accent: "#89b4fa" } }. See core/Theme.qml.
-        theme: {
-            name: "cyber",
-            cyber: {},
-            bubble: {},
-            hifi: {}
-        },
+        theme: "cyber",      // which theme (themes/<name>)
+        screen: "DP-3",      // output name; empty or missing = the first screen
         wallpaper: {
-            path: "",            // image file ("~/…" ok); empty = plain color
-            fit: "fill",         // fill (crop), fit, center, tile
-            color: ""            // the plain color; empty = the theme's background
+            path: "",        // image file ("~/…" ok); empty = plain color
+            fit: "fill",     // fill (crop), fit, center, tile
+            color: "#2c2633" // the plain color; empty = the theme's background
         },
-        bar: {
-            height: 32,
-            padding: 18,
-            spacing: 16
-        },
-        launcher: {
-            terminal: ["kitty", "-e"],                   // prefix for terminal commands
-            search: "https://duckduckgo.com/?q=%s",      // web search URL (%s = query)
-            // Your own entries: { name, command, description?, icon?, terminal?, keywords? }
-            entries: []
-        },
-        calendar: {
-            weekStart: 1,        // first day of the week: 1 = Monday, 0 = Sunday
-            // CalDAV server (read-only); login from ~/.netrc. Empty = no events.
-            url: "",
-            // One color per calendar, in the order the server lists them.
-            colors: ["#94e2d5", "#cba6f7", "#89b4fa", "#a6e3a1", "#f5c2e7", "#fab387"]
-        },
-        // Minutes without input before each step; 0 = never. Apps that inhibit
+        // Minutes without input before each; 0 = never. Apps that inhibit
         // idle (fullscreen, games) and playing media hold both off.
         idle: {
-            lock: 10,
-            screenOff: 15,
-            indicator: 10   // seconds before the bar's sleep glyph shows; 0 = never
+            lock: 25,
+            screenOff: 30
         },
-        lock: {
-            // Passcode mode: check automatically once this many characters are
-            // typed (must equal your password's length). 0 = off, press Enter.
-            passcode: 0
-        },
-        controlCenter: {
-            // Tool keys; each command opens in the terminal (launcher.terminal).
-            tools: [
-                { label: "btop", command: "btop" },
-                { label: "nyst", command: "nyst" },
-                { label: "sensors", command: "watch -n1 sensors" }
-            ]
-        },
-        // Folders the capture prompt suggests (the last one used is remembered).
-        capture: {
-            screenshots: "~/Pictures/Screenshots",
-            recordings: "~/Videos/Recordings",
-            voice: "~/Music/Voice"
-        },
-        clipboard: {
-            // Window classes that paste with Ctrl+Shift+V instead of Ctrl+V.
-            terminals: ["kitty", "com.mitchellh.ghostty", "ghostty", "foot", "Alacritty", "org.wezfurlong.wezterm"]
-        },
-        notifications: {
-            timeout: 5,     // seconds a popup stays up when the app doesn't say
-            mutedApps: []   // apps whose popups are silenced (lowercase names)
+        // The lock screen checks by itself once this many characters are typed
+        // (your password's length); 0 = press Enter.
+        passcode: 4,
+
+        // Remembered by the shell.
+        mutedApps: [],       // apps whose popups are silenced (lowercase names)
+        // The last folder each kind of capture was saved to; empty = Setup's.
+        folders: {
+            screenshots: "",
+            recordings: "",
+            voice: ""
         }
     })
 
+    readonly property string dir: `${Quickshell.env("XDG_STATE_HOME") || `${Quickshell.env("HOME")}/.local/state`}/quickshell`
+
     property var values: defaults
 
+    readonly property string theme: values.theme
     readonly property string screen: values.screen
-    readonly property var theme: values.theme
     readonly property var wallpaper: values.wallpaper
     readonly property var idle: values.idle
-    readonly property var bar: values.bar
-    readonly property var launcher: values.launcher
-    readonly property var calendar: values.calendar
-    readonly property var lock: values.lock
-    readonly property var controlCenter: values.controlCenter
-    readonly property var capture: values.capture
-    readonly property var clipboard: values.clipboard
-    readonly property var notifications: values.notifications
+    readonly property int passcode: values.passcode
+    readonly property var mutedApps: values.mutedApps
+    readonly property var folders: values.folders
 
-    // The setting at a dotted path, e.g. get("bar.height").
+    // The setting at a dotted path, e.g. get("idle.lock").
     function get(path: string): var {
         return path.split(".").reduce((o, k) => o?.[k], values);
     }
 
-    // Change a setting; applied now, written to config.json shortly after.
+    // Change a setting; applied now, written to settings.json shortly after.
     function set(path: string, value: var): void {
         const next = JSON.parse(JSON.stringify(values));
         const keys = path.split(".");
@@ -120,6 +80,7 @@ Singleton {
     property string loadedText: ""   // file content as last read
     property string writtenText: ""  // what we last wrote (to ignore its echo)
     property bool backedUp: false
+    property bool fresh: false  // no settings.json was found
 
     function write(): void {
         const text = JSON.stringify(values, null, 2) + "\n";
@@ -141,7 +102,7 @@ Singleton {
 
     FileView {
         id: backup
-        path: Quickshell.shellPath("config.json.bak")
+        path: `${root.dir}/settings.json.bak`
         blockLoading: true
         printErrors: false
     }
@@ -166,36 +127,27 @@ Singleton {
         return out;
     }
 
-    // Older configs kept the look at the top level (colors, font, shape,
-    // effects): move it into the cyber theme's tweaks. True if anything moved.
-    function migrate(json: var): bool {
-        const old = ["colors", "font", "shape", "effects"].filter(k => k in json);
-        if (old.length === 0)
-            return false;
-        const cyber = {};
-        if (json.colors)
-            cyber.palette = json.colors;
-        if (json.font)
-            cyber.font = json.font;
-        if (json.shape)
-            cyber.shape = json.shape;
-        if (json.effects) {
-            const effects = Object.assign({}, json.effects);
-            if (effects.glow !== undefined)
-                cyber.glow = { opacity: effects.glow };
-            delete effects.glow;
-            cyber.effects = effects;
-        }
-        json.theme = json.theme ?? {};
-        json.theme.cyber = Object.assign(cyber, json.theme.cyber ?? {});
-        for (const k of old)
-            delete json[k];
-        return true;
+    // What an older config.json (in the shell's folder, before settings
+    // moved here) had of these settings.
+    function fromOldConfig(json: var): var {
+        const out = {};
+        if (typeof json.theme?.name === "string")
+            out.theme = json.theme.name;
+        if (typeof json.screen === "string")
+            out.screen = json.screen;
+        if (json.wallpaper)
+            out.wallpaper = json.wallpaper;
+        if (json.idle)
+            out.idle = { lock: json.idle.lock, screenOff: json.idle.screenOff };
+        if (json.lock?.passcode !== undefined)
+            out.passcode = json.lock.passcode;
+        if (Array.isArray(json.notifications?.mutedApps))
+            out.mutedApps = json.notifications.mutedApps;
+        return out;
     }
 
     // qs ipc call config <get PATH|set PATH JSON|add PATH ITEM|remove PATH ITEM>
-    //   config set theme.name '"bubble"'      config set theme.cyber.palette.accent '"#cba6f7"'
-    //   config add notifications.mutedApps steam
+    //   config set theme '"bubble"'      config add mutedApps steam
     IpcHandler {
         target: "config"
 
@@ -209,8 +161,7 @@ Singleton {
             } catch (e) {
                 return `not JSON: ${e.message} (strings need quotes: '"text"')`;
             }
-            // Theme tweaks are free-form (the theme decides what they mean).
-            if (root.get(path) === undefined && !path.startsWith("theme."))
+            if (root.get(path) === undefined)
                 return `unknown setting: ${path}`;
             root.set(path, value);
             return "ok";
@@ -236,7 +187,7 @@ Singleton {
     FileView {
         id: file
 
-        path: Quickshell.shellPath("config.json")
+        path: `${root.dir}/settings.json`
         watchChanges: true
         atomicWrites: true
         printErrors: false
@@ -250,22 +201,44 @@ Singleton {
             if (content === root.writtenText)
                 return;
             try {
-                const json = JSON.parse(content);
-                const migrated = root.migrate(json);
-                root.values = root.merge(root.defaults, json);
+                root.values = root.merge(root.defaults, JSON.parse(content));
                 Health.resolve("config");
-                if (migrated)
-                    writeDelay.restart();
             } catch (e) {
-                Health.report("config", `config.json is invalid, keeping previous values: ${e.message}`);
+                Health.report("config", `settings.json is invalid, keeping previous values: ${e.message}`);
             }
         }
 
         onLoadFailed: error => {
-            if (error === FileViewError.FileNotFound)
+            if (error === FileViewError.FileNotFound) {
                 root.values = root.defaults;
-            else
-                Health.report("config", `cannot read config.json: ${FileViewError.toString(error)}`);
+                root.fresh = true;
+                oldConfig.reload();
+            } else {
+                Health.report("config", `cannot read settings.json: ${FileViewError.toString(error)}`);
+            }
         }
     }
+
+    // No settings yet: take what an older config.json had, once.
+    FileView {
+        id: oldConfig
+
+        path: Quickshell.shellPath("config.json")
+        printErrors: false
+
+        onLoaded: {
+            if (!root.fresh)
+                return;
+            root.fresh = false;
+            try {
+                const old = root.fromOldConfig(JSON.parse(text()));
+                if (Object.keys(old).length > 0) {
+                    root.values = root.merge(root.defaults, old);
+                    writeDelay.restart();
+                }
+            } catch (e) {}
+        }
+    }
+
+    Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", root.dir])
 }

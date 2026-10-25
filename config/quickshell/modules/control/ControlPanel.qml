@@ -19,13 +19,13 @@ Skinned {
 
     // What it shows: CPU, GPU, memory, board, kernel (Sysinfo); pending
     // updates per repository (Updates); disks, shares and USB devices
-    // (Storage); the hostname and uptime (Session); your tools (config.json
-    // → controlCenter.tools: [{ label, command }]).
+    // (Storage); the hostname and uptime (Session); your tools (Setup.tools:
+    // [{ label, command }]).
     readonly property var system: Sysinfo
     readonly property var updates: Updates
     readonly property var storage: Storage
     readonly property var session: Session
-    readonly property var tools: Config.controlCenter.tools
+    readonly property var tools: Setup.tools
 
     skin: "ControlMenu"
 
