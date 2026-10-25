@@ -164,12 +164,20 @@ Scope {
         WlSessionLockSurface {
             id: surface
 
-            color: Theme.palette.bg
+            color: Theme.palette?.bg ?? "black"
 
             LockView {
+                id: view
+
                 anchors.fill: parent
                 primary: surface.screen === Display.primary
                 snapshot: root.shots[surface.screen?.name]?.url ?? ""
+            }
+            // The theme's lock screen couldn't load: a plain one, so the lock
+            // can always be opened.
+            PlainLock {
+                anchors.fill: parent
+                visible: view.skinFailed
             }
         }
     }

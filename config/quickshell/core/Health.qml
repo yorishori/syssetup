@@ -32,7 +32,16 @@ Singleton {
             alert(source, reason);
     }
 
+    // One desktop alert per source every 10 minutes at most: a part that
+    // keeps failing and recovering (a helper restarting in a loop) would
+    // otherwise send one on every round. The bar's indicator stays current.
+    property var alertedAt: ({})
+
     function alert(source: string, reason: string): void {
+        const now = Date.now();
+        if (now - (alertedAt[source] ?? 0) < 10 * 60 * 1000)
+            return;
+        alertedAt[source] = now;
         Quickshell.execDetached(["notify-send", "-u", "critical", "-a", "qs", `${source} is down`, reason]);
     }
 

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Check the theme split (core/Theme.qml):
 #   - every theme (themes/<name>/Spec.qml) has a skin for every skinned widget
-#     (each `skin: "Name"` in components/ and modules/)
+#     (each `skin: "Name"` in components/ and modules/), of its own or shared
+#     (themes/glyphs)
 #   - components/ and modules/ hold no raw styling: no shapes, effects or
 #     hex colors, no plain Rectangles, no style config, no hand-made casing or
 #     letter spacing, no theme motion constants. That belongs in the skins.
+#     Exempt: the plain stand-ins (Plain*.qml), which draw with plain Qt on
+#     purpose so they work whatever state the theme is in.
 #
 #     scripts/check-theme.sh
 set -uo pipefail
@@ -17,7 +20,7 @@ skins=$(grep -rhoE '^\s*skin: "[A-Za-z]+"' components modules | grep -oE '"[A-Za
 for spec in themes/*/Spec.qml; do
     theme=$(dirname "$spec")
     for skin in $skins; do
-        if [[ ! -f "$theme/$skin.qml" ]]; then
+        if [[ ! -f "$theme/$skin.qml" && ! -f "themes/glyphs/$skin.qml" ]]; then
             echo "$theme: missing skin $skin.qml"
             status=1
         fi
@@ -37,7 +40,8 @@ EOF
 )
 while IFS=$'\t' read -r pattern why; do
     # StyledText implements tracking and glow; it's the one allowed place.
-    hits=$(grep -rnE "$pattern" components modules --include='*.qml' | grep -v '^components/StyledText.qml:' | grep -vE '^[^:]+:[0-9]+:\s*//')
+    hits=$(grep -rnE "$pattern" components modules --include='*.qml' | grep -v '^components/StyledText.qml:' \
+        | grep -vE '^[^:]+/Plain[A-Za-z]*\.qml:' | grep -vE '^[^:]+:[0-9]+:\s*//')
     if [[ -n "$hits" ]]; then
         echo "$hits" | sed "s|\$|    <- $why|"
         status=1

@@ -13,13 +13,16 @@ import qs.core
 //   }                                    }
 //
 // The widget takes its size from the skin unless given one; its own children
-// sit above the skin. Switching themes swaps the skin live.
+// sit above the skin. Switching themes swaps the skin live. A skin the theme
+// lacks, or has broken, comes from themes/glyphs (see core/Theme.qml); if
+// that fails too, `skinFailed` is set and nothing is drawn.
 Item {
     id: root
 
     required property string skin
     // The loaded skin, for widgets that place things by it (TextField's input).
     readonly property Item view: loader.item
+    readonly property bool skinFailed: loader.status === Loader.Error
 
     implicitWidth: loader.item?.implicitWidth ?? 0
     implicitHeight: loader.item?.implicitHeight ?? 0
@@ -38,7 +41,7 @@ Item {
         onUrlChanged: load()
         onStatusChanged: {
             if (status === Loader.Error)
-                Health.report("theme", `${Theme.name}: the ${root.skin} skin failed to load (see log)`);
+                Health.report("theme", `${Theme.name}: no ${root.skin} skin could be loaded (see log)`);
         }
     }
 }

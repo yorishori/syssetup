@@ -5,7 +5,8 @@ import qs.components
 import qs.services
 
 // Admin password prompt for polkit, over a darkened screen: see PolkitAsk;
-// the theme draws it. Clicking anywhere puts the focus back in it.
+// the theme draws it (PlainPolkit stands in if it can't). Clicking anywhere
+// puts the focus back in it.
 PanelWindow {
     id: win
 
@@ -29,7 +30,7 @@ PanelWindow {
 
         MouseArea {
             anchors.fill: parent
-            onClicked: ask.refocus()
+            onClicked: ask.skinFailed ? plain.refocus() : ask.refocus()
         }
     }
 
@@ -37,5 +38,13 @@ PanelWindow {
         id: ask
 
         anchors.fill: parent
+    }
+    // The theme's prompt couldn't load: a plain one, so it can always be
+    // answered or cancelled.
+    PlainPolkit {
+        id: plain
+
+        anchors.centerIn: parent
+        visible: ask.skinFailed
     }
 }

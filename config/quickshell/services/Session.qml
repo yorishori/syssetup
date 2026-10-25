@@ -116,7 +116,14 @@ Singleton {
                 }
             }
         }
-        onExited: logindRetry.start()
+        // Restarted, waiting longer each time it dies straight away (gdbus
+        // missing, no system bus) so it doesn't spin.
+        property real startedAt: 0
+        onRunningChanged: if (running) startedAt = Date.now()
+        onExited: {
+            logindRetry.interval = Date.now() - startedAt > 10000 ? 5000 : Math.min(logindRetry.interval * 2, 300000);
+            logindRetry.start();
+        }
     }
     Timer {
         id: logindRetry
