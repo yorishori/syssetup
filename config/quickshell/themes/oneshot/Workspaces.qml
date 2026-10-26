@@ -4,7 +4,7 @@ import qs.modules.bar.widgets as W
 
 // Workspaces as little tags, each on its own length of twine from the
 // bough, like a wind chime. The current one is lantern amber and swings
-// for a moment when you arrive; occupied ones are cream, empty ones dim.
+// on its twine when you arrive; occupied ones are cream, empty ones dim.
 Item {
     id: root
 
@@ -19,8 +19,18 @@ Item {
     // Each tag's extra drop below the line, in art pixels; repeats.
     readonly property var drops: [0, 2, -1, 1, 3, 0, 2, -1]
 
-    property int swingFrame: -1
-    readonly property var swing: [1, -1, 1, 0]
+    // The arriving tag swings on its twine like a pendulum, settling.
+    property real swing: 0
+
+    SequentialAnimation {
+        id: swingAnim
+
+        NumberAnimation { target: root; property: "swing"; to: 9; duration: 140; easing.type: Easing.OutSine }
+        NumberAnimation { target: root; property: "swing"; to: -6; duration: 260; easing.type: Easing.InOutSine }
+        NumberAnimation { target: root; property: "swing"; to: 3; duration: 240; easing.type: Easing.InOutSine }
+        NumberAnimation { target: root; property: "swing"; to: -1.5; duration: 220; easing.type: Easing.InOutSine }
+        NumberAnimation { target: root; property: "swing"; to: 0; duration: 200; easing.type: Easing.InOutSine }
+    }
 
     function workspaceAt(x: real): int {
         const id = Math.floor(x / cell) + 1;
@@ -34,22 +44,7 @@ Item {
         target: root.control
 
         function onActiveChanged() {
-            root.swingFrame = 0;
-            swingTimer.restart();
-        }
-    }
-
-    Timer {
-        id: swingTimer
-
-        interval: 160
-        repeat: true
-        running: false
-        onTriggered: {
-            if (++root.swingFrame >= root.swing.length || !(Theme.get("pixel.animate") ?? true)) {
-                root.swingFrame = -1;
-                stop();
-            }
+            swingAnim.restart();
         }
     }
 
@@ -64,9 +59,13 @@ Item {
             readonly property bool active: root.control.active === wsId
             readonly property bool hovered: root.control.hovered === wsId
             readonly property int tagTop: Math.round((root.height - root.tag) / 2 / root.px + root.drops[index % root.drops.length]) * root.px
-            readonly property int sway: active && root.swingFrame >= 0 ? root.swing[root.swingFrame] * root.px : 0
-
-            x: index * root.cell + sway
+            x: index * root.cell
+            // Swinging from where its twine meets the bough.
+            transform: Rotation {
+                origin.x: root.cell / 2
+                origin.y: root.bough
+                angle: cellItem.active ? root.swing : 0
+            }
             width: root.cell
             height: root.height
 

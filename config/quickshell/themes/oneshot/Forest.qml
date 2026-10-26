@@ -46,7 +46,9 @@ Item {
         stoneShade: "#2c2840",
         flame: "#f2c46d",
         stem: "#cfc6b4",
-        rain: "#6f7cb8",
+        rainFar: "#56618f",
+        rainNear: "#9aa8d8",
+        splash: "#b5bfe6",
         drip: "#8fa0dc",
         bark: "#3a2a24",
         barkDark: "#2c1f1a",
@@ -97,9 +99,10 @@ Item {
         return rows;
     }
 
-    // Idle loops (stars, lantern, mushrooms, fireflies, drips) and the rain.
+    // Idle loops (stars, lantern, mushrooms, fireflies, drips) step slowly;
+    // the rain falls smoothly, at 30 frames a second.
     Ticker { id: slow }
-    Ticker { id: fast; fps: (Theme.get("pixel.fps") ?? 4) * 2 }
+    Ticker { id: rainClock; fps: 30 }
 
     Rectangle {
         anchors.fill: parent
@@ -287,23 +290,6 @@ Item {
             }
         }
 
-        // Rain, in front of everything but the bough.
-        Repeater {
-            model: Math.ceil(root.aw / 14)
-
-            Rectangle {
-                required property int index
-                readonly property int span: root.ah + 8
-
-                x: Math.round(root.rnd(index, 9) * root.aw)
-                y: (Math.round(root.rnd(index, 10) * span) + fast.frame * 5) % span - 6
-                width: 1
-                height: 4
-                color: root.c.rain
-                opacity: 0.4
-            }
-        }
-
         // The bough across the top: bark, its knots, its dark underside,
         // moss on it and hanging off it.
         Canvas {
@@ -357,6 +343,57 @@ Item {
                 height: t < 17 ? 1 : 2
                 color: root.c.drip
                 opacity: t < 4 ? 0 : t < 25 ? 0.9 : 0
+            }
+        }
+    }
+
+    // The rain, in its own layer over the scene (so falling doesn't redraw
+    // the forest): long thin streaks, the far ones dimmer, shorter and
+    // slower, the near ones brighter, longer and faster; it starts under
+    // the bough. Splashes pop on the ground where it lands.
+    Item {
+        width: root.aw
+        height: root.ah
+        scale: root.px
+        transformOrigin: Item.TopLeft
+        layer.enabled: true
+        layer.smooth: false
+
+        Repeater {
+            model: Math.ceil(root.aw * root.ah / 650)
+
+            Rectangle {
+                required property int index
+                readonly property bool near: index % 5 < 2
+                readonly property int start: 6
+                readonly property int span: root.ah - start + height
+                readonly property real speed: (near ? 7 : 4) + root.rnd(index, 21) * 2
+
+                x: Math.round(root.rnd(index, 9) * root.aw)
+                y: start - height + Math.floor((root.rnd(index, 10) * span + rainClock.frame * speed) % span)
+                width: 1
+                height: near ? 7 + Math.round(root.rnd(index, 22) * 5) : 3 + Math.round(root.rnd(index, 23) * 3)
+                color: near ? root.c.rainNear : root.c.rainFar
+                opacity: near ? 0.5 : 0.35
+            }
+        }
+
+        // Splashes: a drop's crown, two frames, here and there on the ground.
+        Repeater {
+            model: Math.ceil(root.aw / 40)
+
+            Item {
+                required property int index
+                readonly property int t: (rainClock.frame + index * 7) % 24
+                readonly property int round: Math.floor((rainClock.frame + index * 7) / 24)
+
+                x: Math.round(root.rnd(index * 31 + round, 24) * (root.aw - 4))
+                y: root.horizon + 4 + Math.round(root.rnd(index * 17 + round, 25) * (root.ah - root.horizon - 8))
+                visible: t < 4
+
+                Rectangle { x: 1; width: 1; height: 1; color: root.c.splash; visible: parent.t < 2 }
+                Rectangle { x: 0; y: -1; width: 1; height: 1; color: root.c.splash; opacity: 0.7; visible: parent.t >= 2 }
+                Rectangle { x: 2; y: -1; width: 1; height: 1; color: root.c.splash; opacity: 0.7; visible: parent.t >= 2 }
             }
         }
     }

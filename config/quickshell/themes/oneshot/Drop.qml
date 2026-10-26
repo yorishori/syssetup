@@ -3,9 +3,8 @@ import qs.components
 import qs.core
 import qs.modules.bar as B
 
-// An RPG window that unrolls below the bar in four steps, the way old menus
-// opened; its contents appear once it's fully open. Two sparkles twinkle on
-// its corners.
+// An RPG window that unrolls below the bar, easing open; its contents fade
+// in as it finishes. Two sparkles twinkle on its corners.
 Item {
     id: root
 
@@ -14,24 +13,25 @@ Item {
     readonly property real overhang: 0
     readonly property real inset: 6
     readonly property int px: Theme.get("pixel.scale") ?? 3
-    readonly property int steps: 4
-    property int step: 0
+    // 0 shut to 1 open, eased (the frame moves smoothly; only the art's
+    // idle loops step).
+    property real progress: control.open ? 1 : 0
+
+    Behavior on progress {
+        NumberAnimation {
+            duration: root.control.open ? 240 : 150
+            easing.type: root.control.open ? Easing.OutCubic : Easing.InCubic
+        }
+    }
 
     // The window's name on top, the contents moved down under it.
     readonly property string title: Theme.get(`titles.${control.name}`) ?? ""
     readonly property real titleHeight: title !== "" ? 34 : 0
     readonly property real contentShift: titleHeight
 
-    readonly property real shownHeight: step >= steps ? control.openHeight + titleHeight
-        : Math.round((control.openHeight + titleHeight) * step / steps / px) * px
-    readonly property real contentOpacity: step >= steps ? 1 : 0
-
-    Timer {
-        interval: 45
-        repeat: true
-        running: root.step !== (root.control.open ? root.steps : 0)
-        onTriggered: root.step += root.control.open ? 1 : -1
-    }
+    readonly property real shownHeight: (control.openHeight + titleHeight) * progress
+    // The contents (and title, sparkles) fade in over the last stretch.
+    readonly property real contentOpacity: Math.max(0, (progress - 0.6) / 0.4)
 
     Ticker { id: clock }
 
@@ -43,7 +43,8 @@ Item {
         x: root.control.padding
         y: root.control.padding - 4
         text: root.title
-        visible: root.title !== "" && root.step >= root.steps
+        visible: root.title !== ""
+        opacity: root.contentOpacity
         color: Theme.palette.accent
         font.pixelSize: Theme.font.size + 6
         font.weight: Font.DemiBold
@@ -60,8 +61,7 @@ Item {
             px: root.px
             colors: ({ "s": Theme.palette.accent })
             rows: [".s.", "sss", ".s."]
-            visible: root.step >= root.steps
-            opacity: (clock.frame + modelData[2]) % 12 < 2 ? 0.25 : 0.9
+            opacity: root.contentOpacity * ((clock.frame + modelData[2]) % 12 < 2 ? 0.25 : 0.9)
         }
     }
 }

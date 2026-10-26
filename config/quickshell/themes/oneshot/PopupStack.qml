@@ -4,10 +4,10 @@ import qs.components as C
 import qs.core
 import qs.modules.notifications as M
 
-// Notification cards top-right, newest on top, as RPG windows. They hop in
-// from the side in three steps and hop out the same way, and pause their
-// timeout while hovered. When one arrives the cat peeks over the top of it
-// for a few seconds, then ducks back down (and back to the bar).
+// Notification cards top-right, newest on top, as RPG windows. They slide
+// in from the side and out the same way, and pause their timeout while
+// hovered. When one arrives the cat peeks over the top of it for a few
+// seconds, then ducks back down (and back to the bar).
 Item {
     id: root
 
@@ -62,33 +62,19 @@ Item {
         }
 
         add: Transition {
-            SequentialAnimation {
-                PropertyAction { property: "x"; value: 36 }
-                PropertyAction { property: "opacity"; value: 0.4 }
-                PauseAnimation { duration: 70 }
-                PropertyAction { property: "x"; value: 15 }
-                PropertyAction { property: "opacity"; value: 0.8 }
-                PauseAnimation { duration: 70 }
-                PropertyAction { property: "x"; value: 0 }
-                PropertyAction { property: "opacity"; value: 1 }
-            }
+            NumberAnimation { property: "x"; from: 48; to: 0; duration: 240; easing.type: Easing.OutCubic }
+            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 180 }
         }
         remove: Transition {
-            SequentialAnimation {
-                PropertyAction { property: "x"; value: 15 }
-                PropertyAction { property: "opacity"; value: 0.8 }
-                PauseAnimation { duration: 70 }
-                PropertyAction { property: "x"; value: 36 }
-                PropertyAction { property: "opacity"; value: 0.4 }
-                PauseAnimation { duration: 70 }
-                PropertyAction { property: "opacity"; value: 0 }
-            }
+            NumberAnimation { property: "x"; to: 48; duration: 160; easing.type: Easing.InCubic }
+            NumberAnimation { property: "opacity"; to: 0; duration: 160 }
         }
-        // Cards pushed down jump to their place; one caught mid-entry is
+        // Cards pushed down glide to their place; one caught mid-entry is
         // finished off.
         displaced: Transition {
-            PropertyAction { property: "x"; value: 0 }
-            PropertyAction { property: "opacity"; value: 1 }
+            NumberAnimation { property: "y"; duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { property: "x"; to: 0; duration: 200; easing.type: Easing.OutCubic }
+            NumberAnimation { property: "opacity"; to: 1; duration: 150 }
         }
     }
 

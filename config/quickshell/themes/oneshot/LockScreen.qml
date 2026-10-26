@@ -8,18 +8,17 @@ import qs.modules.lock as M
 // primary screen an RPG window with the password prompt, the passcode
 // lamps and the power keys, and the cat asleep on top of it. It wakes when
 // you start typing and stays up while a password fails, then dozes off
-// again. Locking and unlocking fade the scene in four steps; a wrong
-// password jitters the window in pixel hops.
+// again. Locking and unlocking fade the scene in and out; a wrong
+// password shakes the window.
 Item {
     id: root
 
     required property M.LockView control
 
     readonly property int px: Theme.get("pixel.scale") ?? 3
-    // The fade, 0 (the desktop) to 4 (locked): up while closing, down
+    // The fade, 0 (the desktop) to 1 (locked): up while closing, down
     // while opening, simply there once locked.
-    property int step: control.phase === "closing" ? 0 : 4
-    readonly property int target: control.phase === "opening" ? 0 : 4
+    property real shown: control.phase === "closing" ? 0 : 1
 
     // The cat's awake while you type, and a while after.
     property bool catAwake: false
@@ -45,11 +44,21 @@ Item {
         doze.restart();
     }
 
-    Timer {
-        interval: Math.max(1, Math.round((Theme.values.layout?.lockClose ?? 400) / 4))
-        repeat: true
-        running: root.step !== root.target
-        onTriggered: root.step += root.step < root.target ? 1 : -1
+    Component.onCompleted: shown = control.phase === "opening" ? 0 : 1
+
+    Connections {
+        target: root.control
+
+        function onPhaseChanged(): void {
+            root.shown = root.control.phase === "opening" ? 0 : 1;
+        }
+    }
+
+    Behavior on shown {
+        NumberAnimation {
+            duration: Math.max(1, (root.control.phase === "opening" ? Theme.values.layout?.lockOpen : Theme.values.layout?.lockClose) ?? 400)
+            easing.type: Easing.InOutQuad
+        }
     }
 
     Timer {
@@ -61,7 +70,7 @@ Item {
 
     Item {
         anchors.fill: parent
-        opacity: root.step / 4
+        opacity: root.shown
 
         Forest {
             anchors.fill: parent
@@ -81,29 +90,20 @@ Item {
         ColumnLayout {
             id: panel
 
-            // Jitters on a wrong password: a few hops either way.
-            property int hop: -1
-            readonly property var hops: [-2, 2, -1, 1, 0]
+            // Shakes on a wrong password.
+            property real nudge: 0
 
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: hop >= 0 ? hops[hop] * root.px : 0
+            anchors.horizontalCenterOffset: nudge
             spacing: 18
 
-            Timer {
+            SequentialAnimation {
                 id: shake
 
-                interval: 60
-                repeat: true
-                onTriggered: {
-                    if (++panel.hop >= panel.hops.length) {
-                        panel.hop = -1;
-                        stop();
-                    }
-                }
-                function restart(): void {
-                    panel.hop = 0;
-                    start();
-                }
+                NumberAnimation { target: panel; property: "nudge"; to: -12; duration: 50 }
+                NumberAnimation { target: panel; property: "nudge"; to: 10; duration: 70 }
+                NumberAnimation { target: panel; property: "nudge"; to: -6; duration: 60 }
+                NumberAnimation { target: panel; property: "nudge"; to: 0; duration: 90; easing.type: Easing.OutCubic }
             }
 
             StyledText {
