@@ -107,6 +107,7 @@ bindsym $mod+l      $qs session lock
 bindsym $mod+F1     $qs panel toggle keys
 # Caps Lock (keycode 66)
 bindcode 66         $qs panel toggle compose
+bindsym $mod+.      $qs clipboard symbols kaomoji
 
 # Capture
 bindsym Print       $qs capture screenshot
