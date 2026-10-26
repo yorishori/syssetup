@@ -88,9 +88,11 @@ Item {
                 anchors.fill: parent
             }
 
-            // The cat naps on the last sign, its tail dangling off the end.
+            // The cat naps on the last sign, its tail dangling off the end,
+            // unless it's off in an open panel (Spec cat.panels).
             Cat {
                 visible: sign.index === root.signs.length - 1
+                    && !(Theme.get("cat.panels") ?? []).includes(root.control.openDrop)
                 pose: "nap"
                 flip: true
                 x: -4 * root.px

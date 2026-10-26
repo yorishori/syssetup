@@ -2,43 +2,39 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// A pill. Hover tints it with the accent, lit fills it; it squashes a little
-// when pressed.
+// A framed plum key. Hover lights the frame and label amber, lit fills it
+// amber; pressed, it sinks a pixel.
 Item {
     id: root
 
     required property C.TextButton control
+    readonly property int px: Theme.get("pixel.scale") ?? 3
 
-    implicitWidth: label.implicitWidth + 26
+    implicitWidth: label.implicitWidth + 24
     implicitHeight: label.implicitHeight + 12
     opacity: control.enabled ? 1 : 0.4
-    scale: control.pressed ? 0.88 : 1
 
-    Behavior on scale {
-        NumberAnimation { duration: 320; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
-    }
+    Item {
+        width: parent.width
+        height: parent.height
+        y: root.control.pressed ? root.px : 0
 
-    Box {
-        anchors.fill: parent
-        roundness: height / 2
-        fill: root.control.lit ? Theme.palette.accent
-            : root.control.hovered ? Qt.alpha(Theme.palette.accent, 0.2)
-            : Theme.palette.surface
+        Rectangle {
+            anchors.fill: parent
+            color: root.control.lit || root.control.hovered ? Theme.palette.accent : "#4a4068"
 
-        Behavior on fill {
-            ColorAnimation { duration: 120 }
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: root.px
+                color: root.control.lit ? Theme.palette.accent : Theme.palette.surface
+            }
         }
-    }
+        C.StyledText {
+            id: label
 
-    C.StyledText {
-        id: label
-
-        anchors.centerIn: parent
-        text: root.control.text
-        caps: true
-        tracking: 1.5
-        font.pixelSize: Theme.font.size - 1
-        font.bold: true
-        color: root.control.lit ? Theme.palette.shadow : root.control.hovered ? Theme.palette.accent : Theme.palette.fg
+            anchors.centerIn: parent
+            text: root.control.text
+            color: root.control.lit ? Theme.palette.shadow : root.control.hovered ? Theme.palette.accent : Theme.palette.fg
+        }
     }
 }

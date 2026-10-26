@@ -84,6 +84,11 @@ QtObject {
             bough: 18,
             offset: 10
         },
+        // The cat: the panels it goes and sits in while they're open (it
+        // leaves the bar for them; there's only ever one cat).
+        cat: {
+            panels: ["control"]
+        },
         // How the pixel art is drawn and moves: each art pixel is `scale`
         // screen pixels; idle loops step at `fps`. `animate: false` holds
         // every loop on its first frame.

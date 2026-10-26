@@ -2,19 +2,18 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Small filled pill.
+// A small filled block with a label in small capitals.
 Item {
     id: root
 
     required property C.Tag control
 
-    implicitWidth: label.implicitWidth + 16
+    implicitWidth: label.implicitWidth + 12
     implicitHeight: label.implicitHeight + 4
 
-    Box {
+    Rectangle {
         anchors.fill: parent
-        roundness: height / 2
-        fill: root.control.fill
+        color: root.control.fill
     }
     C.StyledText {
         id: label
@@ -23,7 +22,7 @@ Item {
         text: root.control.text
         caps: true
         color: root.control.textColor
+        font.family: Theme.get("font.labels") ?? Theme.font.family
         font.pixelSize: root.control.size
-        font.bold: true
     }
 }
