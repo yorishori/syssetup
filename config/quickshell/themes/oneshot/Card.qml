@@ -2,12 +2,10 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// A floating rounded card on a soft shadow, with a fine edge; outlined in
-// its tone, when it has one.
-Box {
+// An RPG window; its frame takes the card's tone when it has one (amber
+// on hover, red for critical), cream otherwise.
+Frame {
     required property C.Card control
 
-    fill: Theme.palette.bg
-    stroke: control.tone
-    raised: true
+    frame: control.tone.a > 0 ? control.tone : Theme.palette.border
 }

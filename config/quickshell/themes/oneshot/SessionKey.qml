@@ -42,7 +42,6 @@ Item {
         Rectangle {
             implicitWidth: 50
             implicitHeight: 50
-            radius: 25
             color: root.on ? root.tone : Theme.palette.surface
 
             C.StyledText {
@@ -63,7 +62,6 @@ Item {
         Rectangle {
             implicitWidth: number.implicitWidth + 12
             implicitHeight: number.implicitHeight + 4
-            radius: height / 2
             color: root.on ? Qt.alpha(root.tone, 0.2) : Theme.palette.surface
 
             C.StyledText {
@@ -87,7 +85,6 @@ Item {
             bottomMargin: 8
         }
         height: 4
-        radius: 2
         width: (root.width - 44) * root.control.fuse
         color: Theme.palette.warn
         visible: root.control.armed

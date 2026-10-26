@@ -13,7 +13,6 @@ Item {
         y: root.control.vertical ? 0 : -3
         width: root.control.vertical ? parent.width : Math.min(parent.width, 10)
         height: parent.height
-        radius: Math.min(width, height) / 2
         color: root.control.color
     }
 }

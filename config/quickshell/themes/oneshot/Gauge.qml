@@ -13,13 +13,11 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: height / 2
         color: Theme.palette.surface
     }
     Rectangle {
         width: Math.max(height, parent.width * Math.max(0, Math.min(1, root.control.value)))
         height: parent.height
-        radius: height / 2
         color: root.control.color
         visible: root.control.value > 0
     }

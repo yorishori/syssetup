@@ -2,7 +2,7 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// A rounded recessed card; outlined in its tone.
+// A recessed block; outlined in its tone.
 Item {
     id: root
 

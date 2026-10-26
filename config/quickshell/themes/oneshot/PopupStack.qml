@@ -1,0 +1,153 @@
+import QtQuick
+import Quickshell
+import qs.components as C
+import qs.core
+import qs.modules.notifications as M
+
+// Notification cards top-right, newest on top, as RPG windows. They hop in
+// from the side in three steps and hop out the same way, and pause their
+// timeout while hovered. When one arrives the cat peeks over the top of it
+// for a few seconds, then ducks back down (and back to the bar).
+Item {
+    id: root
+
+    required property M.PopupStack control
+
+    // Only the cards take input.
+    readonly property Item inputArea: cardsArea
+
+    Item {
+        id: cardsArea
+
+        anchors {
+            top: list.top
+            right: list.right
+        }
+        width: list.width
+        height: Math.min(list.contentHeight, list.height)
+    }
+
+    ListView {
+        id: list
+
+        anchors {
+            top: parent.top
+            right: parent.right
+            // Under the bar, with room for the cat to peek over the top one.
+            topMargin: root.control.barHeight + 30
+            rightMargin: Setup.bar.padding
+        }
+        width: 360
+        height: parent.height - anchors.topMargin
+        spacing: 10
+        interactive: false
+
+        model: ScriptModel {
+            values: root.control.popups
+        }
+
+        delegate: C.NotificationCard {
+            id: card
+
+            required property var modelData
+
+            notif: modelData
+            onDismissRequested: root.control.dismiss(modelData)
+
+            Timer {
+                interval: root.control.timeout(card.modelData) * 1000
+                running: interval > 0 && !card.hovered
+                onTriggered: root.control.hide(card.modelData)
+            }
+        }
+
+        add: Transition {
+            SequentialAnimation {
+                PropertyAction { property: "x"; value: 36 }
+                PropertyAction { property: "opacity"; value: 0.4 }
+                PauseAnimation { duration: 70 }
+                PropertyAction { property: "x"; value: 15 }
+                PropertyAction { property: "opacity"; value: 0.8 }
+                PauseAnimation { duration: 70 }
+                PropertyAction { property: "x"; value: 0 }
+                PropertyAction { property: "opacity"; value: 1 }
+            }
+        }
+        remove: Transition {
+            SequentialAnimation {
+                PropertyAction { property: "x"; value: 15 }
+                PropertyAction { property: "opacity"; value: 0.8 }
+                PauseAnimation { duration: 70 }
+                PropertyAction { property: "x"; value: 36 }
+                PropertyAction { property: "opacity"; value: 0.4 }
+                PauseAnimation { duration: 70 }
+                PropertyAction { property: "opacity"; value: 0 }
+            }
+        }
+        // Cards pushed down jump to their place; one caught mid-entry is
+        // finished off.
+        displaced: Transition {
+            PropertyAction { property: "x"; value: 0 }
+            PropertyAction { property: "opacity"; value: 1 }
+        }
+    }
+
+    // The cat peeking over the newest card: it rises in steps, looks for a
+    // while, and sinks back.
+    Item {
+        id: peek
+
+        readonly property int px: Theme.get("pixel.scale") ?? 3
+        // How many of its rows show: 0 (hidden) to 9 (up to its chin).
+        property int rows: 0
+        property bool up: false
+
+        x: list.x + list.width - 26 * px
+        // The newest card is always the top one.
+        y: list.y - height
+        width: 16 * px
+        height: rows * px
+        clip: true
+        visible: rows > 0 && list.count > 0
+
+        Cat {
+            pose: "sit"
+            flip: true
+        }
+
+        Timer {
+            interval: 110
+            repeat: true
+            running: peek.rows !== (peek.up ? 9 : 0)
+            onTriggered: peek.rows += peek.up ? 1 : -1
+            onRunningChanged: if (!running && !peek.up) CatState.peeking = false
+        }
+        Timer {
+            id: stay
+
+            interval: 4000
+            onTriggered: peek.up = false
+        }
+
+        function show(): void {
+            CatState.peeking = true;
+            up = true;
+            stay.restart();
+        }
+    }
+
+    property int seen: 0
+
+    Connections {
+        target: root.control
+
+        function onPopupsChanged() {
+            const n = root.control.popups.length;
+            if (n > root.seen)
+                peek.show();
+            else if (n === 0)
+                peek.up = false;
+            root.seen = n;
+        }
+    }
+}

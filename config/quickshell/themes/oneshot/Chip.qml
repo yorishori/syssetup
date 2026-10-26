@@ -2,7 +2,7 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// A pill with a dot: tinted in the accent when on, dim red and struck
+// A block with a square dot: tinted in the accent when on, dim red and struck
 // through when off.
 Item {
     id: root
@@ -27,9 +27,8 @@ Item {
 
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
-            width: 7
-            height: 7
-            radius: 3.5
+            width: 6
+            height: 6
             color: root.control.on ? Theme.palette.accent : Theme.palette.off
         }
         C.StyledText {

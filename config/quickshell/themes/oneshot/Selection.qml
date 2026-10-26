@@ -20,7 +20,6 @@ Item {
         y: root.r.y - 2
         width: root.r.width + 4
         height: root.r.height + 4
-        radius: 8
         color: "transparent"
         border.width: 2
         border.color: Theme.palette.accent

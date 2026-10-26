@@ -10,7 +10,6 @@ Rectangle {
 
     implicitWidth: 6
     implicitHeight: 6
-    radius: Math.min(width, height) / 2
     color: control.on ? control.litColor : Theme.palette.surface
 
     SequentialAnimation on opacity {

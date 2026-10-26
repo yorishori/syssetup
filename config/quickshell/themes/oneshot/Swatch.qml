@@ -15,7 +15,6 @@ Item {
         anchors.centerIn: parent
         width: parent.width - (root.control.selected ? 6 : 0)
         height: parent.height - (root.control.selected ? 6 : 0)
-        radius: height / 2
         color: root.control.color
         scale: root.control.hovered && !root.control.selected ? 1.18 : 1
 
@@ -25,7 +24,6 @@ Item {
     }
     Rectangle {
         anchors.fill: parent
-        radius: height / 2
         color: "transparent"
         border.color: Theme.palette.fg
         border.width: 2

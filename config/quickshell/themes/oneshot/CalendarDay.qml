@@ -15,7 +15,6 @@ Item {
         anchors.centerIn: parent
         width: root.size
         height: root.size
-        radius: root.size / 2
         color: root.control.isToday ? Theme.palette.accent : root.control.hovered ? Theme.palette.surface : "transparent"
         border.color: Theme.palette.accent
         border.width: root.control.selected ? 2 : 0
@@ -46,7 +45,6 @@ Item {
 
                 width: 4
                 height: 4
-                radius: 2
                 color: root.control.isToday ? Theme.palette.shadow : modelData
                 opacity: root.control.inMonth ? 1 : 0.4
             }

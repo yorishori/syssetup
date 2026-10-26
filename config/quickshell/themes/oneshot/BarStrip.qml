@@ -89,9 +89,10 @@ Item {
             }
 
             // The cat naps on the last sign, its tail dangling off the end,
-            // unless it's off in an open panel (Spec cat.panels).
+            // unless it's off in an open panel (Spec cat.panels) or peeking
+            // over a notification.
             Cat {
-                visible: sign.index === root.signs.length - 1
+                visible: sign.index === root.signs.length - 1 && !CatState.peeking
                     && !(Theme.get("cat.panels") ?? []).includes(root.control.openDrop)
                 pose: "nap"
                 flip: true
