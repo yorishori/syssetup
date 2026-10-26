@@ -74,6 +74,12 @@ QtObject {
             shadow: 0,
             backdrop: 0.35
         },
+        // The lock fades the forest in over the desktop and out again, in
+        // four steps (see LockScreen), this long each way.
+        layout: {
+            lockClose: 400,
+            lockOpen: 400
+        },
         // OneShot's own.
         // The bar is the wallpaper's bough with signs hanging from it:
         // `bough` is where the bough's underside is (the wallpaper paints
