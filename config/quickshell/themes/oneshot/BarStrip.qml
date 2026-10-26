@@ -36,14 +36,17 @@ Item {
         return Math.round(v / px) * px;
     }
 
+    // Every entry of every island is its own sign.
+    readonly property var signs: entries().filter(i => i && !hangsItself.includes(i.widget ?? ""))
+
     Repeater {
-        // Every entry of every island is its own sign.
-        model: root.entries().filter(i => i && !root.hangsItself.includes(i.widget ?? ""))
+        model: root.signs
 
         Item {
             id: sign
 
             required property var modelData
+            required property int index
             // What's showing in it: a group's children (a slot counts when
             // its widget is visible), or the entry itself.
             readonly property var parts: modelData.widget !== undefined ? [modelData]
@@ -104,6 +107,15 @@ Item {
                     anchors.margins: root.px
                     color: Theme.palette.bg
                 }
+            }
+
+            // The cat naps on the last sign, its tail dangling off the end.
+            Cat {
+                visible: sign.index === root.signs.length - 1
+                pose: "nap"
+                flip: true
+                x: -4 * root.px
+                y: -7 * root.px
             }
         }
     }
