@@ -90,6 +90,23 @@ QtObject {
             bough: 18,
             offset: 10
         },
+        // Every panel's window has its name on top in lantern amber; the
+        // launcher titles itself by its mode, the OSD and tray menus go
+        // without.
+        titles: {
+            calendar: "Calendar",
+            network: "Wi-Fi",
+            bluetooth: "Bluetooth",
+            audio: "Audio",
+            notifications: "Notifications",
+            control: "Control center",
+            session: "Session",
+            settings: "Settings",
+            keys: "Keys",
+            clipboard: "Clipboard",
+            compose: "Compose",
+            capture: "Save"
+        },
         // The cat: the panels it goes and sits in while they're open (it
         // leaves the bar for them; there's only ever one cat).
         cat: {

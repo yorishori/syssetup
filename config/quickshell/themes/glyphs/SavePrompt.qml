@@ -30,6 +30,8 @@ Item {
     BottomDrawer {
         id: drawer
 
+        name: "capture"
+
         anchors {
             bottom: parent.bottom
             bottomMargin: drawer.lift

@@ -4,7 +4,7 @@ import qs.components as C
 import qs.core
 import qs.modules.notifications as M
 
-// The window's title in lantern amber, then do not disturb (on, or for an
+// Under the title the frame draws: do not disturb (on, or for an
 // hour), the sources to mute, then the history: click a notification to
 // run its action, × dismisses it.
 Item {
@@ -21,12 +21,6 @@ Item {
         width: parent.width
         spacing: 10
 
-        C.StyledText {
-            text: "Notifications"
-            color: Theme.palette.accent
-            font.pixelSize: Theme.font.size + 6
-            font.weight: Font.DemiBold
-        }
 
         // ── Do not disturb ───────────────────────────────────────────────────
         C.SectionTitle {

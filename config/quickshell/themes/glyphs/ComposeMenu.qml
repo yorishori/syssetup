@@ -36,6 +36,8 @@ Item {
     BottomDrawer {
         id: drawer
 
+        name: "compose"
+
         anchors {
             bottom: parent.bottom
             bottomMargin: drawer.lift

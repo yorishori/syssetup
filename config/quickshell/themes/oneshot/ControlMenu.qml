@@ -4,7 +4,7 @@ import qs.components as C
 import qs.core
 import qs.modules.control as M
 
-// An RPG status screen: the window's title in lantern amber, then system
+// An RPG status screen (the frame draws its title): system
 // (hostname, uptime; CPU, GPU, RAM as block meters; board, kernel), updates
 // per repository, storage, USB devices and your tools, in one scrolling
 // column. The cat comes and sits in the corner by the tools while it's
@@ -94,12 +94,6 @@ Item {
             width: flick.width - 6
             spacing: 8
 
-            C.StyledText {
-                text: "Control center"
-                color: Theme.palette.accent
-                font.pixelSize: Theme.font.size + 6
-                font.weight: Font.DemiBold
-            }
 
             // ── System ───────────────────────────────────────────────────────
             RowLayout {

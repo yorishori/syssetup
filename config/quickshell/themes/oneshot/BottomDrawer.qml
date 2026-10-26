@@ -18,8 +18,13 @@ Item {
     readonly property int steps: 4
     property int step: 0
 
-    readonly property real shownHeight: step >= steps ? control.openHeight
-        : Math.round(control.openHeight * step / steps / px) * px
+    // The window's name on top, the contents moved down under it.
+    readonly property string title: Theme.get(`titles.${control.name}`) ?? ""
+    readonly property real titleHeight: title !== "" ? 34 : 0
+    readonly property real contentShift: titleHeight
+
+    readonly property real shownHeight: step >= steps ? control.openHeight + titleHeight
+        : Math.round((control.openHeight + titleHeight) * step / steps / px) * px
     readonly property real contentOpacity: step >= steps ? 1 : 0
 
     Timer {
@@ -37,6 +42,16 @@ Item {
 
     Frame {
         anchors.fill: parent
+    }
+
+    C.StyledText {
+        x: root.control.padding
+        y: root.control.padding - 4
+        text: root.title
+        visible: root.title !== "" && root.step >= root.steps
+        color: Theme.palette.accent
+        font.pixelSize: Theme.font.size + 6
+        font.weight: Font.DemiBold
     }
 
     PixelArt {
