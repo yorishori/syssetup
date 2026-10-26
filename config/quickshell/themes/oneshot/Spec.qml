@@ -75,6 +75,15 @@ QtObject {
             backdrop: 0.35
         },
         // OneShot's own.
+        // The bar is the wallpaper's bough with signs hanging from it:
+        // `bough` is where the bough's underside is (the wallpaper paints
+        // it, 6 art pixels), `offset` how far below the middle the signs'
+        // contents sit.
+        bar: {
+            height: 68,
+            bough: 18,
+            offset: 10
+        },
         // How the pixel art is drawn and moves: each art pixel is `scale`
         // screen pixels; idle loops step at `fps`. `animate: false` holds
         // every loop on its first frame.
