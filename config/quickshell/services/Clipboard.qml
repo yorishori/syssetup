@@ -56,7 +56,8 @@ Singleton {
     function pick(entry: var, paste: bool): void {
         if (!entry || busy)
             return;
-        hide();
+        if (open)
+            Panels.close();
         copier.paste = paste;
         copier.command = ["sh", "-c", 'printf "%s" "$1" | cliphist decode | wl-copy', "sh", entry.line];
         copier.running = true;
@@ -67,7 +68,8 @@ Singleton {
     function insert(text: string, paste: bool): void {
         if (!text || busy)
             return;
-        hide();
+        if (open)
+            Panels.close();
         copier.paste = paste;
         copier.command = ["sh", "-c", 'printf "%s" "$1" | wl-copy', "sh", text];
         copier.running = true;
