@@ -22,8 +22,8 @@ import qs.services
 Scope {
     id: root
 
-    // Idle locking and screen blanking live in the Idle service; referencing
-    // it here starts it.
+    // Idle locking and screen blanking live in the Idle service (started by
+    // modules/daemons).
     readonly property bool screenOff: Idle.screenOff
 
     readonly property int closeTime: Math.min(Theme.values.layout?.lockClose ?? 0, 1000)

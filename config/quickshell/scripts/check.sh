@@ -13,6 +13,9 @@
 #            casing or letter spacing, no theme motion constants.
 #   Keys     skins decide no keys: they forward their field's keys to the
 #            panel (Keys.onPressed → control.fieldKey), nothing else.
+#   Lists    every theme folder is in Theme.names and imported in shell.qml;
+#            every panel in Panels.names is a row in Bar.qml's `panels` or a
+#            module of its own, and every bar panel has its <Name>Panel.qml.
 #   Plain    the plain stand-ins (modules/**/Plain*.qml) import only QtQuick
 #            and services, so nothing a theme breaks can reach them. They're
 #            exempt from the styling rules.
@@ -74,6 +77,28 @@ hits=$(grep -rnE 'Keys\.on[A-Z][A-Za-z]*Pressed' themes --include='*.qml' | grep
 for f in $(find modules -name 'Plain*.qml'); do
     hits=$(grep -nE '^import ' "$f" | grep -vE '^[0-9]+:import (QtQuick|qs\.services)$')
     [[ -n "$hits" ]] && fail "$(echo "$hits" | sed "s|^|$f:|; s|\$|    <- a plain stand-in uses QtQuick and services only|")"
+done
+
+# Lists: themes
+names=$(grep -oE 'names: \[[^]]*\]' core/Theme.qml | grep -oE '"[a-z]+"' | tr -d '"' | sort)
+folders=$(for spec in themes/*/Spec.qml; do basename "$(dirname "$spec")"; done | sort)
+[[ "$names" == "$folders" ]] || fail "core/Theme.qml: names ($(echo $names)) differ from the theme folders ($(echo $folders))"
+for theme in $folders glyphs; do
+    grep -qE "^import qs\.themes\.$theme\b" shell.qml || fail "shell.qml: no import qs.themes.$theme (the folder isn't known without it)"
+done
+
+# Lists: panels
+ipc=$(tr '\n' ' ' < services/Panels.qml | grep -oE 'names: \[[^]]*\]' | grep -oE '"[a-z]+"' | tr -d '"' | sort)
+bar=$(sed -n '/property var panels: \[/,/^    \]/p' modules/bar/Bar.qml | grep -oE '\{ name: "[a-z]+"' | grep -oE '"[a-z]+"' | tr -d '"' | sort)
+for panel in $ipc; do
+    grep -qx "$panel" <<<"$bar" \
+        || grep -qE "path: \"modules/$panel/" shell.qml \
+        || fail "services/Panels.qml: \"$panel\" is neither in Bar.qml's panels nor a module in shell.qml"
+done
+for panel in $bar; do
+    [[ "$panel" == tray ]] || grep -qx "$panel" <<<"$ipc" || fail "modules/bar/Bar.qml: panel \"$panel\" is missing from Panels.names (IPC can't open it)"
+    file="modules/$panel/${panel^}Panel.qml"
+    [[ -f "$file" ]] || fail "modules/bar/Bar.qml: panel \"$panel\" has no $file"
 done
 
 [[ $status -eq 0 ]] && echo "ok: $(ls themes/*/Spec.qml | wc -l) themes, $(echo "$skins" | wc -l) skins each"

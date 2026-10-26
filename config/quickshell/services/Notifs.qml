@@ -110,8 +110,14 @@ Singleton {
 
             onNotification: n => {
                 n.tracked = true;
-                n.closed.connect(() => root.popups = root.popups.filter(p => p !== n));
-                root.received = Object.assign({}, root.received, { [n.id]: Date.now() });
+                const id = n.id;
+                n.closed.connect(() => {
+                    root.popups = root.popups.filter(p => p !== n);
+                    const received = Object.assign({}, root.received);
+                    delete received[id];
+                    root.received = received;
+                });
+                root.received = Object.assign({}, root.received, { [id]: Date.now() });
 
                 const silenced = root.dnd || root.centerOpen || root.isMuted(n.appName);
                 if (!silenced || n.urgency === NotificationUrgency.Critical)

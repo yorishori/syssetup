@@ -8,7 +8,9 @@ import qs.core
 // Screenshots, screen recordings and voice memos, as one small state machine:
 //
 //   idle → selecting → marking → asking      (screenshot)
-//   idle → selecting → recording → asking    (screen recording, wf-recorder)
+//   idle → selecting → starting → recording → asking
+//                                            (screen recording, wf-recorder;
+//                                             starting waits out the overlay)
 //   idle → recording → asking                (voice memo, pw-record)
 //
 // The capture overlay (modules/capture) does the selecting and marking on a
@@ -126,15 +128,16 @@ Singleton {
             mkdir -p "$(dirname "$target")" && mv -f "$src" "$target" || exit 1
             [ "$3" = copy ] && wl-copy --type image/png < "$target"
             exit 0`, "sh", target.replace(/^~(?=\/|$)/, home), file, alsoCopy ? "copy" : ""];
+        // Remember the folder for next time, once the file is really there.
+        finisher.rememberAs = dir && dir !== suggestedDir ? folderKey : "";
+        finisher.rememberDir = dir;
         finisher.running = true;
-        // Remember the folder for next time.
-        if (dir && dir !== suggestedDir)
-            Config.set(`folders.${folderKey}`, dir);
         state = "idle";
     }
 
     function copy(): void {
         finisher.command = ["sh", "-c", 'wl-copy --type image/png < "$1"; rm -f "$1"', "sh", file];
+        finisher.rememberAs = "";
         finisher.running = true;
         state = "idle";
     }
@@ -229,7 +232,12 @@ Singleton {
     Process {
         id: finisher
 
+        property string rememberAs: ""   // folder key to update on success
+        property string rememberDir: ""
+
         onExited: code => {
+            if (code === 0 && rememberAs)
+                Config.set(`folders.${rememberAs}`, rememberDir);
             if (code !== 0)
                 Quickshell.execDetached(["notify-send", "-a", "qs", "Capture not saved", "Could not write the file; it's still in " + root.tmpDir]);
         }
@@ -255,6 +263,10 @@ Singleton {
                 root.discard();
             else if (root.state === "selecting" || root.state === "marking")
                 root.cancel();
+            else if (root.state === "starting") {
+                recordDelay.stop();
+                root.cancel();
+            }
         }
         function status(): string {
             return root.recording ? `recording ${root.kind} for ${root.elapsed}s` : root.state;

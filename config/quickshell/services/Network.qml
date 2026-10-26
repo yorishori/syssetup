@@ -137,11 +137,23 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = {};
+                const bad = [];
                 for (const line of text.split("\n")) {
                     const space = line.indexOf(" ");
-                    if (space > 0)
+                    if (space <= 0)
+                        continue;
+                    // A truncated read or another busctl/networkctl version's
+                    // output: skip the line rather than freeze the state.
+                    try {
                         lines[line.slice(0, space)] = JSON.parse(line.slice(space + 1));
+                    } catch (e) {
+                        bad.push(line.slice(0, space));
+                    }
                 }
+                if (bad.length)
+                    Health.report("network", `could not parse ${bad.join(", ")} from iwd/networkd`);
+                else
+                    Health.resolve("network");
 
                 root.iwdRunning = !!lines.objects;
                 if (lines.objects)
