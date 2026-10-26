@@ -7,12 +7,14 @@ import QtQuick
 // `contentOpacity` the content's and `popScale` the drawer's scale.
 // `overhang` is how far it draws past the sides (windows sized to the
 // drawer leave room for that) and `lift` how far it floats off the screen
-// edge (set it as the drawer's bottom margin).
+// edge (set it as the drawer's bottom margin). `name` says which one it is
+// (the OSD's is "osd"), for skins that dress them differently.
 Skinned {
     id: root
 
     property bool open: false
     property int padding: 14
+    property string name: ""
 
     default property alias content: body.data
 

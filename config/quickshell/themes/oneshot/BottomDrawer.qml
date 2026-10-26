@@ -3,14 +3,16 @@ import qs.components as C
 import qs.core
 
 // An RPG window rising off the bottom edge in four steps; its contents
-// show once it's up. A little music note hops beside it while it's out
-// (it's the volume's window); `overhang` makes room for it.
+// show once it's up. On the volume's (the OSD's) a little music note hops
+// beside it while it's out, `overhang` making room; the others (clipboard,
+// compose, …) twinkle on their corners like the panels.
 Item {
     id: root
 
     required property C.BottomDrawer control
 
-    readonly property real overhang: 9 * px
+    readonly property bool osd: control.name === "osd"
+    readonly property real overhang: osd ? 9 * px : 0
     readonly property real lift: 18
     readonly property int px: Theme.get("pixel.scale") ?? 3
     readonly property int steps: 4
@@ -41,7 +43,7 @@ Item {
         x: root.width + 2 * root.px
         y: (clock.frame % 4 < 2 ? 1 : 0) * root.px
         px: root.px
-        visible: root.step >= root.steps
+        visible: root.osd && root.step >= root.steps
         colors: ({ "n": Theme.palette.dim })
         rows: [
             "...nn.",
@@ -53,5 +55,21 @@ Item {
             "nnnn..",
             ".nn..."
         ]
+    }
+
+    Repeater {
+        model: root.osd ? [] : [[-1, -1, 0], [1, -1, 5]]
+
+        PixelArt {
+            required property var modelData
+
+            x: modelData[0] < 0 ? -root.px : root.width - 2 * root.px
+            y: -root.px
+            px: root.px
+            colors: ({ "s": Theme.palette.accent })
+            rows: [".s.", "sss", ".s."]
+            visible: root.step >= root.steps
+            opacity: (clock.frame + modelData[2]) % 18 < 3 ? 0.25 : 0.9
+        }
     }
 }
