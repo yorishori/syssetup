@@ -64,7 +64,16 @@ Skinned {
         clip: true
         Keys.onPressed: event => event.accepted = root.keyFilter?.(event.key, event.modifiers) ?? false
         onEditingFinished: root.editingFinished()
-        Keys.onReturnPressed: event => root.enter(event.modifiers)
-        Keys.onEnterPressed: event => root.enter(event.modifiers)
+        // Return/Enter get their own signals, which Keys emits before
+        // onPressed (and onPressed not at all once they take the key), so
+        // they ask keyFilter first themselves.
+        Keys.onReturnPressed: event => {
+            if (!root.keyFilter?.(event.key, event.modifiers))
+                root.enter(event.modifiers);
+        }
+        Keys.onEnterPressed: event => {
+            if (!root.keyFilter?.(event.key, event.modifiers))
+                root.enter(event.modifiers);
+        }
     }
 }
