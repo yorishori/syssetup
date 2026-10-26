@@ -8,7 +8,8 @@ import qs.services
 // Wallpaper: Config → wallpaper.path on every screen (a second monitor
 // gets it too, so it's never a black hole). Changing it crossfades. No image,
 // or one that can't be loaded, leaves a plain color: wallpaper.color, or the
-// console color when that's empty.
+// console color when that's empty. A theme with a Wallpaper skin of its own
+// paints its scene instead (Scene.qml), and the image isn't loaded.
 Scope {
     id: root
 
@@ -25,6 +26,7 @@ Scope {
     })[Config.wallpaper.fit] ?? Image.PreserveAspectCrop
 
     property string failed: ""  // the path that couldn't be loaded
+    readonly property bool scene: Theme.owns("Wallpaper")
 
     Variants {
         model: Display.screens
@@ -59,7 +61,7 @@ Scope {
             Image {
                 id: front
 
-                readonly property string target: root.path ? `file://${root.path}` : ""
+                readonly property string target: root.path && !root.scene ? `file://${root.path}` : ""
 
                 anchors.fill: parent
                 fillMode: root.fillMode
@@ -99,6 +101,15 @@ Scope {
                     duration: 400
                     easing.type: Easing.OutCubic
                     onFinished: back.source = ""
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.scene
+
+                sourceComponent: Scene {
+                    screen: win.modelData
                 }
             }
         }
