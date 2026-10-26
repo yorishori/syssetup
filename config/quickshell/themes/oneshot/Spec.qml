@@ -95,7 +95,7 @@ QtObject {
         // without.
         titles: {
             calendar: "Calendar",
-            network: "Wi-Fi",
+            network: "Network",
             bluetooth: "Bluetooth",
             audio: "Audio",
             notifications: "Notifications",
