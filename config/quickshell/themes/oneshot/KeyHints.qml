@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import qs.components as C
 import qs.core
 
-// Little keycaps with what they do: [↵] run  [esc] close
+// Square keycaps and what they do, in small capitals: [↵] RUN  [ESC] CLOSE
 RowLayout {
     id: root
 
@@ -21,8 +21,7 @@ RowLayout {
 
             Rectangle {
                 implicitWidth: Math.max(implicitHeight, key.implicitWidth + 10)
-                implicitHeight: key.implicitHeight + 2
-                radius: 6
+                implicitHeight: key.implicitHeight + 4
                 color: Theme.palette.surface
 
                 C.StyledText {
@@ -32,14 +31,14 @@ RowLayout {
                     text: modelData[0]
                     color: Theme.palette.fg
                     font.pixelSize: Theme.font.size - 3
-                    font.bold: true
                 }
             }
             C.StyledText {
                 text: modelData[1]
                 caps: true
-                color: Theme.palette.muted
-                font.pixelSize: Theme.font.size - 3
+                color: Theme.palette.dim
+                font.family: Theme.get("font.labels") ?? Theme.font.family
+                font.pixelSize: Theme.font.size - 4
             }
         }
     }

@@ -2,36 +2,50 @@ import QtQuick
 import qs.core
 import qs.modules.bar as B
 
-// A card floating just below the bar, on a soft shadow; it pops open with a
-// bounce. Flush drops keep a little off the screen edge.
+// An RPG window that unrolls below the bar in four steps, the way old menus
+// opened; its contents appear once it's fully open. Two sparkles twinkle on
+// its corners.
 Item {
     id: root
 
     required property B.Drop control
 
     readonly property real overhang: 0
-    readonly property real inset: 4
-    property real shownHeight: control.open ? control.openHeight : 0
-    property real contentOpacity: control.open ? 1 : 0
-    property real popScale: control.open ? 1 : 0.8
+    readonly property real inset: 6
+    readonly property int px: Theme.get("pixel.scale") ?? 3
+    readonly property int steps: 4
+    property int step: 0
 
-    Behavior on shownHeight {
-        NumberAnimation {
-            duration: root.control.open ? 420 : 160
-            easing.type: root.control.open ? Theme.motion.spring : Easing.InCubic
-            easing.overshoot: Theme.motion.bounce / 2
-        }
-    }
-    Behavior on contentOpacity {
-        NumberAnimation { duration: root.control.open ? 200 : 80 }
-    }
-    Behavior on popScale {
-        NumberAnimation { duration: 460; easing.type: Theme.motion.spring; easing.overshoot: Theme.motion.bounce }
+    readonly property real shownHeight: step >= steps ? control.openHeight
+        : Math.round(control.openHeight * step / steps / px) * px
+    readonly property real contentOpacity: step >= steps ? 1 : 0
+
+    Timer {
+        interval: 45
+        repeat: true
+        running: root.step !== (root.control.open ? root.steps : 0)
+        onTriggered: root.step += root.control.open ? 1 : -1
     }
 
-    Box {
+    Ticker { id: clock }
+
+    Frame {
         anchors.fill: parent
-        fill: Theme.palette.bg
-        raised: true
+    }
+
+    Repeater {
+        model: [[-1, -1, 0], [1, 1, 5]]
+
+        PixelArt {
+            required property var modelData
+
+            x: modelData[0] < 0 ? -root.px : root.width - 2 * root.px
+            y: modelData[1] < 0 ? -root.px : root.height - 2 * root.px
+            px: root.px
+            colors: ({ "s": Theme.palette.accent })
+            rows: [".s.", "sss", ".s."]
+            visible: root.step >= root.steps
+            opacity: (clock.frame + modelData[2]) % 12 < 2 ? 0.25 : 0.9
+        }
     }
 }

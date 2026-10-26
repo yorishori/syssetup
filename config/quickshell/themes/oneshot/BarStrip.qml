@@ -84,29 +84,8 @@ Item {
                 }
             }
 
-            // Dark outline, cream frame, plum face; corners cut a pixel.
-            Rectangle {
-                x: root.px
-                width: parent.width - 2 * root.px
-                height: parent.height
-                color: Theme.palette.shadow
-            }
-            Rectangle {
-                y: root.px
-                width: parent.width
-                height: parent.height - 2 * root.px
-                color: Theme.palette.shadow
-            }
-            Rectangle {
+            Frame {
                 anchors.fill: parent
-                anchors.margins: root.px
-                color: Theme.palette.border
-
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: root.px
-                    color: Theme.palette.bg
-                }
             }
 
             // The cat naps on the last sign, its tail dangling off the end.
