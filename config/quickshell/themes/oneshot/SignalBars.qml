@@ -2,7 +2,7 @@ import QtQuick
 import qs.components as C
 import qs.core
 
-// Four rising rounded bars.
+// Four rising pixel blocks, lit by strength.
 Row {
     id: root
 
@@ -17,8 +17,8 @@ Row {
             required property int index
 
             anchors.bottom: parent.bottom
-            width: 3
-            height: 4 + index * 3
+            width: 4
+            height: 4 + index * 4
             color: root.control.strength > index * 25 ? root.control.color : Theme.palette.surface
         }
     }

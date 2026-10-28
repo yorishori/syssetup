@@ -29,7 +29,7 @@ Item {
                 color: root.control.lit ? Theme.palette.accent : Theme.palette.surface
             }
         }
-        C.StyledText {
+        Glyph {
             id: label
 
             anchors.centerIn: parent

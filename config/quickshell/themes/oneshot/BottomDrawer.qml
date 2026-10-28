@@ -42,7 +42,11 @@ Item {
     }
 
     Frame {
+        id: frame
+
         anchors.fill: parent
+        kind: root.control.name
+        trim: root.contentOpacity
     }
 
     C.StyledText {
@@ -76,7 +80,7 @@ Item {
     }
 
     Repeater {
-        model: root.osd ? [] : [[-1, -1, 0], [1, -1, 5]]
+        model: frame.dressed ? [] : (root.osd ? [] : [[-1, -1, 0], [1, -1, 5]])
 
         PixelArt {
             required property var modelData

@@ -4,7 +4,7 @@ import qs.components as C
 import qs.core
 import qs.modules.notifications as M
 
-// Notification cards top-right, newest on top, as RPG windows. They slide
+// Notifications top-right as letters (Letter), newest on top. They slide
 // in from the side and out the same way, and pause their timeout while
 // hovered. When one arrives the cat peeks over the top of it for a few
 // seconds, then ducks back down (and back to the bar).
@@ -46,13 +46,20 @@ Item {
             values: root.control.popups
         }
 
-        delegate: C.NotificationCard {
+        delegate: Letter {
             id: card
 
             required property var modelData
 
-            notif: modelData
-            onDismissRequested: root.control.dismiss(modelData)
+            width: list.width
+            app: modelData?.appName ?? ""
+            summary: modelData?.summary ?? ""
+            body: root.control.plain(modelData)
+            when: "now"
+            critical: root.control.critical(modelData)
+            actions: (modelData?.actions ?? []).filter(a => a.identifier !== "default")
+            onOpened: root.control.invoke(modelData)
+            onDismissed: root.control.dismiss(modelData)
 
             Timer {
                 interval: root.control.timeout(card.modelData) * 1000

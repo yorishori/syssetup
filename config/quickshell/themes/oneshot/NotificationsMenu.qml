@@ -12,7 +12,7 @@ Item {
 
     required property M.NotificationsPanel control
 
-    implicitWidth: 380
+    implicitWidth: 400
     implicitHeight: column.implicitHeight
 
     ColumnLayout {
@@ -111,79 +111,24 @@ Item {
                 id: list
 
                 width: parent.width
-                height: Math.min(contentHeight, 440)
+                height: Math.min(contentHeight, 460)
                 clip: true
-                spacing: 4
+                spacing: 8
                 boundsBehavior: Flickable.StopAtBounds
                 model: root.control.history
 
-                delegate: C.Entry {
-                    id: entry
-
+                delegate: Letter {
                     required property var modelData
-                    readonly property bool critical: root.control.critical(modelData)
 
                     width: ListView.view.width
-                    implicitHeight: body.implicitHeight + 16
-                    tone: critical ? Theme.palette.error : "transparent"
-                    onClicked: root.control.invoke(entry.modelData)
-
-                    ColumnLayout {
-                        id: body
-
-                        anchors {
-                            left: parent.left
-                            right: parent.right
-                            top: parent.top
-                            margins: 8
-                            leftMargin: 10
-                        }
-                        spacing: 2
-
-                        RowLayout {
-                            Layout.fillWidth: true
-                            spacing: 8
-
-                            C.StyledText {
-                                text: (entry.modelData?.appName ?? "")
-                                caps: true
-                                color: entry.critical ? Theme.palette.error : Theme.palette.muted
-                                font.pixelSize: Theme.font.size - 3
-                                font.bold: true
-                                tracking: 1.5
-                            }
-                            Item {
-                                Layout.fillWidth: true
-                            }
-                            C.StyledText {
-                                text: root.control.ago(entry.modelData)
-                                caps: true
-                                color: Theme.palette.muted
-                                font.pixelSize: Theme.font.size - 3
-                                font.bold: true
-                            }
-                            C.IconButton {
-                                size: 20
-                                icon: "\u{F0156}"
-                                iconColor: Theme.palette.muted
-                                onClicked: root.control.dismiss(entry.modelData)
-                            }
-                        }
-                        C.StyledText {
-                            Layout.fillWidth: true
-                            text: entry.modelData?.summary ?? ""
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-                        C.StyledText {
-                            Layout.fillWidth: true
-                            text: (entry.modelData?.body ?? "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ")
-                            color: Theme.palette.dim
-                            font.pixelSize: Theme.font.size - 1
-                            elide: Text.ElideRight
-                            visible: text !== ""
-                        }
-                    }
+                    app: modelData?.appName ?? ""
+                    summary: modelData?.summary ?? ""
+                    body: root.control.plain(modelData)
+                    when: root.control.ago(modelData)
+                    critical: root.control.critical(modelData)
+                    maxLines: 1
+                    onOpened: root.control.invoke(modelData)
+                    onDismissed: root.control.dismiss(modelData)
                 }
             }
             C.ScrollLamp {

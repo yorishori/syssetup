@@ -132,13 +132,15 @@ Item {
 
                 Frame {
                     anchors.fill: parent
+                    kind: "lock"
                 }
 
                 // Twice the size it is on the bar: this is its place.
                 Cat {
                     px: 2 * root.px
                     x: 4 * root.px
-                    y: -7 * px
+                    // Asleep on the sill.
+                    y: -7 * px - 7 * root.px
                     pose: root.catAwake || root.control.authState === "failed" ? "loaf" : "sleep"
                 }
 

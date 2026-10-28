@@ -2,10 +2,13 @@ import QtQuick
 import qs.core
 import qs.modules.bar as B
 
-// No strip: the wallpaper's bough runs along the top, and each group of
-// keys is a sign hanging from it on two lengths of twine, cream-framed plum
-// like the panels. Widgets that hang themselves (the workspace tags) get no
-// sign. Everything sits on the art-pixel grid so it matches the wallpaper.
+// The cabin's beam runs along the top (we're inside, looking out at the
+// rain): a squared log with its grain and pegs where twine is tied. Each
+// group of keys is a sign hanging from it on two lengths of twine, framed
+// like the panels; widgets that hang themselves (the workspace tags, the
+// tray's charms) get no sign. Ropes sag from sign to sign, the cat's paths
+// along the bar: wooden, mossy. Drops gather on the beam's underside and fall now and
+// then. Everything sits on the art-pixel grid.
 Item {
     id: root
 
@@ -18,7 +21,25 @@ Item {
     // Signs: 11 art pixels tall, their middle where the widgets sit.
     readonly property int signHeight: 11 * px
     readonly property int signTop: snap(height / 2 + offset - signHeight / 2)
-    readonly property var hangsItself: ["Workspaces"]
+    readonly property var hangsItself: ["Workspaces", "Tray"]
+
+    readonly property var c: ({
+        wood: "#4a3428",
+        woodLight: "#5e4433",
+        woodDark: "#3a2820",
+        grain: "#33241c",
+        under: "#21160f",
+        peg: "#6b5038",
+        twine: "#a08c62",
+        rope: "#6e5034",
+        ropeLight: "#8a6844",
+        ropeDark: "#4a3428",
+        moss: "#4a6038",
+        mossLight: "#62784a",
+        mossDark: "#33442a",
+        knot: "#5f533c",
+        drip: "#8fa0dc"
+    })
 
     // The islands' entries in one list (they may arrive nested or not).
     function entries(): var {
@@ -36,9 +57,156 @@ Item {
         return Math.round(v / px) * px;
     }
 
-    // Every entry of every island is its own sign.
-    readonly property var signs: entries().filter(i => i && !hangsItself.includes(i.widget ?? ""))
+    // Where an entry's sign goes: around what's showing in it (a group's
+    // children, a slot counting while its widget is visible, but not the
+    // ones that hang themselves), or the entry itself.
+    function box(entry: var): var {
+        const parts = entry.widget !== undefined ? [entry]
+            : Array.from(entry.children ?? []).filter(c => c.visible && c.width > 0 && (c.item?.visible ?? true) && !hangsItself.includes(c.widget ?? ""));
+        if (!parts.length || !entry.visible || !(entry.item?.visible ?? true))
+            return null;
+        const start = Math.min(...parts.map(p => p === entry ? 0 : p.x));
+        const end = Math.max(...parts.map(p => p === entry ? p.width : p.x + p.width));
+        const pad = 3 * px;
+        return { x: snap(entry.x + start - pad), w: snap(end - start + 2 * pad) };
+    }
 
+    readonly property var signs: entries().filter(i => i && !hangsItself.includes(i.widget ?? "")).map(e => box(e)).filter(b => b && b.w > 0)
+    // Ropes from each sign to the next; they pass behind what hangs by
+    // itself, so the cat can get from one end of the bar to the other.
+    readonly property var ropes: {
+        const s = signs.slice().sort((a, b) => a.x - b.x);
+        const out = [];
+        for (let i = 0; i + 1 < s.length; i++) {
+            const from = s[i].x + s[i].w - 2 * px, to = s[i + 1].x + 2 * px;
+            if (to - from > 4 * px)
+                out.push({ from: from, to: to });
+        }
+        return out;
+    }
+
+    Ticker { id: clock }
+
+    // ── The beam ──────────────────────────────────────────────────────────
+    Canvas {
+        id: beam
+
+        width: root.width
+        height: root.bough + root.px
+        antialiasing: false
+        renderStrategy: Canvas.Immediate
+
+        onPaint: {
+            const ctx = getContext("2d");
+            const p = root.px, W = width, c = root.c;
+            const rnd = (i, s) => {
+                const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453;
+                return v - Math.floor(v);
+            };
+            ctx.clearRect(0, 0, W, height);
+            ctx.fillStyle = c.wood;
+            ctx.fillRect(0, 0, W, 5 * p);
+            ctx.fillStyle = c.woodLight;
+            ctx.fillRect(0, 0, W, p);
+            ctx.fillStyle = c.woodDark;
+            ctx.fillRect(0, 4 * p, W, p);
+            ctx.fillStyle = c.under;
+            ctx.fillRect(0, 5 * p, W, p);
+            // Grain: long thin streaks, a knot now and then.
+            ctx.fillStyle = c.grain;
+            for (let i = 0; i < W / (6 * p); i++) {
+                const x = Math.round(rnd(i, 1) * W / p) * p;
+                const y = (1 + Math.floor(rnd(i, 2) * 3)) * p;
+                ctx.fillRect(x, y, (6 + Math.floor(rnd(i, 3) * 18)) * p, p);
+            }
+            for (let i = 0; i < W / (90 * p); i++) {
+                const x = Math.round(rnd(i, 4) * W / p) * p;
+                ctx.fillRect(x, 2 * p, 3 * p, 2 * p);
+                ctx.fillStyle = c.woodDark;
+                ctx.fillRect(x + p, 2 * p, p, p);
+                ctx.fillStyle = c.grain;
+            }
+        }
+
+        Connections {
+            target: root
+
+            function onWidthChanged() { beam.requestPaint(); }
+        }
+    }
+
+    // Drops gathering under the beam and falling: 28 frames each.
+    Repeater {
+        model: Math.ceil(root.width / 300)
+
+        Rectangle {
+            required property int index
+            readonly property int t: (clock.frame + index * 9) % 28
+
+            x: root.snap((index * 0.167 + 0.06) * root.width + (index * 37 % 90))
+            y: t < 20 ? root.bough : root.bough + [1, 4, 9, 16, 25, 25, 25, 25][t - 20] * root.px
+            width: root.px
+            height: t < 17 ? root.px : 2 * root.px
+            color: root.c.drip
+            opacity: t < 4 ? 0 : t < 25 ? 0.9 : 0
+        }
+    }
+
+    // ── Ropes between signs ───────────────────────────────────────────────
+    Repeater {
+        model: root.ropes
+
+        Canvas {
+            id: rope
+
+            required property var modelData
+            readonly property real sag: Math.min(8 * root.px, (modelData.to - modelData.from) * 0.06)
+
+            x: modelData.from
+            y: root.signTop - root.px
+            width: modelData.to - modelData.from
+            height: sag + 9 * root.px
+            antialiasing: false
+            renderStrategy: Canvas.Immediate
+
+            onPaint: {
+                const ctx = getContext("2d"), p = root.px, c = root.c;
+                const rnd = (i, k) => {
+                    const v = Math.sin((i + modelData.from) * 12.9898 + k * 78.233) * 43758.5453;
+                    return v - Math.floor(v);
+                };
+                const put = (x, y, col) => {
+                    ctx.fillStyle = col;
+                    ctx.fillRect(x, y, p, p);
+                };
+                ctx.clearRect(0, 0, width, height);
+                for (let x = 0, i = 0; x < width; x += p, i++) {
+                    const t = x / width;
+                    const y = 2 * p + Math.round(4 * sag * t * (1 - t) / p) * p;
+                    // Two strands twisted: a light fleck every third pixel.
+                    put(x, y, i % 3 === 0 ? c.ropeLight : c.rope);
+                    put(x, y + p, i % 3 === 1 ? c.rope : c.ropeDark);
+                    // Moss along the top, in clumps, and a strand hanging
+                    // off it now and then.
+                    const m = rnd(Math.floor(i / 4), 1);
+                    if (m < 0.55 && rnd(i, 2) < 0.8) {
+                        put(x, y, rnd(i, 3) < 0.5 ? c.moss : c.mossDark);
+                        put(x, y - p, rnd(i, 4) < 0.4 ? c.mossLight : c.moss);
+                        if (rnd(i, 5) < 0.25)
+                            put(x, y - 2 * p, c.moss);
+                    }
+                    if (m < 0.55 && rnd(i, 6) < 0.12) {
+                        const n = 1 + Math.floor(rnd(i, 7) * 4);
+                        for (let k = 0; k < n; k++)
+                            put(x, y + (2 + k) * p, k === n - 1 ? c.mossLight : c.mossDark);
+                    }
+                }
+            }
+            onWidthChanged: requestPaint()
+        }
+    }
+
+    // ── Signs ─────────────────────────────────────────────────────────────
     Repeater {
         model: root.signs
 
@@ -46,40 +214,39 @@ Item {
             id: sign
 
             required property var modelData
-            required property int index
-            // What's showing in it: a group's children (a slot counts when
-            // its widget is visible), or the entry itself.
-            readonly property var parts: modelData.widget !== undefined ? [modelData]
-                : Array.from(modelData.children ?? []).filter(c => c.visible && c.width > 0 && (c.item?.visible ?? true))
-            readonly property real start: parts.length ? Math.min(...parts.map(p => p === modelData ? 0 : p.x)) : 0
-            readonly property real end: parts.length ? Math.max(...parts.map(p => p === modelData ? p.width : p.x + p.width)) : 0
-            readonly property bool shown: modelData.visible && (modelData.item?.visible ?? true) && end > start
-            readonly property int pad: 3 * root.px
 
-            x: root.snap(modelData.x + start - pad)
+            x: modelData.x
             y: root.signTop
-            width: root.snap(end - start + 2 * pad)
+            width: modelData.w
             height: root.signHeight
-            visible: shown
 
-            // Twine, from the bough's underside to the sign's top corners.
+            // Twine, from a peg on the beam to the sign's top corners.
             Repeater {
                 model: [2, sign.width / root.px - 3]
 
-                Rectangle {
+                Item {
                     required property real modelData
 
                     x: Math.round(modelData) * root.px
                     y: root.bough - sign.y
-                    width: root.px
-                    height: sign.y - root.bough
-                    color: "#a08c62"
 
                     Rectangle {
-                        y: parent.height - root.px
+                        x: -root.px
+                        y: -2 * root.px
+                        width: 3 * root.px
+                        height: 2 * root.px
+                        color: root.c.peg
+                    }
+                    Rectangle {
+                        width: root.px
+                        height: sign.y - root.bough
+                        color: root.c.twine
+                    }
+                    Rectangle {
+                        y: sign.y - root.bough - root.px
                         width: root.px
                         height: root.px
-                        color: "#5f533c"
+                        color: root.c.knot
                     }
                 }
             }
@@ -87,18 +254,19 @@ Item {
             Frame {
                 anchors.fill: parent
             }
-
-            // The cat naps on the last sign, its tail dangling off the end,
-            // unless it's off in an open panel (Spec cat.panels) or peeking
-            // over a notification.
-            Cat {
-                visible: sign.index === root.signs.length - 1 && !CatState.peeking
-                    && !(Theme.get("cat.panels") ?? []).includes(root.control.openDrop)
-                pose: "nap"
-                flip: true
-                x: -4 * root.px
-                y: -7 * root.px
-            }
         }
+    }
+
+    // ── The cat, out for a walk along the first rope ──────────────────────
+    PixelArt {
+        readonly property var rope: root.ropes[0] ?? null
+        readonly property real at: 0.4
+
+        visible: rope !== null
+        px: root.px
+        x: rope ? root.snap(rope.from + (rope.to - rope.from) * at) - width / 2 : 0
+        y: rope ? root.signTop + root.px + root.snap(4 * Math.min(8 * root.px, (rope.to - rope.from) * 0.06) * at * (1 - at)) - height + root.px : 0
+        rows: Sprites.cat["walk" + (1 + clock.frame % 4)]
+        colors: ({ "O": "#4f4570", "B": "#17141f", "L": "#1f1b29", "P": "#3a2a40", "E": "#ff9a2e" })
     }
 }

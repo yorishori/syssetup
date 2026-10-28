@@ -4,13 +4,15 @@ import qs.core
 import qs.modules.bar as B
 
 // An RPG window that unrolls below the bar, easing open; its contents fade
-// in as it finishes. Two sparkles twinkle on its corners.
+// in as it finishes. Its frame is dressed for what it holds (see Frame);
+// plain ones get two sparkles twinkling on their corners.
 Item {
     id: root
 
     required property B.Drop control
 
-    readonly property real overhang: 0
+    // Room for what the frame fixes to its sides (a spine, whiskers, a mantel).
+    readonly property real overhang: 10 * px
     readonly property real inset: 6
     readonly property int px: Theme.get("pixel.scale") ?? 3
     // 0 shut to 1 open, eased (the frame moves smoothly; only the art's
@@ -36,7 +38,11 @@ Item {
     Ticker { id: clock }
 
     Frame {
+        id: frame
+
         anchors.fill: parent
+        kind: root.control.name
+        trim: root.contentOpacity
     }
 
     StyledText {
@@ -51,7 +57,7 @@ Item {
     }
 
     Repeater {
-        model: [[-1, -1, 0], [1, 1, 5]]
+        model: frame.dressed ? [] : [[-1, -1, 0], [1, 1, 5]]
 
         PixelArt {
             required property var modelData

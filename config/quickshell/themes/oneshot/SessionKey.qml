@@ -4,7 +4,7 @@ import qs.components as C
 import qs.core
 import qs.modules.session as M
 
-// A big soft key: the glyph in a round bubble, the label, the number in a
+// A big key: the pixel icon in a square, the label, the number in a
 // pill. Current is tinted and outlined in the accent, armed in peach with
 // the fuse shrinking along the bottom.
 Item {
@@ -44,11 +44,11 @@ Item {
             implicitHeight: 50
             color: root.on ? root.tone : Theme.palette.surface
 
-            C.StyledText {
+            Glyph {
                 anchors.centerIn: parent
+                px: 3
                 text: root.control.glyph
                 color: root.on ? Theme.palette.shadow : Theme.palette.dim
-                font.pixelSize: 26
             }
         }
         C.StyledText {

@@ -15,14 +15,13 @@ Item {
         anchors.fill: parent
         color: root.control.fill
     }
-    C.StyledText {
+    Glyph {
         id: label
 
         anchors.centerIn: parent
         text: root.control.text
-        caps: true
         color: root.control.textColor
-        font.family: Theme.get("font.labels") ?? Theme.font.family
-        font.pixelSize: root.control.size
+        pixelSize: root.control.size
+        px: 2
     }
 }

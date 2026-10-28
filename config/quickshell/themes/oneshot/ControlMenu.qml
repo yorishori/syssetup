@@ -4,11 +4,11 @@ import qs.components as C
 import qs.core
 import qs.modules.control as M
 
-// An RPG status screen (the frame draws its title): system
-// (hostname, uptime; CPU, GPU, RAM as block meters; board, kernel), updates
-// per repository, storage, USB devices and your tools, in one scrolling
-// column. The cat comes and sits in the corner by the tools while it's
-// open (it leaves the bar for it; Spec cat.panels).
+// A character status screen (the frame draws its title): the cat's
+// portrait beside the machine's name, how long it's been up and its kernel
+// (the cat leaves the bar for it; Spec cat.panels); then the system (CPU,
+// GPU, RAM as block meters; board, kernel), updates per repository,
+// storage, USB devices and your tools, in one scrolling column.
 Item {
     id: root
 
@@ -94,6 +94,63 @@ Item {
             width: flick.width - 6
             spacing: 8
 
+            // ── The character: the cat's portrait, the machine's name ───────
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.bottomMargin: 4
+                spacing: 14
+
+                Item {
+                    implicitWidth: 72
+                    implicitHeight: 66
+
+                    Frame {
+                        anchors.fill: parent
+                        face: Theme.palette.bgAlt
+                    }
+                    Item {
+                        x: 6
+                        y: 6
+                        width: 60
+                        height: 54
+                        clip: true
+
+                        Cat {
+                            x: (parent.width - width) / 2 + 2
+                            y: 4
+                            px: 4
+                            pose: "sit"
+                        }
+                    }
+                }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 3
+
+                    C.StyledText {
+                        Layout.fillWidth: true
+                        text: root.control.session.hostname
+                        color: Theme.palette.accent
+                        font.pixelSize: Theme.font.size + 6
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                    C.StyledText {
+                        text: `up ${root.control.session.uptimeText}`
+                        caps: true
+                        color: Theme.palette.dim
+                        font.family: Theme.get("font.labels") ?? Theme.font.family
+                        font.pixelSize: Theme.font.size - 3
+                    }
+                    C.StyledText {
+                        Layout.fillWidth: true
+                        text: root.control.system.kernel
+                        color: Theme.palette.muted
+                        font.pixelSize: Theme.font.size - 2
+                        elide: Text.ElideRight
+                    }
+                }
+            }
 
             // ── System ───────────────────────────────────────────────────────
             RowLayout {
@@ -102,7 +159,6 @@ Item {
 
                 C.SectionTitle {
                     text: "System"
-                    code: `${root.control.session.hostname} · up ${root.control.session.uptimeText}`
                 }
                 C.IconButton {
                     size: 24
@@ -478,11 +534,6 @@ Item {
                             onClicked: root.control.run(modelData.command)
                         }
                     }
-                }
-                Cat {
-                    Layout.alignment: Qt.AlignBottom
-                    pose: "sit"
-                    visible: (Theme.get("cat.panels") ?? []).includes("control")
                 }
             }
         }

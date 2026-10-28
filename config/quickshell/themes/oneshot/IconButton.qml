@@ -14,12 +14,13 @@ Item {
         anchors.fill: parent
         color: root.control.lit ? Theme.palette.accent : root.control.hovered ? Theme.palette.surface : "transparent"
     }
-    C.StyledText {
+    Glyph {
         anchors.centerIn: parent
         anchors.verticalCenterOffset: root.control.pressed ? root.px : 0
         text: root.control.icon
         color: root.control.lit ? Theme.palette.shadow : root.control.hovered ? Theme.palette.accent : root.control.iconColor
         rotation: root.control.iconRotation
-        font.pixelSize: Math.round(root.control.size * 0.55)
+        px: root.control.size >= 26 ? 3 : 2
+        pixelSize: Math.round(root.control.size * 0.55)
     }
 }
