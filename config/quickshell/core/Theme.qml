@@ -1,5 +1,6 @@
 pragma Singleton
 
+import QtQml
 import QtQuick
 import Quickshell
 import "merge.js" as Merge
@@ -8,7 +9,8 @@ import "merge.js" as Merge
 //
 // A theme is a folder, themes/<name>/:
 //   Spec.qml     its tokens (palette, font, glow, motion, swatches and anything
-//                of its own)
+//                of its own), and `fonts`: font files in its folder, loaded
+//                while it's active (nothing is installed)
 //   <Skin>.qml   one skin per themed widget, drawing it from its `control`
 //                (see components/Skinned.qml)
 // A skin the theme has no file for comes from themes/glyphs (the shared
@@ -23,7 +25,7 @@ Singleton {
     id: root
 
     // Known themes, in the order Settings offers them.
-    readonly property var names: ["cyber", "bubble", "hifi"]
+    readonly property var names: ["cyber", "bubble", "hifi", "oneshot"]
     readonly property string name: names.includes(Config.theme) ? Config.theme : names[0]
 
     readonly property var specs: {
@@ -90,6 +92,29 @@ Singleton {
         }
         skinUrls[key] = url;
         return url;
+    }
+
+    // Whether the theme draws this skin itself (a working file of its own),
+    // for the few places that do something else when it doesn't: the
+    // wallpaper shows your image unless the theme paints a scene.
+    function owns(skin: string): bool {
+        return !String(skinUrl(skin)).endsWith(`/themes/${shared}/${skin}.qml`);
+    }
+
+    // The theme's own font files (its Spec's `fonts`, paths in its folder).
+    // Families stay registered after a switch; that's harmless.
+    Instantiator {
+        model: root.spec?.fonts ?? []
+
+        delegate: FontLoader {
+            required property string modelData
+
+            source: Qt.resolvedUrl(`../themes/${root.name}/${modelData}`)
+            onStatusChanged: {
+                if (status === FontLoader.Error)
+                    Health.report("theme", `${root.name}: can't load the font ${modelData}`);
+            }
+        }
     }
 
     onNameChanged: Health.resolve("theme")

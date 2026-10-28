@@ -66,6 +66,7 @@ PanelWindow {
             horizontalCenter: parent.horizontalCenter
         }
         width: 380
+        name: "osd"
         open: win.shown
 
         RowLayout {

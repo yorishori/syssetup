@@ -151,6 +151,8 @@ PanelWindow {
             right: parent.right
         }
         height: Theme.barHeight
+        openDrop: bar.openDrop
+        openDropItem: bar.activeDrop
         // The groups of keys, for themes that draw them apart.
         islands: [[leftGroup], [launcher, workspaces, centerRow], [rightGroup]]
 
@@ -161,6 +163,7 @@ PanelWindow {
             anchors {
                 left: parent.left
                 verticalCenter: parent.verticalCenter
+                verticalCenterOffset: background.offset
                 leftMargin: Setup.bar.padding
             }
             spacing: Setup.bar.spacing
@@ -179,6 +182,7 @@ PanelWindow {
                 right: workspaces.left
                 rightMargin: Setup.bar.spacing
                 verticalCenter: parent.verticalCenter
+                verticalCenterOffset: background.offset
             }
         }
         BarSlot {
@@ -186,6 +190,7 @@ PanelWindow {
 
             widget: "Workspaces"
             anchors.centerIn: parent
+            anchors.verticalCenterOffset: background.offset
         }
         Row {
             id: centerRow
@@ -194,6 +199,7 @@ PanelWindow {
                 left: workspaces.right
                 leftMargin: Setup.bar.spacing
                 verticalCenter: parent.verticalCenter
+                verticalCenterOffset: background.offset
             }
             spacing: 8
 
@@ -209,6 +215,7 @@ PanelWindow {
             anchors {
                 right: parent.right
                 verticalCenter: parent.verticalCenter
+                verticalCenterOffset: background.offset
                 rightMargin: Setup.bar.padding
             }
             spacing: Setup.bar.spacing

@@ -11,7 +11,9 @@ Item {
 
     required property M.SavePrompt control
 
-    readonly property Item inputArea: drawer
+    // What takes clicks: the drawer's place, unscaled. A skin may grow the
+    // drawer in by its scale, which the window's input region doesn't follow.
+    readonly property Item inputArea: hit
     readonly property bool showing: drawer.height > 0
 
     implicitWidth: drawer.width + 2 * drawer.overhang
@@ -27,8 +29,16 @@ Item {
         }
     }
 
+    Item {
+        id: hit
+
+        anchors.fill: drawer
+    }
+
     BottomDrawer {
         id: drawer
+
+        name: "capture"
 
         anchors {
             bottom: parent.bottom

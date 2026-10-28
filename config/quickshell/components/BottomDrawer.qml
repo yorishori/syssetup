@@ -4,15 +4,19 @@ import QtQuick
 // the screen edge; it opens upward when `open`. Content goes in as children.
 //
 // The skin animates it: its `shownHeight` is the drawer's height,
-// `contentOpacity` the content's and `popScale` the drawer's scale.
+// `contentOpacity` the content's, `contentShift` moves the content down
+// (room for a title the skin draws) and `popScale` the drawer's scale.
 // `overhang` is how far it draws past the sides (windows sized to the
 // drawer leave room for that) and `lift` how far it floats off the screen
-// edge (set it as the drawer's bottom margin).
+// edge (set it as the drawer's bottom margin). `name` says which one it is
+// (the OSD's is "osd"; "clipboard", "compose",
+// "capture"), for skins that dress them differently.
 Skinned {
     id: root
 
     property bool open: false
     property int padding: 14
+    property string name: ""
 
     default property alias content: body.data
 
@@ -36,7 +40,7 @@ Skinned {
             id: body
 
             x: root.padding
-            y: root.padding
+            y: root.padding + (root.view?.contentShift ?? 0)
             width: root.width - 2 * root.padding
             opacity: root.view?.contentOpacity ?? 1
         }

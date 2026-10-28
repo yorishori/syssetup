@@ -33,6 +33,7 @@ import qs.themes.glyphs as SharedSkins
 import qs.themes.cyber as CyberTheme
 import qs.themes.bubble as BubbleTheme
 import qs.themes.hifi as HifiTheme
+import qs.themes.oneshot as OneshotTheme
 
 // Entry point. Only lists modules; each one is loaded in isolation.
 ShellRoot {

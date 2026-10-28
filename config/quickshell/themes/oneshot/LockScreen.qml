@@ -1,0 +1,251 @@
+import QtQuick
+import QtQuick.Layouts
+import qs.components
+import qs.core
+import qs.modules.lock as M
+
+// The forest, a little dimmer, with the clock in lantern amber; on the
+// primary screen an RPG window with the password prompt (nothing in it
+// tells how long the password is) and the power keys, the cat asleep on
+// its sill. It wakes when you start typing and stays up while a password
+// fails, then dozes off again. Locking and unlocking fade the scene in and
+// out; a wrong password shakes the window.
+Item {
+    id: root
+
+    required property M.LockView control
+
+    readonly property int px: Theme.get("pixel.scale") ?? 3
+    // The fade, 0 (the desktop) to 1 (locked): up while closing, down
+    // while opening, simply there once locked.
+    property real shown: control.phase === "closing" ? 0 : 1
+
+    // The cat's awake while you type, and a while after.
+    property bool catAwake: false
+
+    Connections {
+        target: root.control
+
+        function onFailed(): void {
+            shake.restart();
+            field.text = "";
+            root.wake();
+        }
+        function onReset(): void {
+            field.text = "";
+        }
+        function onRefocusRequested(): void {
+            field.focusInput();
+        }
+    }
+
+    function wake(): void {
+        catAwake = true;
+        doze.restart();
+    }
+
+    Component.onCompleted: shown = control.phase === "opening" ? 0 : 1
+
+    Connections {
+        target: root.control
+
+        function onPhaseChanged(): void {
+            root.shown = root.control.phase === "opening" ? 0 : 1;
+        }
+    }
+
+    Behavior on shown {
+        NumberAnimation {
+            duration: Math.max(1, (root.control.phase === "opening" ? Theme.values.layout?.lockOpen : Theme.values.layout?.lockClose) ?? 400)
+            easing.type: Easing.InOutQuad
+        }
+    }
+
+    Timer {
+        id: doze
+
+        interval: 10000
+        onTriggered: root.catAwake = false
+    }
+
+    Item {
+        anchors.fill: parent
+        opacity: root.shown
+
+        Forest {
+            anchors.fill: parent
+        }
+        Rectangle {
+            anchors.fill: parent
+            color: Theme.palette.shadow
+            opacity: 0.3
+        }
+
+        // Clicking anywhere puts the focus back in the input.
+        MouseArea {
+            anchors.fill: parent
+            onClicked: root.control.refocus()
+        }
+
+        ColumnLayout {
+            id: panel
+
+            // Shakes on a wrong password.
+            property real nudge: 0
+
+            anchors.centerIn: parent
+            anchors.horizontalCenterOffset: nudge
+            spacing: 18
+
+            SequentialAnimation {
+                id: shake
+
+                NumberAnimation { target: panel; property: "nudge"; to: -12; duration: 50 }
+                NumberAnimation { target: panel; property: "nudge"; to: 10; duration: 70 }
+                NumberAnimation { target: panel; property: "nudge"; to: -6; duration: 60 }
+                NumberAnimation { target: panel; property: "nudge"; to: 0; duration: 90; easing.type: Easing.OutCubic }
+            }
+
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: Qt.formatDateTime(root.control.now, "HH:mm")
+                color: Theme.palette.accent
+                font.pixelSize: 96
+                font.weight: Font.DemiBold
+            }
+            StyledText {
+                Layout.alignment: Qt.AlignHCenter
+                text: Qt.formatDate(root.control.now, "dddd d MMMM")
+                caps: true
+                color: Theme.palette.fg
+                font.family: Theme.get("font.labels") ?? Theme.font.family
+                font.pixelSize: Theme.font.size
+            }
+
+            // The window (primary screen only), the cat on top of it.
+            Item {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 72
+                implicitWidth: 420
+                implicitHeight: box.implicitHeight + 40
+                visible: root.control.primary
+
+                Frame {
+                    anchors.fill: parent
+                    kind: "lock"
+                }
+
+                // Twice the size it is on the bar: this is its place.
+                Cat {
+                    px: 2 * root.px
+                    x: 4 * root.px
+                    // Asleep on the sill.
+                    y: -7 * px - 7 * root.px
+                    pose: root.catAwake || root.control.authState === "failed" ? "loaf" : "sleep"
+                }
+
+                ColumnLayout {
+                    id: box
+
+                    anchors {
+                        left: parent.left
+                        right: parent.right
+                        top: parent.top
+                        margins: 20
+                    }
+                    spacing: 12
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+
+                        StyledText {
+                            text: "Locked"
+                            color: Theme.palette.accent
+                            font.pixelSize: Theme.font.size + 6
+                            font.weight: Font.DemiBold
+                        }
+                        Item {
+                            Layout.fillWidth: true
+                        }
+                        StyledText {
+                            text: `${root.control.user} @ ${root.control.hostname}`
+                            caps: true
+                            color: Theme.palette.dim
+                            font.family: Theme.get("font.labels") ?? Theme.font.family
+                            font.pixelSize: Theme.font.size - 3
+                        }
+                    }
+                    TextField {
+                        id: field
+
+                        Layout.fillWidth: true
+                        prompt: "password"
+                        placeholder: ""
+                        echoMode: TextInput.Password
+                        onAccepted: root.control.unlock(text)
+                        onTextChanged: {
+                            if (text !== "")
+                                root.wake();
+                            // Passcode mode: check as soon as enough is typed.
+                            if (root.control.passcode > 0 && text.length === root.control.passcode)
+                                root.control.unlock(text);
+                        }
+                        // Never let the focus wander off.
+                        onInputFocusedChanged: {
+                            if (!inputFocused)
+                                Qt.callLater(root.control.refocus);
+                        }
+
+                        Component.onCompleted: root.control.refocus()
+                    }
+                    StyledText {
+                        text: root.control.authState === "checking" ? "checking…"
+                            : root.control.authState === "failed" ? `wrong password · ${root.control.failures}` : ""
+                        caps: true
+                        color: root.control.authState === "failed" ? Theme.palette.warn : Theme.palette.dim
+                        font.family: Theme.get("font.labels") ?? Theme.font.family
+                        font.pixelSize: Theme.font.size - 3
+                        visible: text !== ""
+                    }
+                    StyledText {
+                        Layout.fillWidth: true
+                        text: root.control.authMessage
+                        color: Theme.palette.muted
+                        font.pixelSize: Theme.font.size - 2
+                        wrapMode: Text.Wrap
+                        visible: text !== ""
+                    }
+
+                    // Power keys
+                    Divider {
+                        Layout.fillWidth: true
+                        Layout.topMargin: 4
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 8
+
+                        TextButton {
+                            text: root.control.armed === "reboot" ? "confirm?" : "\u{F0709}  reboot"
+                            lit: root.control.armed === "reboot"
+                            onClicked: root.control.power("reboot")
+                        }
+                        TextButton {
+                            text: "\u{F0904}  sleep"
+                            onClicked: root.control.power("sleep")
+                        }
+                        Item {
+                            Layout.fillWidth: true
+                        }
+                        TextButton {
+                            text: root.control.armed === "poweroff" ? "confirm?" : "\u{F0425}  power off"
+                            lit: root.control.armed === "poweroff"
+                            onClicked: root.control.power("poweroff")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

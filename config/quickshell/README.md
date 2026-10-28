@@ -88,6 +88,12 @@ Skinned {                               Rectangle {
   `font` (family, size, caps, tracking), `glow`, `motion`, `swatches`, and anything
   of the theme's own. `Setup.themes.<name>` overrides only what differs. Read them
   through `Theme` (`Theme.palette.accent`, `Theme.get("glow.opacity")`).
+- **Fonts**: a Spec's `fonts` lists font files in the theme's folder (with their
+  licenses beside them); they're loaded while the theme is active, nothing is
+  installed.
+- **Wallpaper**: a theme with a `Wallpaper` skin of its own paints the
+  wallpaper itself (`modules/wallpaper/Scene.qml`, one per screen) and your
+  image isn't loaded; the others show your image (`Theme.owns(skin)`).
 - **Layout hints** a Spec may set under `layout`: `sessionScreen` (the session menu
   full screen instead of a drop), `lockClose` / `lockOpen` (ms, ≤ 1000: a lock
   transition, below), and the theme's own (`drawers`, `hangers`, `behindBar`).

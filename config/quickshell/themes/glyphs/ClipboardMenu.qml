@@ -40,6 +40,8 @@ Item {
     BottomDrawer {
         id: drawer
 
+        name: "clipboard"
+
         anchors {
             bottom: parent.bottom
             bottomMargin: drawer.lift
