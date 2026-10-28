@@ -14,7 +14,9 @@ PanelWindow {
     screen: Display.primary
     anchors.bottom: true
     implicitWidth: prompt.implicitWidth
-    implicitHeight: 420
+    // Room for the tallest prompt a skin draws (a title, a frame that
+    // reaches past it); it only takes input where the prompt is.
+    implicitHeight: 520
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
     visible: asking || (prompt.view?.showing ?? false)

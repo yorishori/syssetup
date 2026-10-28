@@ -17,7 +17,7 @@ import qs.core
 // Drawn in art pixels (the screen divided by pixel.scale) and blown up
 // without smoothing, so every pixel stays square. What never moves is
 // painted once on canvases; the loops are live pixels on Tickers (the
-// scene's slow ones, the rain's at 30 a second), and the rain is two
+// scene's slow ones, the rain's at 24 a second), and the rain is two
 // painted sheets that slide. Places are fractions of the screen, so any
 // size works; the "random" bits are fixed per index.
 Item {
@@ -213,9 +213,11 @@ Item {
         return rows;
     }
 
-    // The scene's idle loops step slowly; the rain falls at 30 a second.
+    // The scene's idle loops step slowly; the rain falls at 24 frames a
+    // second, film's rate: smooth enough for streaks, and a fifth fewer
+    // redraws than 30.
     Ticker { id: slow }
-    Ticker { id: rainClock; fps: 30 }
+    Ticker { id: rainClock; fps: 24 }
 
     Rectangle {
         anchors.fill: parent
@@ -753,7 +755,7 @@ Item {
 
     // ── The rain: two sheets of streaks sliding down ─────────────────────
     // Each depth is one strip of streaks, painted once and repeated down the
-    // screen; falling only moves the sheet (a whole art pixel at a time, 30
+    // screen; falling only moves the sheet (a whole art pixel at a time, 24
     // times a second), so nothing is redrawn while it rains.
     Item {
         width: root.aw
@@ -766,8 +768,8 @@ Item {
             // [strip height, speed, streaks per strip, length, extra length,
             //  colour, opacity, salt]: far, then near.
             model: [
-                [97, 4, Math.ceil(root.aw / 3.2), 3, 3, root.c.rainFar, 0.35, 21],
-                [131, 7, Math.ceil(root.aw / 5), 7, 5, root.c.rainNear, 0.5, 41]
+                [97, 5, Math.ceil(root.aw / 3.2), 3, 3, root.c.rainFar, 0.35, 21],
+                [131, 9, Math.ceil(root.aw / 5), 7, 5, root.c.rainNear, 0.5, 41]
             ]
 
             Item {
