@@ -3,12 +3,14 @@ import qs.core
 
 // The forest on a rainy night, in pixel art (the wallpaper, and behind the
 // lock screen), as seen from inside a cabin (the beam across the top is
-// the bar's). Back to front: banded sky, the moon in a dithered halo
-// behind cloud, the far treeline; a band of mist; the clearing with
-// puddles, stepping stones and a stone lantern, its light a dithered glow
-// with a pool on the ground; mist again, lower; the big pines framing the
-// edges, ferns and bushes in front, wet with highlights. Live on top:
-// stars, the flame, glowing mushrooms, fireflies. The rain is its own
+// the bar's). Back to front: a sky heavy with rain clouds, the moon barely
+// peeking through a gap in them, its light bleeding through round it; two
+// dark mountain ranges, their ridges catching a little of it; three rows
+// of pines, each nearer one darker, mist between them; the clearing,
+// grassy, with puddles, stepping stones and a stone lantern, its light a
+// dithered glow with a pool on the ground; mist again, lower; the big
+// pines framing the edges, ferns and bushes in front, wet with highlights.
+// Live on top: the flame, glowing mushrooms, fireflies. The rain is its own
 // layer: streaks in two depths, splashes on the ground and on the
 // lantern's roof, rings spreading in the puddles.
 //
@@ -40,15 +42,23 @@ Item {
         moon: "#e8dcc0",
         moonShade: "#cbbf9f",
         halo: "#e8dcc0",
-        cloud: "#262848",
-        cloud2: "#22243f",
-        star: "#ece3d2",
-        starAlt: "#b5a8e0",
-        far: "#1d1b34",
-        farAlt: "#1a182f",
-        farRim: "#22203f",
-        farDark: "#171529",
-        farTrunk: "#141224",
+        cloud: "#24253f",
+        cloud2: "#1f2038",
+        cloudDark: "#1a1b31",
+        cloudLit: "#3a3a5c",
+        ridge: "#161629",
+        ridgeLit: "#262644",
+        ridgeNear: "#131225",
+        ridgeNearLit: "#1f1e3a",
+        far3: "#171629",
+        far3Rim: "#1c1b33",
+        far2: "#151427",
+        far2Rim: "#1a1930",
+        far: "#131224",
+        farAlt: "#121122",
+        farRim: "#19182f",
+        farDark: "#0f0e1d",
+        farTrunk: "#100f1e",
         near: "#0f0d18",
         nearAlt: "#110f1c",
         nearRim: "#18152a",
@@ -244,17 +254,34 @@ Item {
                 ctx.fillStyle = c.sky3;
                 root.dither(ctx, 0, Math.round(H * 0.511) - 2, W, 2, 0.5, null);
 
-                // The moon in its halo: two dithered rings, then the disc,
-                // shaded where it turns away, then cloud across it.
+                // A cloud bank: puffs along a line, flat underneath, its top
+                // edge lit where the moon's near.
+                const moonX = Math.round(W * 0.667) + 15, moonY = Math.round(H * 0.13) + 15;
+                const bank = (x0, y0, w, h, fill, seed) => {
+                    const puffs = Math.max(3, Math.round(w / (h * 0.9)));
+                    const shapes = [];
+                    for (let i = 0; i < puffs; i++) {
+                        const t = (i + 0.5) / puffs;
+                        const r = h * (0.45 + root.rnd(seed * 7 + i, 60) * 0.55) * (1 - Math.abs(t - 0.5) * 0.8);
+                        shapes.push([x0 + t * w, y0 + h - r * 0.8, r]);
+                    }
+                    const inside = (x, y, dx, dy) => y <= y0 + h && shapes.some(([sx, sy, r]) => Math.hypot(x - sx - dx, (y - sy - dy) * 1.5) < r);
+                    for (let y = Math.floor(y0 - h); y <= y0 + h; y++) {
+                        for (let x = Math.floor(x0 - h); x < x0 + w + h; x++) {
+                            if (!inside(x, y, 0, 0))
+                                continue;
+                            const near = Math.hypot(x - moonX, y - moonY);
+                            // Lit along its upper edge, near the moon only.
+                            const edge = !inside(x, y - 1, 0, 0) || !inside(x, y - 2, 0, 0);
+                            ctx.fillStyle = edge && near < 70 ? c.cloudLit : edge && near < 120 ? c.cloud : fill;
+                            ctx.fillRect(x, y, 1, 1);
+                        }
+                    }
+                };
+
+                // The moon, mostly hidden: the cloud goes over it, but for a
+                // gap its top right peeks through.
                 const r = 15, mx = Math.round(W * 0.667), my = Math.round(H * 0.13);
-                const cx = mx + r, cy = my + r;
-                ctx.fillStyle = Qt.rgba(0.91, 0.86, 0.75, 0.16);
-                root.dither(ctx, cx - 30, cy - 30, 60, 60, 0.5, (x, y) => Math.hypot(x - cx, y - cy) < r + 7);
-                ctx.fillStyle = Qt.rgba(0.91, 0.86, 0.75, 0.1);
-                root.dither(ctx, cx - 30, cy - 30, 60, 60, 0.25, (x, y) => {
-                    const d = Math.hypot(x - cx, y - cy);
-                    return d >= r + 7 && d < r + 14;
-                });
                 for (let y = 0; y < 2 * r; y++) {
                     const d = y - r + 0.5;
                     const half = Math.round(Math.sqrt(Math.max(0, r * r - d * d)));
@@ -269,38 +296,95 @@ Item {
                             ctx.fillRect(mx + la, my + y, lb - la, 1);
                     }
                 }
-                ctx.fillStyle = c.cloud;
-                ctx.fillRect(mx - 20, my + 17, 67, 4);
-                ctx.fillRect(mx - 14, my + 16, 30, 1);
-                ctx.fillStyle = c.cloud2;
-                ctx.fillRect(mx - 7, my + 22, 47, 3);
-                ctx.fillRect(mx + 30, my + 8, 28, 2);
 
-                // The far treeline on the horizon.
-                const n = Math.ceil(W / 30) + 2;
-                for (let i = 0; i < n; i++) {
-                    const w = 30 + Math.round(root.rnd(i, 3) * 20);
-                    const h = 67 + Math.round(root.rnd(i, 4) * 40);
-                    const x = -10 + i * 30 + Math.round(root.rnd(i, 5) * 8);
-                    const bottom = root.horizon - Math.round(root.rnd(i, 6) * 10);
-                    root.pine(ctx, x, bottom, w, h, i % 2 ? c.far : c.farAlt, c.farRim, c.farDark, c.farTrunk);
+                // The overcast: banks across the whole sky, darker and
+                // heavier lower down; one across the moon's lower part and
+                // one over its top left, leaving it a gap.
+                const rows = Math.ceil(H * 0.5 / 14);
+                for (let k = 0; k < rows; k++) {
+                    const y = 4 + k * 14 + Math.round(root.rnd(k, 61) * 6);
+                    const fill = k < rows * 0.35 ? c.cloud2 : c.cloudDark;
+                    for (let x = -40 + Math.round(root.rnd(k, 62) * 60); x < W; x += 90 + Math.round(root.rnd(k * 3 + x, 63) * 70)) {
+                        // Keep the gap the moon peeks through clear.
+                        if (Math.abs(x + 60 - moonX) < 70 && Math.abs(y + 8 - moonY) < 22)
+                            continue;
+                        bank(x, y, 110 + Math.round(root.rnd(k * 5 + x, 64) * 90), 9 + Math.round(root.rnd(k * 7 + x, 65) * 6), fill, k * 31 + x);
+                    }
                 }
-            }
-        }
+                // Over the moon itself: everything but a sliver at its top
+                // right, the cloud's edge lit where it crosses.
+                for (let y = moonY - r - 1; y <= moonY + r + 1; y++) {
+                    for (let x = moonX - r - 1; x <= moonX + r + 1; x++) {
+                        const dx = x - moonX, dy = y - moonY;
+                        if (Math.hypot(dx, dy) > r + 1)
+                            continue;
+                        const peek = dx - dy * 1.3 - 9 - Math.round(Math.sin(dy / 2) * 1.5);
+                        if (peek > 0)
+                            continue;
+                        ctx.fillStyle = peek > -2 ? c.cloudLit : c.cloud2;
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+                bank(mx - 50, my + 18, 110, 12, c.cloud2, 701);
+                bank(mx + 22, my + 24, 70, 10, c.cloudDark, 703);
 
-        // Stars.
-        Repeater {
-            model: 14
+                // Its light bleeding through the cloud round it.
+                ctx.fillStyle = Qt.rgba(0.91, 0.86, 0.75, 0.07);
+                root.dither(ctx, moonX - 44, moonY - 44, 88, 88, 0.25, (x, y) => {
+                    const d = Math.hypot(x - moonX, y - moonY);
+                    return d > r + 1 && d < 40;
+                });
+                ctx.fillStyle = Qt.rgba(0.91, 0.86, 0.75, 0.05);
+                root.dither(ctx, moonX - 60, moonY - 60, 120, 120, 0.125, (x, y) => {
+                    const d = Math.hypot(x - moonX, y - moonY);
+                    return d >= 40 && d < 58;
+                });
 
-            Rectangle {
-                required property int index
+                // Two mountain ranges, dark: a far one and a nearer one,
+                // the slopes facing the moon catching an edge of light.
+                const range = (base, height, freq, seed, fill, lit) => {
+                    const ridge = x => base - height * (0.55
+                        + 0.25 * Math.sin(x / (freq * 1.0) + seed)
+                        + 0.15 * Math.sin(x / (freq * 0.37) + seed * 2)
+                        + 0.06 * Math.sin(x / (freq * 0.13) + seed * 3));
+                    for (let x = 0; x < W; x++) {
+                        const top = Math.round(ridge(x));
+                        ctx.fillStyle = fill;
+                        ctx.fillRect(x, top, 1, root.horizon - top);
+                        // Lit where it falls away toward the moon's side.
+                        if (ridge(x + 1) > ridge(x - 1)) {
+                            ctx.fillStyle = lit;
+                            ctx.fillRect(x, top, 1, 1);
+                            if (ridge(x + 2) - ridge(x - 2) > 2)
+                                ctx.fillRect(x, top + 1, 1, 1);
+                        }
+                    }
+                };
+                range(root.horizon - 40, 90, 70, 1.3, c.ridge, c.ridgeLit);
+                range(root.horizon - 22, 60, 45, 4.1, c.ridgeNear, c.ridgeNearLit);
+                // Mist lying at their feet.
+                ctx.fillStyle = Qt.rgba(0.23, 0.24, 0.4, 0.35);
+                root.dither(ctx, 0, root.horizon - 40, W, 8, 0.125, null);
+                root.dither(ctx, 0, root.horizon - 32, W, 6, 0.25, x => Math.sin(x / 19) > -0.4);
 
-                x: Math.round(root.rnd(index, 1) * root.aw)
-                y: Math.round(root.rnd(index, 2) * root.ah * 0.3) + 8
-                width: 1
-                height: 1
-                color: index % 3 ? root.c.star : root.c.starAlt
-                opacity: (slow.frame + index * 7) % 20 < 2 ? 0.3 : 0.9
+                // Three rows of pines, each nearer one bigger and darker,
+                // mist between them.
+                const row = (spacing, minW, extraW, minH, extraH, bottom, jitter, fill, rim, salt) => {
+                    const n = Math.ceil(W / spacing) + 2;
+                    for (let i = 0; i < n; i++) {
+                        const w = minW + Math.round(root.rnd(i, salt) * extraW);
+                        const h = minH + Math.round(root.rnd(i, salt + 1) * extraH);
+                        const x = -10 + i * spacing + Math.round(root.rnd(i, salt + 2) * spacing * 0.5);
+                        root.pine(ctx, x, bottom - Math.round(root.rnd(i, salt + 3) * jitter), w, h, fill, rim, c.farDark, c.farTrunk);
+                    }
+                };
+                row(9, 12, 8, 26, 16, root.horizon - 16, 6, c.far3, c.far3Rim, 70);
+                ctx.fillStyle = Qt.rgba(0.23, 0.24, 0.4, 0.4);
+                root.dither(ctx, 0, root.horizon - 24, W, 10, 0.125, x => Math.sin(x / 27) > -0.5);
+                row(15, 20, 12, 44, 24, root.horizon - 6, 6, c.far2, c.far2Rim, 74);
+                ctx.fillStyle = Qt.rgba(0.23, 0.24, 0.4, 0.35);
+                root.dither(ctx, 0, root.horizon - 14, W, 8, 0.125, x => Math.sin(x / 33 + 2) > -0.4);
+                row(24, 30, 20, 67, 40, root.horizon, 10, c.far, c.farRim, 3);
             }
         }
 
@@ -530,22 +614,33 @@ Item {
                 const ctx = getContext("2d");
                 const W = root.aw, H = root.ah, c = root.c;
                 ctx.clearRect(0, 0, W, H);
+                // Grass over the clearing, taller toward the front; none in
+                // the puddles, on the stones or at the lantern's foot. Drawn
+                // first, so the big pines stand in front of it.
+                const inPuddle = (x, y) => root.puddles.some(p => Math.abs(x - W * p.x) < p.rx + 1 && Math.abs(y - H * p.y) < p.ry + 2);
+                const onStone = (x, y) => [[0.458, 0.844, 21, 4], [0.424, 0.9, 24, 5], [0.389, 0.962, 28, 5]]
+                    .some(([sx, sy, sw, sh]) => x >= W * sx - 2 && x < W * sx + sw + 1 && y >= H * sy && y < H * sy + sh + 3);
+                for (let i = 0; i < W * 1.4; i++) {
+                    const x = Math.round(root.rnd(i, 50) * W), y = root.horizon + 3 + Math.round(root.rnd(i, 51) * (H - root.horizon - 3));
+                    if ((Math.abs(x - root.lanternX - 15) < 18 && Math.abs(y - root.lanternBase) < 5) || inPuddle(x, y) || onStone(x, y))
+                        continue;
+                    const depth = (y - root.horizon) / (H - root.horizon);
+                    const tall = 1 + Math.round(depth * 3 + root.rnd(i, 52) * 1.5);
+                    ctx.fillStyle = i % 4 ? c.fern : c.fernMid;
+                    ctx.fillRect(x, y - tall, 1, tall);
+                    ctx.fillRect(x + 2, y - tall - 1, 1, tall + 1);
+                    if (i % 3 === 0)
+                        ctx.fillRect(x + 1, y - Math.max(1, tall - 1), 1, Math.max(1, tall - 1));
+                    if (depth > 0.5 && i % 5 === 0) {
+                        ctx.fillStyle = c.fernLight;
+                        ctx.fillRect(x + 2, y - tall - 1, 1, 1);
+                    }
+                }
+
                 root.pine(ctx, -30, H, 93, H + 12, c.near, c.nearRim, c.nearDark, c.nearTrunk);
                 root.pine(ctx, 50, H, 63, Math.round(H * 0.58), c.nearAlt, c.nearRim, c.nearDark, c.nearTrunk);
                 root.pine(ctx, W - 87, H, 77, Math.round(H * 0.69), c.nearAlt, c.nearRim, c.nearDark, c.nearTrunk);
                 root.pine(ctx, W - 47, H, 93, H + 12, c.near, c.nearRim, c.nearDark, c.nearTrunk);
-
-                // Grass tufts across the clearing.
-                for (let i = 0; i < W / 3; i++) {
-                    const x = Math.round(root.rnd(i, 50) * W), y = root.horizon + 6 + Math.round(root.rnd(i, 51) * (H - root.horizon - 6));
-                    if (Math.abs(x - root.lanternX - 15) < 18 && y > root.lanternBase - 4)
-                        continue;
-                    ctx.fillStyle = i % 4 ? c.fern : c.fernMid;
-                    ctx.fillRect(x, y - 2, 1, 2);
-                    ctx.fillRect(x + 2, y - 3, 1, 3);
-                    if (i % 3 === 0)
-                        ctx.fillRect(x + 1, y - 1, 1, 1);
-                }
 
                 // Bushes along the bottom, leaving the path clear; ferns
                 // among them.
