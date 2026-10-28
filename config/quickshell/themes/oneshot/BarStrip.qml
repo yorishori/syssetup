@@ -6,11 +6,14 @@ import qs.modules.bar as B
 // rain): a squared log with its grain and pegs where twine is tied. Each
 // group of keys is a sign hanging from it on two lengths of twine, framed
 // like the panels; widgets that hang themselves (the workspace tags, the
-// tray's charms, the indicator bubbles) get no sign, and the launcher and
-// caffeine keys are carved into brackets coming down from the beam itself.
-// Ropes sag from sign to sign and bracket, the cat's paths along the bar:
-// wooden, mossy. Drops gather on the beam's underside and fall now and
-// then. Everything sits on the art-pixel grid.
+// tray's bottles, the indicator bubbles) get no sign, and the launcher and
+// caffeine keys are carved into brackets coming down from the beam itself,
+// the two ends of a tunnel (a portal: the cat goes in one and comes out of
+// the other, both glowing). Ropes sag from sign to sign and bracket (into
+// a bracket low, at its mouth), the cat's paths along the bar: wooden,
+// mossy; a rope's end dangles from the longest, for the cat to climb.
+// Drops gather on the beam's underside and fall now and then. Everything
+// sits on the art-pixel grid.
 Item {
     id: root
 
@@ -84,33 +87,70 @@ Item {
             const kids = e.widget !== undefined ? [[e, 0]] : Array.from(e.children ?? []).map(k => [k, e.x]);
             for (const [k, dx] of kids)
                 if (carved.includes(k.widget ?? "") && k.visible && k.width > 0)
-                    out.push({ x: snap(dx + k.x - 4 * px), w: snap(k.width + 8 * px) });
+                    out.push({ x: snap(dx + k.x - 4 * px), w: snap(k.width + 8 * px), carved: true });
         }
         return out;
     }
+    // Where a rope's top runs into a sign, and lower, into a bracket (a
+    // tunnel's mouth).
+    readonly property int ropeHigh: signTop + px
+    readonly property int ropeLow: signTop + signHeight - 3 * px
     // Ropes from each sign or bracket to the next; they pass behind what
     // hangs by itself, so the cat can get from one end of the bar to the
-    // other.
+    // other. None between two brackets side by side: that's a tunnel, a
+    // portal from one to the other (see `portals`).
     readonly property var ropes: {
         const s = signs.concat(brackets).sort((a, b) => a.x - b.x);
         const out = [];
         for (let i = 0; i + 1 < s.length; i++) {
+            if (s[i].carved && s[i + 1].carved)
+                continue;
             const from = s[i].x + s[i].w - 2 * px, to = s[i + 1].x + 2 * px;
             if (to - from > 4 * px)
-                out.push({ from: from, to: to });
+                out.push({
+                    from: from,
+                    to: to,
+                    y1: s[i].carved ? ropeLow : ropeHigh,
+                    y2: s[i + 1].carved ? ropeLow : ropeHigh,
+                    sag: Math.min(8 * px, (to - from) * 0.06)
+                });
         }
         return out;
     }
+    // The portals: from the left bracket's mouth to the right one's, for
+    // each pair of brackets side by side.
+    readonly property var portals: {
+        const s = brackets.slice().sort((a, b) => a.x - b.x);
+        const out = [];
+        for (let i = 0; i + 1 < s.length; i++)
+            out.push({ a: s[i].x + 2 * px, b: s[i + 1].x + s[i + 1].w - 2 * px });
+        return out;
+    }
+    // A rope's end dangling from the middle of the longest rope: the cat
+    // climbs back up it after a fall.
+    readonly property var vine: {
+        const r = ropes.slice().sort((p, q) => (q.to - q.from) - (p.to - p.from))[0];
+        if (!r)
+            return null;
+        const x = snap((r.from + r.to) / 2);
+        return { x: x, top: ropeY(r, x), length: 14 * px };
+    }
 
-    // Where the cat's feet go at x: on a rope, its sag; on a sign or a
-    // bracket (or past the ends), the signs' top.
+    function ropeY(r: var, x: real): real {
+        const t = (x - r.from) / (r.to - r.from);
+        return r.y1 + (r.y2 - r.y1) * t + Math.round(4 * r.sag * t * (1 - t) / px) * px;
+    }
+    // Where the cat's feet go at x: on a rope, along it; on a sign (or past
+    // the ends), the signs' top.
     function groundAt(x: real): real {
-        for (const r of ropes) {
-            if (x >= r.from && x <= r.to) {
-                const t = (x - r.from) / (r.to - r.from);
-                const sag = Math.min(8 * px, (r.to - r.from) * 0.06);
-                return signTop + px + Math.round(4 * sag * t * (1 - t) / px) * px;
-            }
+        for (const r of ropes)
+            if (x >= r.from && x <= r.to)
+                return snap(ropeY(r, x));
+        for (const p of portals) {
+            if (x >= p.a - 2 * px && x <= p.a)
+                return ropeLow;
+            if (x >= p.b && x <= p.b + 2 * px)
+                return ropeLow;
         }
         return signTop;
     }
@@ -198,12 +238,12 @@ Item {
             id: rope
 
             required property var modelData
-            readonly property real sag: Math.min(8 * root.px, (modelData.to - modelData.from) * 0.06)
+            readonly property real sag: modelData.sag
 
             x: modelData.from
-            y: root.signTop - root.px
+            y: Math.min(modelData.y1, modelData.y2) - 3 * root.px
             width: modelData.to - modelData.from
-            height: sag + 9 * root.px
+            height: Math.abs(modelData.y2 - modelData.y1) + sag + 10 * root.px
             antialiasing: false
             renderStrategy: Canvas.Immediate
 
@@ -219,8 +259,7 @@ Item {
                 };
                 ctx.clearRect(0, 0, width, height);
                 for (let x = 0, i = 0; x < width; x += p, i++) {
-                    const t = x / width;
-                    const y = 2 * p + Math.round(4 * sag * t * (1 - t) / p) * p;
+                    const y = root.snap(root.ropeY(modelData, modelData.from + x)) - rope.y;
                     // Two strands twisted: a light fleck every third pixel.
                     put(x, y, i % 3 === 0 ? c.ropeLight : c.rope);
                     put(x, y + p, i % 3 === 1 ? c.rope : c.ropeDark);
@@ -290,6 +329,39 @@ Item {
             }
             onWidthChanged: requestPaint()
             onHeightChanged: requestPaint()
+
+            // The portal lighting up as the cat goes through: the carved
+            // panel glows, a lit rim round it, a few sparks.
+            Item {
+                readonly property int panelTop: (Math.round((root.signTop - parent.y) / root.px) + 1) * root.px
+
+                x: 3 * root.px
+                y: panelTop
+                width: parent.width - 6 * root.px
+                height: root.signHeight - 2 * root.px
+                opacity: cat.portalGlow
+                visible: opacity > 0
+
+                Rectangle {
+                    anchors.fill: parent
+                    color: Qt.rgba(0.71, 0.66, 0.88, 0.28)
+                    border.width: root.px
+                    border.color: Theme.palette.dim
+                }
+                Repeater {
+                    model: 4
+
+                    Rectangle {
+                        required property int index
+
+                        x: ((index * 7 + clock.frame * 3) % 9) * root.px
+                        y: (index % 2 ? 2 : -1) * root.px - (clock.frame + index) % 3 * root.px
+                        width: root.px
+                        height: root.px
+                        color: index % 2 ? Theme.palette.accent : "#fff6dc"
+                    }
+                }
+            }
         }
     }
 
@@ -344,9 +416,49 @@ Item {
         }
     }
 
+    // ── The rope's end the cat climbs back up after a fall ────────────────
+    Item {
+        visible: root.vine !== null
+        x: root.vine?.x ?? 0
+        y: root.vine?.top ?? 0
+
+        Repeater {
+            model: root.vine ? Math.round(root.vine.length / root.px) : 0
+
+            Rectangle {
+                required property int index
+
+                // Swaying a pixel side to side lower down.
+                x: (index > 8 && Math.floor(clock.frame / 4) % 2 ? root.px : 0)
+                y: index * root.px
+                width: root.px
+                height: root.px
+                color: index % 3 === 0 ? root.c.ropeLight : root.c.rope
+            }
+        }
+        Rectangle {
+            x: -root.px
+            y: (root.vine?.length ?? 0) - root.px
+            width: 3 * root.px
+            height: 2 * root.px
+            color: root.c.ropeDark
+        }
+        Rectangle {
+            y: 3 * root.px
+            width: root.px
+            height: 2 * root.px
+            color: root.c.moss
+        }
+    }
+
     // ── The cat, living on the bar (see BarCat) ───────────────────────────
     BarCat {
+        id: cat
+
         anchors.fill: parent
+        portals: root.portals
+        vine: root.vine
+        onRope: x => root.ropes.some(r => x >= r.from && x <= r.to)
         px: root.px
         groundAt: x => root.groundAt(x)
         minX: root.walkable[0]

@@ -7,8 +7,9 @@ import qs.modules.bar.widgets as W
 // of twine: corked, a little glass bottle filled with a potion of its own
 // colour (picked from the app's id, so it keeps it), the app's icon on it
 // like a label (shrunk to 10 x 10 and blown up unsmoothed, so it's pixel
-// art too). Now and then a bubble rises in it. The one whose menu is open
-// is lifted a little and its glass lit. Hidden when there are none.
+// art too). Now and then a bubble rises in it, and a gust sets them
+// swaying a little (Wind). The one whose menu is open is lifted a little
+// and its glass lit. Hidden when there are none.
 Item {
     id: root
 
@@ -60,10 +61,26 @@ Item {
             readonly property bool pulled: root.control.pulled === modelData
             readonly property int bottleY: root.bottleTop(index) - (pulled ? 2 * root.px : 0)
             readonly property color tint: root.potion(modelData)
+            // Where it hangs on screen, for the wind (found as a gust starts).
+            property real screenX: 0
 
             x: index * (root.bottleWidth + root.gap)
             width: root.bottleWidth
             height: root.height
+            // Swaying on its twine when a gust goes by.
+            transform: Rotation {
+                origin.x: 5 * root.px
+                origin.y: root.bough
+                angle: Wind.sway(bottle.screenX, bottle.index + 3)
+            }
+
+            Connections {
+                target: Wind
+
+                function onStarted(): void {
+                    bottle.screenX = bottle.mapToItem(null, root.bottleWidth / 2, 0).x;
+                }
+            }
 
             // The twine, from the beam to the cork.
             Rectangle {

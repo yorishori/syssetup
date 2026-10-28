@@ -5,6 +5,7 @@ import qs.modules.bar.widgets as W
 // Workspaces as little tags, each on its own length of twine from the
 // bough, like a wind chime. The current one is lantern amber and swings
 // on its twine when you arrive; occupied ones are cream, empty ones dim.
+// A gust now and then sets them all swaying a little (Wind).
 Item {
     id: root
 
@@ -59,12 +60,24 @@ Item {
             readonly property bool active: root.control.active === wsId
             readonly property bool hovered: root.control.hovered === wsId
             readonly property int tagTop: Math.round((root.height - root.tag) / 2 / root.px + root.drops[index % root.drops.length]) * root.px
+            // Where it hangs on screen, for the wind (found as a gust starts).
+            property real screenX: 0
+
             x: index * root.cell
-            // Swinging from where its twine meets the bough.
+            // Swinging from where its twine meets the bough: when you arrive,
+            // and a little when a gust goes by.
             transform: Rotation {
                 origin.x: root.cell / 2
                 origin.y: root.bough
-                angle: cellItem.active ? root.swing : 0
+                angle: (cellItem.active ? root.swing : 0) + Wind.sway(cellItem.screenX, cellItem.index)
+            }
+
+            Connections {
+                target: Wind
+
+                function onStarted(): void {
+                    cellItem.screenX = cellItem.mapToItem(null, root.cell / 2, 0).x;
+                }
             }
             width: root.cell
             height: root.height
