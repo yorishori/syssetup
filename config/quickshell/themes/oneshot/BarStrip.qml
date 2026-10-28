@@ -20,8 +20,8 @@ Item {
 
     readonly property int px: Theme.get("pixel.scale") ?? 3
     readonly property int bough: Theme.get("bar.bough") ?? 18
-    // Signs: 11 art pixels tall, their middle where the widgets sit.
-    readonly property int signHeight: 11 * px
+    // Signs: 13 art pixels tall, their middle where the widgets sit.
+    readonly property int signHeight: 13 * px
     readonly property int signTop: snap(height / 2 + offset - signHeight / 2)
     readonly property var hangsItself: ["Workspaces", "Tray", "StatusLamps", "LauncherButton", "CaffeineButton"]
     // Keys carved into the beam rather than hung.
@@ -233,7 +233,9 @@ Item {
             x: modelData.x
             y: root.bough - root.px
             width: modelData.w
-            height: root.signTop + root.signHeight - y
+            // Down past the signs' foot: its carved panel spans what a sign
+            // would, so the key sits in its middle.
+            height: root.signTop + root.signHeight + 2 * root.px - y
             antialiasing: false
             renderStrategy: Canvas.Immediate
 
@@ -257,8 +259,9 @@ Item {
                 // Grain down its sides, and the panel the key's carved into.
                 rect(2, 1, 1, 3, c.grain);
                 rect(W - 3, 2, 1, 2, c.grain);
-                const top = Math.max(2, H - 13);
-                rect(3, top, W - 6, H - 3 - top - 1, c.under);
+                const top = Math.round((root.signTop - y) / p) + 1;
+                const bottom = top + root.signHeight / p - 2;
+                rect(3, top, W - 6, bottom - top, c.under);
                 rect(3, top, W - 6, 1, c.grain);
                 // Pegs holding it to the beam.
                 rect(2, 1, 1, 1, c.peg);

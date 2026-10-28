@@ -23,6 +23,7 @@ import qs.core
 //   clipboard      a satchel: leather, stitching, a strap and buckle
 //   launcher       a spellbook: a spine, gilt corners, a ribbon
 //   lock           a cabin window: a sill for the cat, a padlock
+//   tray           a scroll: parchment between two wooden rollers
 Item {
     id: root
 
@@ -38,7 +39,7 @@ Item {
     // How far a dressed frame's band reaches outside the window.
     readonly property int grow: dressed ? 3 : 0
     // Whether `kind` is one this dresses (the rest get the cream band).
-    readonly property bool dressed: ["network", "bluetooth", "audio", "calendar", "notifications", "control", "session", "settings", "keys", "clipboard", "launcher", "lock"].includes(kind)
+    readonly property bool dressed: ["network", "bluetooth", "audio", "calendar", "notifications", "control", "session", "settings", "keys", "clipboard", "launcher", "lock", "tray"].includes(kind)
     readonly property bool lively: ["bluetooth", "session"].includes(kind)
 
     readonly property var c: ({
@@ -512,6 +513,26 @@ Item {
                 }
                 dot(x - 1, y + sy, accent);
             }
+            break;
+        }
+        case "tray": {
+            // A scroll: parchment edges, a wooden roller across the top and
+            // one across the bottom (it unrolls with the window), brass
+            // knobs on their ends.
+            base(1, cream, "#e8dcbf", c.paper);
+            for (const y of [T - 2, B - 2]) {
+                rect(L - 4, y, W + 2 * G + 8, 5, outline);
+                rect(L - 3, y + 1, W + 2 * G + 6, 1, c.woodLight);
+                rect(L - 3, y + 2, W + 2 * G + 6, 1, c.wood);
+                rect(L - 3, y + 3, W + 2 * G + 6, 1, c.woodDark);
+                for (const x of [L - 6, R + 4]) {
+                    rect(x, y, 3, 5, outline);
+                    rect(x + (x < 0 ? 1 : 0), y + 1, 2, 3, c.brass);
+                    dot(x + (x < 0 ? 1 : 0), y + 1, accent);
+                }
+            }
+            // The parchment's curl just under the top roller.
+            rect(L + 1, T + 3, W + 2 * G - 2, 1, c.paper);
             break;
         }
         case "lock": {

@@ -9,7 +9,8 @@ import qs.modules.bar as B
 // the point, the last stars wink out. It hangs a little below the bar, more
 // for the ones whose frames have ears or a mantel to show. Its frame is
 // dressed for what it holds (see Frame); plain ones get two sparkles
-// twinkling on their corners.
+// twinkling on their corners. A tray app's menu is a scroll instead: it
+// unrolls down from under its bottle, sparks flying off the roller.
 Item {
     id: root
 
@@ -22,6 +23,8 @@ Item {
     readonly property var gaps: ({ control: [40, 36], session: [30, 30] })
     readonly property real inset: gaps[control.name]?.[0] ?? 6
     readonly property real gap: gaps[control.name]?.[1] ?? 18
+
+    readonly property bool scroll: control.name === "tray"
 
     // 0 shut to 1 open, at an even pace; what moves takes its own curve
     // from it.
@@ -36,6 +39,8 @@ Item {
     // How far grown: nothing while the stars gather, then out of the point
     // with a little overshoot.
     readonly property real spread: {
+        if (scroll)
+            return progress > 0 ? 1 : 0;
         const t = Math.max(0, (progress - conjure.gather) / (1 - conjure.gather));
         const c = 1.3, u = t - 1;
         return t <= 0 ? 0 : 1 + (c + 1) * u * u * u + c * u * u;
@@ -47,7 +52,11 @@ Item {
     readonly property real titleHeight: title !== "" ? 34 : 0
     readonly property real contentShift: gap + titleHeight
 
-    readonly property real shownHeight: progress > 0 ? control.openHeight + gap + titleHeight : 0
+    // How far a scroll's unrolled, eased.
+    readonly property real unrolled: 1 - Math.pow(1 - progress, 3)
+    readonly property real shownHeight: progress <= 0 ? 0
+        : scroll ? gap + (control.openHeight + titleHeight) * unrolled
+        : control.openHeight + gap + titleHeight
     // The contents (and title, sparkles) fade in as it settles.
     readonly property real contentOpacity: Math.max(0, (progress - 0.75) / 0.25)
 
@@ -96,9 +105,27 @@ Item {
         }
     }
 
+    // Sparks off the scroll's bottom roller while it unrolls.
+    Repeater {
+        model: root.scroll ? 5 : 0
+
+        PixelArt {
+            required property int index
+
+            visible: root.progress > 0 && root.progress < 1
+            x: (index + 0.5) / 5 * root.width + Math.sin(index * 7 + root.progress * 9) * 2 * root.px
+            y: root.height + (index % 2 + 1) * 2 * root.px * (1 - root.progress)
+            px: root.px
+            opacity: 1 - root.progress
+            colors: ({ "s": index % 2 ? Theme.palette.accent : Theme.palette.border })
+            rows: (Math.floor(root.progress * 12) + index) % 2 ? [".s.", "sss", ".s."] : ["s"]
+        }
+    }
+
     Conjure {
         id: conjure
 
+        visible: !root.scroll && progress > 0 && progress < 1
         progress: root.progress
         spread: root.spread
         originX: root.width / 2
