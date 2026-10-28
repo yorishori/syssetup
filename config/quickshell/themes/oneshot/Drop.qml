@@ -105,6 +105,17 @@ Item {
         }
     }
 
+    // The cat, when it's come to lie on this one's edge (see BarCat), its
+    // tail hanging over the frame.
+    Cat {
+        visible: CatState.perch === root.control.name
+        px: root.px
+        pose: "loaf"
+        flip: CatState.perchFlip
+        x: Math.round((CatState.perchX - root.control.x - width / 2) / root.px) * root.px
+        y: root.gap - 3 * root.px - 7 * root.px
+    }
+
     // Sparks off the scroll's bottom roller while it unrolls.
     Repeater {
         model: root.scroll ? 5 : 0

@@ -248,14 +248,30 @@ Item {
         y: root.mode === "hang" ? root.snap(root.shownY - 2 * root.px) : root.snap(root.shownY - height)
     }
 
-    // Napping on a rope, or lying on a panel's edge: the loaf, its tail
-    // hanging over.
+    // Napping on a rope: the loaf, its tail hanging over.
     Cat {
-        visible: !root.hidden && (root.mode === "nap" || root.mode === "perch")
+        visible: !root.hidden && root.mode === "nap"
         px: root.px
-        pose: root.mode === "nap" ? "nap" : "loaf"
+        pose: "nap"
         flip: root.facingLeft
         x: root.snap(root.shownX - width / 2)
         y: root.snap(root.shownY - 7 * root.px)
+    }
+
+    // Lying on a panel: the panel draws it, over its frame (CatState).
+    Binding {
+        target: CatState
+        property: "perch"
+        value: root.mode === "perch" && root.drop && !root.hidden ? root.drop.name : ""
+    }
+    Binding {
+        target: CatState
+        property: "perchX"
+        value: root.shownX
+    }
+    Binding {
+        target: CatState
+        property: "perchFlip"
+        value: root.facingLeft
     }
 }
