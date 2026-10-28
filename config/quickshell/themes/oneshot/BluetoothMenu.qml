@@ -181,6 +181,15 @@ Item {
                     enabled: !root.control.discovering
                     iconColor: root.control.discovering ? Theme.palette.accent : Theme.palette.fg
                     onClicked: root.control.scan()
+
+                    NumberAnimation on iconRotation {
+                        running: root.control.discovering
+                        loops: Animation.Infinite
+                        from: 0
+                        to: 360
+                        duration: 900
+                        alwaysRunToEnd: true
+                    }
                 }
                 C.IconButton {
                     icon: root.control.powered ? "\u{F00AF}" : "\u{F00B2}"

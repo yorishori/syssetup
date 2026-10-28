@@ -862,10 +862,10 @@ Singleton {
         "󰝣": "box",
         "󰝤": "block",
         "󰕌": "undo",
-        "󰕧": "screen",
+        "󰕧": "webcam",
         "󰘮": "tune",
         "󰒲": "zzz",
-        "󱒃": "webcam",
+        "󱒃": "screen",
         "󰐕": "plus",
         "󰍴": "minus",
         "󰣇": "launcher"

@@ -53,6 +53,11 @@ Item {
         ColumnLayout {
             id: content
 
+            // Every tab's body is this tall, so the drawer keeps its size
+            // as you switch: six history rows, or six rows of symbols and
+            // the selected one's details.
+            readonly property int bodyHeight: 6 * 48 + 5 * 2
+
             width: parent.width
             spacing: 10
 
@@ -81,20 +86,26 @@ Item {
                 text: root.control.onHistory
                     ? (root.control.allHistory.length === 0 ? "-- history is empty --" : "-- no matches --")
                     : (root.control.symbolsLoaded ? "-- no matches --" : "-- loading --")
+                Layout.fillWidth: true
+                Layout.preferredHeight: content.bodyHeight
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
                 visible: root.control.entries.length === 0
             }
 
             // ── History: newest at the bottom, next to the prompt ────────
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: list.height
+                Layout.preferredHeight: content.bodyHeight
                 visible: root.control.onHistory && root.control.entries.length > 0
 
                 ListView {
                     id: list
 
+                    // Down by the prompt when there are only a few.
+                    y: parent.height - height
                     width: parent.width
-                    height: Math.min(contentHeight, 440)
+                    height: Math.min(contentHeight, parent.height)
                     verticalLayoutDirection: ListView.BottomToTop
                     clip: true
                     spacing: 2
@@ -180,14 +191,14 @@ Item {
             // ── Symbols: glyph grid and the selected one's details ───────
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: grid.height
+                Layout.preferredHeight: content.bodyHeight - 34 - content.spacing
                 visible: !root.control.onHistory && root.control.entries.length > 0
 
                 GridView {
                     id: grid
 
                     width: parent.width
-                    height: Math.min(Math.ceil(count / root.control.columns), 6) * cellHeight
+                    height: Math.min(Math.ceil(count / root.control.columns) * cellHeight, parent.height)
                     clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     cellWidth: Math.floor(width / root.control.columns)
@@ -228,8 +239,10 @@ Item {
                 readonly property var current: root.control.symbols[root.control.selected] ?? null
 
                 Layout.fillWidth: true
+                // Kept in place (only emptied) so the body stays one height.
+                Layout.preferredHeight: 34
                 spacing: 12
-                visible: current !== null
+                visible: !root.control.onHistory && root.control.entries.length > 0
 
                 StyledText {
                     Layout.maximumWidth: 220

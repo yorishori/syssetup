@@ -6,8 +6,10 @@ import qs.modules.bar as B
 // rain): a squared log with its grain and pegs where twine is tied. Each
 // group of keys is a sign hanging from it on two lengths of twine, framed
 // like the panels; widgets that hang themselves (the workspace tags, the
-// tray's charms) get no sign. Ropes sag from sign to sign, the cat's paths
-// along the bar: wooden, mossy. Drops gather on the beam's underside and fall now and
+// tray's charms, the indicator bubbles) get no sign, and the launcher and
+// caffeine keys are carved into brackets coming down from the beam itself.
+// Ropes sag from sign to sign and bracket, the cat's paths along the bar:
+// wooden, mossy. Drops gather on the beam's underside and fall now and
 // then. Everything sits on the art-pixel grid.
 Item {
     id: root
@@ -21,7 +23,9 @@ Item {
     // Signs: 11 art pixels tall, their middle where the widgets sit.
     readonly property int signHeight: 11 * px
     readonly property int signTop: snap(height / 2 + offset - signHeight / 2)
-    readonly property var hangsItself: ["Workspaces", "Tray"]
+    readonly property var hangsItself: ["Workspaces", "Tray", "StatusLamps", "LauncherButton", "CaffeineButton"]
+    // Keys carved into the beam rather than hung.
+    readonly property var carved: ["LauncherButton", "CaffeineButton"]
 
     readonly property var c: ({
         wood: "#4a3428",
@@ -67,15 +71,28 @@ Item {
             return null;
         const start = Math.min(...parts.map(p => p === entry ? 0 : p.x));
         const end = Math.max(...parts.map(p => p === entry ? p.width : p.x + p.width));
-        const pad = 3 * px;
+        const pad = 5 * px;
         return { x: snap(entry.x + start - pad), w: snap(end - start + 2 * pad) };
     }
 
     readonly property var signs: entries().filter(i => i && !hangsItself.includes(i.widget ?? "")).map(e => box(e)).filter(b => b && b.w > 0)
-    // Ropes from each sign to the next; they pass behind what hangs by
-    // itself, so the cat can get from one end of the bar to the other.
+    // The carved keys' brackets: around each, from the beam down to the
+    // signs' foot.
+    readonly property var brackets: {
+        const out = [];
+        for (const e of entries().filter(i => i && i.visible)) {
+            const kids = e.widget !== undefined ? [[e, 0]] : Array.from(e.children ?? []).map(k => [k, e.x]);
+            for (const [k, dx] of kids)
+                if (carved.includes(k.widget ?? "") && k.visible && k.width > 0)
+                    out.push({ x: snap(dx + k.x - 4 * px), w: snap(k.width + 8 * px) });
+        }
+        return out;
+    }
+    // Ropes from each sign or bracket to the next; they pass behind what
+    // hangs by itself, so the cat can get from one end of the bar to the
+    // other.
     readonly property var ropes: {
-        const s = signs.slice().sort((a, b) => a.x - b.x);
+        const s = signs.concat(brackets).sort((a, b) => a.x - b.x);
         const out = [];
         for (let i = 0; i + 1 < s.length; i++) {
             const from = s[i].x + s[i].w - 2 * px, to = s[i + 1].x + 2 * px;
@@ -203,6 +220,52 @@ Item {
                 }
             }
             onWidthChanged: requestPaint()
+        }
+    }
+
+    // ── Brackets: the carved keys' wood, coming down out of the beam ─────
+    Repeater {
+        model: root.brackets
+
+        Canvas {
+            required property var modelData
+
+            x: modelData.x
+            y: root.bough - root.px
+            width: modelData.w
+            height: root.signTop + root.signHeight - y
+            antialiasing: false
+            renderStrategy: Canvas.Immediate
+
+            onPaint: {
+                const ctx = getContext("2d"), p = root.px, c = root.c;
+                const W = Math.round(width / p), H = Math.round(height / p);
+                const rect = (x, y, w, h, col) => {
+                    ctx.fillStyle = col;
+                    ctx.fillRect(x * p, y * p, w * p, h * p);
+                };
+                ctx.clearRect(0, 0, width, height);
+                // The block, its lower corners cut; it runs up into the beam.
+                rect(0, 0, W, H - 2, c.under);
+                rect(1, H - 2, W - 2, 1, c.under);
+                rect(2, H - 1, W - 4, 1, c.under);
+                rect(1, 0, W - 2, H - 3, c.wood);
+                rect(2, H - 3, W - 4, 1, c.wood);
+                rect(1, 0, 1, H - 3, c.woodLight);
+                rect(W - 2, 0, 1, H - 3, c.woodDark);
+                rect(2, H - 3, W - 4, 1, c.woodDark);
+                // Grain down its sides, and the panel the key's carved into.
+                rect(2, 1, 1, 3, c.grain);
+                rect(W - 3, 2, 1, 2, c.grain);
+                const top = Math.max(2, H - 13);
+                rect(3, top, W - 6, H - 3 - top - 1, c.under);
+                rect(3, top, W - 6, 1, c.grain);
+                // Pegs holding it to the beam.
+                rect(2, 1, 1, 1, c.peg);
+                rect(W - 3, 1, 1, 1, c.peg);
+            }
+            onWidthChanged: requestPaint()
+            onHeightChanged: requestPaint()
         }
     }
 

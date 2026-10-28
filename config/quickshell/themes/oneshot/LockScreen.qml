@@ -5,11 +5,11 @@ import qs.core
 import qs.modules.lock as M
 
 // The forest, a little dimmer, with the clock in lantern amber; on the
-// primary screen an RPG window with the password prompt, the passcode
-// lamps and the power keys, and the cat asleep on top of it. It wakes when
-// you start typing and stays up while a password fails, then dozes off
-// again. Locking and unlocking fade the scene in and out; a wrong
-// password shakes the window.
+// primary screen an RPG window with the password prompt (nothing in it
+// tells how long the password is) and the power keys, the cat asleep on
+// its sill. It wakes when you start typing and stays up while a password
+// fails, then dozes off again. Locking and unlocking fade the scene in and
+// out; a wrong password shakes the window.
 Item {
     id: root
 
@@ -180,7 +180,7 @@ Item {
                         id: field
 
                         Layout.fillWidth: true
-                        prompt: root.control.passcode > 0 ? "code" : "password"
+                        prompt: "password"
                         placeholder: ""
                         echoMode: TextInput.Password
                         onAccepted: root.control.unlock(text)
@@ -199,32 +199,14 @@ Item {
 
                         Component.onCompleted: root.control.refocus()
                     }
-                    // Passcode lamps: one per character, lit as you type.
-                    Row {
-                        spacing: root.px * 2
-                        visible: root.control.passcode > 0
-
-                        Repeater {
-                            model: root.control.passcode
-
-                            Lamp {
-                                required property int index
-
-                                implicitWidth: 4 * root.px
-                                implicitHeight: 4 * root.px
-                                on: index < field.text.length
-                                litColor: root.control.authState === "failed" ? Theme.palette.warn : Theme.palette.accent
-                            }
-                        }
-                    }
                     StyledText {
                         text: root.control.authState === "checking" ? "checking…"
-                            : root.control.authState === "failed" ? `wrong password · ${root.control.failures}`
-                            : root.control.passcode > 0 ? "type your passcode" : "enter to unlock"
+                            : root.control.authState === "failed" ? `wrong password · ${root.control.failures}` : ""
                         caps: true
                         color: root.control.authState === "failed" ? Theme.palette.warn : Theme.palette.dim
                         font.family: Theme.get("font.labels") ?? Theme.font.family
                         font.pixelSize: Theme.font.size - 3
+                        visible: text !== ""
                     }
                     StyledText {
                         Layout.fillWidth: true
