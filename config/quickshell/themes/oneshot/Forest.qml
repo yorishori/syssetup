@@ -201,16 +201,35 @@ Item {
         return rows;
     }
 
+    // A layer of the forest, in art pixels blown up unsmoothed: one texture.
+    component ForestLayer: Item {
+        width: root.aw
+        height: root.ah
+        scale: root.px
+        transformOrigin: Item.TopLeft
+        layer.enabled: true
+        layer.smooth: false
+    }
+    // Where fog bands go: scaled the same, but no texture of its own, so a
+    // band can sit between art pixels (a screen pixel at a time).
+    component FogLayer: Item {
+        width: root.aw
+        height: root.ah
+        scale: root.px
+        transformOrigin: Item.TopLeft
+    }
+
     // A band of fog: [top, height, opacity, drift (art px per slow step,
     // signed), wave lengths a and b, how patchy (-1 solid to 1 sparse),
-    // seed]. It drifts at its own pace (some left, some right), thickening
-    // and thinning.
+    // seed]. It drifts at its own pace (some left, some right), gliding a
+    // screen pixel at a time, and thickens and thins.
     component FogBand: Item {
         id: band
 
         required property var modelData
         readonly property real drift: modelData[3]
-        readonly property int offset: Math.floor(slow.frame * Math.abs(drift)) % root.aw
+        // How far it's drifted, in art pixels, to the nearest screen pixel.
+        readonly property real offset: Math.round((flyClock.frame / 12 * Math.abs(drift) * 4) % root.aw * root.px) / root.px
 
         y: modelData[0]
         width: root.aw
@@ -250,7 +269,9 @@ Item {
         }
     }
 
-    // The scene's idle loops step slowly; the fireflies at 12 a second.
+    // The scene's idle loops step slowly. What glides (the fog, a screen
+    // pixel at a time, and the fireflies) shares one clock at 12 a second,
+    // so their changes land in the same frames.
     Ticker {
         id: slow
 
@@ -268,18 +289,10 @@ Item {
         color: root.c.sky
     }
 
-    Item {
-        id: art
-
-        width: root.aw
-        height: root.ah
-        scale: root.px
-        transformOrigin: Item.TopLeft
-        // One texture for the whole forest, redrawn only when its slow loops
-        // step: far cheaper to put on screen than its canvases one by one.
-        layer.enabled: true
-        layer.smooth: false
-
+    // The forest in three layers, back to front, each one texture (redrawn
+    // only when something in it steps), with the fog drifting between
+    // them, outside any layer, so it can glide a screen pixel at a time.
+    ForestLayer {
         // ── Back: sky, moon, far trees ────────────────────────────────────
         Canvas {
             id: back
@@ -478,7 +491,9 @@ Item {
                 row(24, 30, 20, 67, 40, root.horizon, 10, c.far, c.farRim, 3);
             }
         }
+    }
 
+    FogLayer {
         // ── Fog among the far rows, each band its own ─────────────────────
         Repeater {
             model: [
@@ -489,7 +504,9 @@ Item {
 
             FogBand {}
         }
+    }
 
+    ForestLayer {
         // ── Middle: the clearing, the lantern ─────────────────────────────
         Canvas {
             id: middle
@@ -623,14 +640,18 @@ Item {
                 color: "#fff1c9"
             }
         }
+    }
 
+    FogLayer {
         // ── Fog over the clearing, in front of the lantern ─────────────────
         Repeater {
             model: [[root.lanternBase - 12, 20, 0.45, -0.25, 31, 5, -0.4, 4]]
 
             FogBand {}
         }
+    }
 
+    ForestLayer {
         // ── Front: big pines, bushes, ferns ───────────────────────────────
         Canvas {
             id: front
@@ -680,7 +701,9 @@ Item {
                 ferns.forEach(([fx, fy, fs], i) => root.fern(ctx, Math.round(W * fx), Math.round(H * fy), fs, i + 7));
             }
         }
+    }
 
+    FogLayer {
         // ── Fog low over the grass, in front of it all ────────────────────
         Repeater {
             model: [
@@ -690,18 +713,18 @@ Item {
 
             FogBand {}
         }
+    }
 
-        Connections {
-            target: root
+    Connections {
+        target: root
 
-            function onAwChanged() {
-                back.requestPaint();
-                middle.requestPaint();
-                glow.requestPaint();
-                front.requestPaint();
-            }
-            function onAhChanged() { onAwChanged(); }
+        function onAwChanged() {
+            back.requestPaint();
+            middle.requestPaint();
+            glow.requestPaint();
+            front.requestPaint();
         }
+        function onAhChanged() { onAwChanged(); }
     }
 
     // ── Fireflies, in their own layer (they move often; the forest needn't
