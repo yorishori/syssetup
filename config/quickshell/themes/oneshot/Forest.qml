@@ -17,8 +17,9 @@ import qs.core
 // Drawn in art pixels (the screen divided by pixel.scale) and blown up
 // without smoothing, so every pixel stays square. What never moves is
 // painted once on canvases; the loops are live pixels on Tickers (the
-// scene's slow ones, the rain's at 30 a second). Places are fractions of
-// the screen, so any size works; the "random" bits are fixed per index.
+// scene's slow ones, the rain's at 30 a second), and the rain is two
+// painted sheets that slide. Places are fractions of the screen, so any
+// size works; the "random" bits are fixed per index.
 Item {
     id: root
 
@@ -228,6 +229,9 @@ Item {
         height: root.ah
         scale: root.px
         transformOrigin: Item.TopLeft
+        // One texture for the whole forest, redrawn only when its slow loops
+        // step: far cheaper to put on screen every rain frame than its
+        // canvases one by one.
         layer.enabled: true
         layer.smooth: false
 
@@ -237,6 +241,7 @@ Item {
 
             anchors.fill: parent
             antialiasing: false
+            smooth: false
             renderStrategy: Canvas.Immediate
 
             onPaint: {
@@ -259,22 +264,63 @@ Item {
                 const moonX = Math.round(W * 0.667) + 15, moonY = Math.round(H * 0.13) + 15;
                 const bank = (x0, y0, w, h, fill, seed) => {
                     const puffs = Math.max(3, Math.round(w / (h * 0.9)));
-                    const shapes = [];
+                    // Each row's spans, puff by puff (no pixel tests).
+                    const by = Math.floor(y0 - h), bh = Math.ceil(2 * h) + 2;
+                    const spans = [];
+                    for (let j = 0; j < bh; j++)
+                        spans.push([]);
                     for (let i = 0; i < puffs; i++) {
                         const t = (i + 0.5) / puffs;
                         const r = h * (0.45 + root.rnd(seed * 7 + i, 60) * 0.55) * (1 - Math.abs(t - 0.5) * 0.8);
-                        shapes.push([x0 + t * w, y0 + h - r * 0.8, r]);
+                        const sx = x0 + t * w, sy = y0 + h - r * 0.8;
+                        for (let y = Math.ceil(sy - r / 1.5); y <= Math.floor(Math.min(sy + r / 1.5, y0 + h)); y++) {
+                            const half = Math.sqrt(Math.max(0, r * r - Math.pow((y - sy) * 1.5, 2)));
+                            const from = Math.ceil(sx - half), to = Math.ceil(sx + half);
+                            if (to > from && y >= by && y < by + bh)
+                                spans[y - by].push([from, to]);
+                        }
                     }
-                    const inside = (x, y, dx, dy) => y <= y0 + h && shapes.some(([sx, sy, r]) => Math.hypot(x - sx - dx, (y - sy - dy) * 1.5) < r);
-                    for (let y = Math.floor(y0 - h); y <= y0 + h; y++) {
-                        for (let x = Math.floor(x0 - h); x < x0 + w + h; x++) {
-                            if (!inside(x, y, 0, 0))
+                    // Merged, so each row is a few runs.
+                    for (let j = 0; j < bh; j++) {
+                        const row = spans[j].sort((p, q) => p[0] - q[0]);
+                        const out = [];
+                        for (const [f, t] of row) {
+                            if (out.length && f <= out[out.length - 1][1])
+                                out[out.length - 1][1] = Math.max(out[out.length - 1][1], t);
+                            else
+                                out.push([f, t]);
+                        }
+                        spans[j] = out;
+                    }
+                    ctx.fillStyle = fill;
+                    for (let j = 0; j < bh; j++)
+                        for (const [f, t] of spans[j])
+                            ctx.fillRect(f, by + j, t - f, 1);
+                    // Near the moon, its upper edge lit: the pixels of a row
+                    // that the rows above don't cover.
+                    const bx = x0 - h, bw = w + 2 * h;
+                    if (Math.hypot(Math.max(bx - moonX, 0, moonX - bx - bw), Math.max(by - moonY, 0, moonY - by - bh)) >= 120)
+                        return;
+                    // A coverage grid round the moon only (where any edge can
+                    // be lit), then the edge pixels in it.
+                    const gx = Math.round(moonX - 120), gw = 240;
+                    const grid = new Uint8Array(gw * bh);
+                    for (let j = 0; j < bh; j++)
+                        for (const [f, t] of spans[j])
+                            for (let x = Math.max(f, gx); x < Math.min(t, gx + gw); x++)
+                                grid[j * gw + x - gx] = 1;
+                    for (let j = 0; j < bh; j++) {
+                        const dy = by + j - moonY;
+                        if (Math.abs(dy) >= 120)
+                            continue;
+                        for (let i = 0; i < gw; i++) {
+                            if (grid[j * gw + i] === 0 || (j >= 2 && grid[(j - 1) * gw + i] === 1 && grid[(j - 2) * gw + i] === 1))
                                 continue;
-                            const near = Math.hypot(x - moonX, y - moonY);
-                            // Lit along its upper edge, near the moon only.
-                            const edge = !inside(x, y - 1, 0, 0) || !inside(x, y - 2, 0, 0);
-                            ctx.fillStyle = edge && near < 70 ? c.cloudLit : edge && near < 120 ? c.cloud : fill;
-                            ctx.fillRect(x, y, 1, 1);
+                            const near = Math.hypot(gx + i - moonX, dy);
+                            if (near < 120) {
+                                ctx.fillStyle = near < 70 ? c.cloudLit : c.cloud;
+                                ctx.fillRect(gx + i, by + j, 1, 1);
+                            }
                         }
                     }
                 };
@@ -401,6 +447,7 @@ Item {
                 width: root.aw
                 height: band
                 antialiasing: false
+                smooth: false
                 renderStrategy: Canvas.Immediate
                 opacity: 0.5
 
@@ -423,6 +470,7 @@ Item {
 
             anchors.fill: parent
             antialiasing: false
+            smooth: false
             renderStrategy: Canvas.Immediate
 
             onPaint: {
@@ -532,6 +580,7 @@ Item {
 
             anchors.fill: parent
             antialiasing: false
+            smooth: false
             renderStrategy: Canvas.Immediate
             opacity: [1, 1, 0.85, 1, 1, 1, 0.92, 1, 0.88, 1, 1][slow.frame % 11]
 
@@ -586,6 +635,7 @@ Item {
                 width: root.aw
                 height: band
                 antialiasing: false
+                smooth: false
                 renderStrategy: Canvas.Immediate
                 opacity: 0.35
 
@@ -608,6 +658,7 @@ Item {
 
             anchors.fill: parent
             antialiasing: false
+            smooth: false
             renderStrategy: Canvas.Immediate
 
             onPaint: {
@@ -700,30 +751,66 @@ Item {
         }
     }
 
-    // ── The rain, in its own layer (falling doesn't redraw the forest) ────
+    // ── The rain: two sheets of streaks sliding down ─────────────────────
+    // Each depth is one strip of streaks, painted once and repeated down the
+    // screen; falling only moves the sheet (a whole art pixel at a time, 30
+    // times a second), so nothing is redrawn while it rains.
     Item {
         width: root.aw
         height: root.ah
         scale: root.px
         transformOrigin: Item.TopLeft
-        layer.enabled: true
-        layer.smooth: false
+        clip: true
 
         Repeater {
-            model: Math.ceil(root.aw * root.ah / 650)
+            // [strip height, speed, streaks per strip, length, extra length,
+            //  colour, opacity, salt]: far, then near.
+            model: [
+                [97, 4, Math.ceil(root.aw / 3.2), 3, 3, root.c.rainFar, 0.35, 21],
+                [131, 7, Math.ceil(root.aw / 5), 7, 5, root.c.rainNear, 0.5, 41]
+            ]
 
-            Rectangle {
-                required property int index
-                readonly property bool near: index % 5 < 2
-                readonly property int span: root.ah + height
-                readonly property real speed: (near ? 7 : 4) + root.rnd(index, 21) * 2
+            Item {
+                id: sheet
 
-                x: Math.round(root.rnd(index, 9) * root.aw)
-                y: -height + Math.floor((root.rnd(index, 10) * span + rainClock.frame * speed) % span)
-                width: 1
-                height: near ? 7 + Math.round(root.rnd(index, 22) * 5) : 3 + Math.round(root.rnd(index, 23) * 3)
-                color: near ? root.c.rainNear : root.c.rainFar
-                opacity: near ? 0.5 : 0.35
+                required property var modelData
+                readonly property int strip: modelData[0]
+
+                width: root.aw
+                height: root.ah + strip
+                y: (rainClock.frame * modelData[1]) % strip - strip
+
+                Repeater {
+                    model: Math.ceil(root.ah / sheet.strip) + 1
+
+                    Canvas {
+                        required property int index
+
+                        y: index * sheet.strip
+                        width: root.aw
+                        height: sheet.strip
+                        antialiasing: false
+                        smooth: false
+                        opacity: sheet.modelData[6]
+                        renderStrategy: Canvas.Immediate
+
+                        onPaint: {
+                            const ctx = getContext("2d"), m = sheet.modelData;
+                            ctx.clearRect(0, 0, width, height);
+                            ctx.fillStyle = m[5];
+                            for (let i = 0; i < m[2]; i++) {
+                                const x = Math.round(root.rnd(i, m[7]) * width);
+                                const y = Math.round(root.rnd(i, m[7] + 1) * height);
+                                const len = m[3] + Math.round(root.rnd(i, m[7] + 2) * m[4]);
+                                // Wrapping round the strip, so the sheets join.
+                                ctx.fillRect(x, y, 1, Math.min(len, height - y));
+                                if (y + len > height)
+                                    ctx.fillRect(x, 0, 1, y + len - height);
+                            }
+                        }
+                        onWidthChanged: requestPaint()
+                    }
+                }
             }
         }
 
