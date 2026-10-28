@@ -1,12 +1,13 @@
 import QtQuick
 
-// OneShot: a rainy night in an enchanted pine forest, in pixel art. The
-// wallpaper is the forest (a stone lantern, glowing mushrooms, fireflies,
-// rain), and its top edge is a mossy bough the bar's applets hang from on
-// twine. Panels are framed boxes, cream on plum, like an old RPG's menus,
-// but every label says plainly what it is. A black cat with pumpkin eyes
-// naps on the bar and wanders into panels. Motion is slow and stepped, a
-// few frames a second, never tweened.
+// OneShot: a misty night in an enchanted pine forest, in pixel art, seen
+// from inside a cabin. The wallpaper is the forest (mountains, a stone
+// lantern, drifting fog, fireflies); the bar is the cabin's beam, keys on
+// signs hung from it by twine, joined by mossy ropes. Panels are framed
+// boxes like an old RPG's menus, each dressed for what it holds, but every
+// label says plainly what it is. A black cat with pumpkin eyes lives on
+// the bar and jumps onto the panels you open. The art moves a few frames a
+// second, in whole pixels; windows open and close smoothly.
 //
 // The primitives (Box, Card, Chip, …) start from bubble's and are being
 // redrawn; the fonts are bundled under fonts/ with their licenses (OFL 1.1).

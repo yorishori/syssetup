@@ -3,7 +3,7 @@ import qs.core
 import qs.modules.bar as B
 
 // The cabin's beam runs along the top (we're inside, looking out at the
-// rain): a squared log with its grain and pegs where twine is tied. Each
+// night): a squared log with its grain and pegs where twine is tied. Each
 // group of keys is a sign hanging from it on two lengths of twine, framed
 // like the panels; widgets that hang themselves (the workspace tags, the
 // tray's bottles, the indicator bubbles) get no sign, and the launcher and

@@ -1,29 +1,29 @@
 import QtQuick
 import qs.core
 
-// The forest on a rainy night, in pixel art (the wallpaper, and behind the
+// The forest on a misty night, in pixel art (the wallpaper, and behind the
 // lock screen), as seen from inside a cabin (the beam across the top is
-// the bar's). Back to front: a sky heavy with rain clouds, the moon barely
-// peeking through a gap in them, its light bleeding through round it; two
+// the bar's). Back to front: a sky heavy with cloud, the moon barely
+// peeking through a gap in it, its light bleeding through round it; two
 // dark mountain ranges, their ridges catching a little of it; three rows
 // of pines, each nearer one darker, mist between them; the clearing,
-// grassy, with puddles, stepping stones and a stone lantern, its light a
-// dithered glow with a pool on the ground; mist again, lower; the big
-// pines framing the edges, ferns and bushes in front, wet with highlights.
-// Live on top: the flame, glowing mushrooms, fireflies. The rain is its own
-// layer: streaks in two depths, splashes on the ground and on the
-// lantern's roof, rings spreading in the puddles.
+// grassy, with stepping stones and a stone lantern, its light a dithered
+// glow with a pool on the ground; the big pines framing the edges, ferns
+// and bushes in front. Fog drifts through it in bands of its own, each at
+// its own height, thickness and pace, thickening and thinning. Live on
+// top: the flame, and fireflies lighting up, wandering, dimming and going
+// out, to light up again somewhere else.
 //
 // Drawn in art pixels (the screen divided by pixel.scale) and blown up
 // without smoothing, so every pixel stays square. What never moves is
 // painted once on canvases; the loops are live pixels on Tickers (the
-// scene's slow ones, the rain's at 24 a second), and the rain is two
-// painted sheets that slide. Places are fractions of the screen, so any
-// size works; the "random" bits are fixed per index.
+// scene's slow ones; the fireflies' quicker, in a layer of their own).
+// Places are fractions of the screen, so any size works; the "random"
+// bits are fixed per index.
 Item {
     id: root
 
-    // Holds every loop still (the rain, the mist, the flame, fireflies):
+    // Holds every loop still (the fog, the flame, the fireflies):
     // set while something covers the whole screen, so nothing's drawn for
     // nobody.
     property bool paused: false
@@ -43,8 +43,6 @@ Item {
         groundLit: "#1a1729",
         path: "#221f33",
         pathWet: "#2e2b45",
-        puddle: "#1b1e3b",
-        puddleRim: "#2a2f58",
         moon: "#e8dcc0",
         moonShade: "#cbbf9f",
         halo: "#e8dcc0",
@@ -79,29 +77,14 @@ Item {
         mossLight: "#3f5e4a",
         flame: "#f2c46d",
         glow: "#f2c46d",
-        stem: "#cfc6b4",
         fernDark: "#0b1413",
         fern: "#0f1d1b",
         fernMid: "#152824",
         fernLight: "#1f3a33",
         wet: "#4b7a6c",
-        rainFar: "#56618f",
-        rainNear: "#9aa8d8",
-        splash: "#b5bfe6"
+        firefly: "#e6f59a",
+        fireflyGlow: "#b7d96a"
     })
-
-    readonly property var mushrooms: [
-        { x: 0.431, y: 0.778, cap: "#8fd6b4" }, { x: 0.447, y: 0.791, cap: "#b5a8e0" },
-        { x: 0.564, y: 0.771, cap: "#8fd6b4" }, { x: 0.292, y: 0.844, cap: "#b5a8e0" },
-        { x: 0.694, y: 0.822, cap: "#8fd6b4" }, { x: 0.711, y: 0.836, cap: "#e8a0b4" }
-    ]
-    // Puddles: centre (fractions), half-width and half-height (art pixels).
-    readonly property var puddles: [
-        { x: 0.385, y: 0.93, rx: 15, ry: 3 },
-        { x: 0.575, y: 0.885, rx: 10, ry: 2 },
-        { x: 0.635, y: 0.955, rx: 13, ry: 3 },
-        { x: 0.21, y: 0.9, rx: 9, ry: 2 }
-    ]
 
     // A fixed pseudo-random number in [0, 1) for (index, salt).
     function rnd(i: int, salt: int): real {
@@ -218,18 +201,65 @@ Item {
         return rows;
     }
 
-    // The scene's idle loops step slowly; the rain falls at 24 frames a
-    // second, film's rate: smooth enough for streaks, and a fifth fewer
-    // redraws than 30.
+    // A band of fog: [top, height, opacity, drift (art px per slow step,
+    // signed), wave lengths a and b, how patchy (-1 solid to 1 sparse),
+    // seed]. It drifts at its own pace (some left, some right), thickening
+    // and thinning.
+    component FogBand: Item {
+        id: band
+
+        required property var modelData
+        readonly property real drift: modelData[3]
+        readonly property int offset: Math.floor(slow.frame * Math.abs(drift)) % root.aw
+
+        y: modelData[0]
+        width: root.aw
+        height: modelData[1]
+        // Breathing: thicker, thinner, slowly, out of step.
+        opacity: modelData[2] * (0.8 + 0.2 * Math.sin(slow.frame / 23 + modelData[7] * 1.7))
+
+        Repeater {
+            model: 2
+
+            Canvas {
+                required property int index
+
+                x: band.drift > 0 ? index * root.aw - band.offset : (index - 1) * root.aw + band.offset
+                width: root.aw
+                height: band.height
+                antialiasing: false
+                smooth: false
+                renderStrategy: Canvas.Immediate
+
+                onPaint: {
+                    const ctx = getContext("2d"), m = band.modelData;
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.fillStyle = root.c.mist;
+                    // Wraps round, so the two canvases join.
+                    const k = 2 * Math.PI / width;
+                    for (let y = 0; y < height; y++) {
+                        const t = y / height;
+                        const share = t < 0.2 || t > 0.85 ? 0.125 : t < 0.4 || t > 0.7 ? 0.25 : 0.5;
+                        root.dither(ctx, 0, y, width, 1, share, x =>
+                            Math.sin(x * k * Math.round(width / m[4]) + y / 7 + m[7]) * 0.6
+                            + Math.sin(x * k * Math.round(width / (m[4] * 2.7)) - y / m[5] + m[7] * 2) * 0.4 > m[6]);
+                    }
+                }
+                onWidthChanged: requestPaint()
+            }
+        }
+    }
+
+    // The scene's idle loops step slowly; the fireflies at 12 a second.
     Ticker {
         id: slow
 
         running: !root.paused && (Theme.get("pixel.animate") ?? true)
     }
     Ticker {
-        id: rainClock
+        id: flyClock
 
-        fps: 24
+        fps: 12
         running: !root.paused && (Theme.get("pixel.animate") ?? true)
     }
 
@@ -246,8 +276,7 @@ Item {
         scale: root.px
         transformOrigin: Item.TopLeft
         // One texture for the whole forest, redrawn only when its slow loops
-        // step: far cheaper to put on screen every rain frame than its
-        // canvases one by one.
+        // step: far cheaper to put on screen than its canvases one by one.
         layer.enabled: true
         layer.smooth: false
 
@@ -450,34 +479,15 @@ Item {
             }
         }
 
-        // ── Mist among the far trunks, drifting ───────────────────────────
+        // ── Fog among the far rows, each band its own ─────────────────────
         Repeater {
-            model: 2
+            model: [
+                [root.horizon - 72, 16, 0.32, 0.20, 41, 13, 0.1, 1],
+                [root.horizon - 26, 26, 0.5, 0.33, 23, 7, -0.6, 2],
+                [root.horizon - 6, 14, 0.42, -0.25, 37, 11, 0, 3]
+            ]
 
-            Canvas {
-                required property int index
-                readonly property int band: 26
-
-                x: index * root.aw - Math.floor(slow.frame / 3) % root.aw
-                y: root.horizon - band + 4
-                width: root.aw
-                height: band
-                antialiasing: false
-                smooth: false
-                renderStrategy: Canvas.Immediate
-                opacity: 0.5
-
-                onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.fillStyle = root.c.mist;
-                    for (let y = 0; y < height; y++) {
-                        const t = y / height;
-                        const share = t < 0.2 || t > 0.85 ? 0.125 : t < 0.4 || t > 0.7 ? 0.25 : 0.5;
-                        root.dither(ctx, 0, y, width, 1, share, x => Math.sin(x / 23 + y / 7) > -0.6);
-                    }
-                }
-            }
+            FogBand {}
         }
 
         // ── Middle: the clearing, the lantern ─────────────────────────────
@@ -500,25 +510,6 @@ Item {
                 for (let i = 0; i < W * 1.5; i++) {
                     ctx.fillStyle = i % 3 ? c.nearDark : c.groundLit;
                     ctx.fillRect(Math.round(root.rnd(i, 40) * W), root.horizon + 2 + Math.round(root.rnd(i, 41) * (H - root.horizon)), 1 + (i % 2), 1);
-                }
-
-                // Puddles: dark water, a lighter rim, the lantern in them.
-                for (const p of root.puddles) {
-                    const px0 = Math.round(W * p.x), py0 = Math.round(H * p.y);
-                    for (const [dy, half] of root.ellipse(p.rx, p.ry)) {
-                        ctx.fillStyle = c.puddleRim;
-                        ctx.fillRect(px0 - half, py0 + dy, 2 * half + 1, 1);
-                        ctx.fillStyle = c.puddle;
-                        if (half > 1)
-                            ctx.fillRect(px0 - half + 1, py0 + dy, 2 * half - 1, 1);
-                    }
-                    const lx = root.lanternX + 15;
-                    if (Math.abs(px0 - lx) < p.rx + 6) {
-                        ctx.fillStyle = Qt.rgba(0.95, 0.77, 0.43, 0.45);
-                        for (let dy = -p.ry + 1; dy < p.ry; dy++)
-                            if (dy % 2 === 0)
-                                ctx.fillRect(lx - 1 + (dy % 4 ? 1 : 0), py0 + dy, 2, 1);
-                    }
                 }
 
                 // Stepping stones, wet on top.
@@ -578,11 +569,6 @@ Item {
                 ctx.fillStyle = c.moss;
                 ctx.fillRect(lx + 2, lb - 49, 1, 2);
                 ctx.fillRect(lx + 27, lb - 49, 1, 3);
-
-                // Mushroom stems (their caps glow, on top).
-                ctx.fillStyle = c.stem;
-                for (const m of root.mushrooms)
-                    ctx.fillRect(Math.round(W * m.x) + 2, Math.round(H * m.y) + 3, 2, 3);
             }
         }
 
@@ -638,34 +624,11 @@ Item {
             }
         }
 
-        // ── Mist again, lower, over the clearing ──────────────────────────
+        // ── Fog over the clearing, in front of the lantern ─────────────────
         Repeater {
-            model: 2
+            model: [[root.lanternBase - 12, 20, 0.45, -0.25, 31, 5, -0.4, 4]]
 
-            Canvas {
-                required property int index
-                readonly property int band: 18
-
-                x: index * root.aw - (root.aw - Math.floor(slow.frame / 4) % root.aw)
-                y: root.lanternBase - 10
-                width: root.aw
-                height: band
-                antialiasing: false
-                smooth: false
-                renderStrategy: Canvas.Immediate
-                opacity: 0.35
-
-                onPaint: {
-                    const ctx = getContext("2d");
-                    ctx.clearRect(0, 0, width, height);
-                    ctx.fillStyle = root.c.mist;
-                    for (let y = 0; y < height; y++) {
-                        const t = y / height;
-                        const share = t < 0.25 || t > 0.8 ? 0.125 : 0.25;
-                        root.dither(ctx, 0, y, width, 1, share, x => Math.sin(x / 31 - y / 5) > -0.3);
-                    }
-                }
-            }
+            FogBand {}
         }
 
         // ── Front: big pines, bushes, ferns ───────────────────────────────
@@ -681,15 +644,14 @@ Item {
                 const ctx = getContext("2d");
                 const W = root.aw, H = root.ah, c = root.c;
                 ctx.clearRect(0, 0, W, H);
-                // Grass over the clearing, taller toward the front; none in
-                // the puddles, on the stones or at the lantern's foot. Drawn
-                // first, so the big pines stand in front of it.
-                const inPuddle = (x, y) => root.puddles.some(p => Math.abs(x - W * p.x) < p.rx + 1 && Math.abs(y - H * p.y) < p.ry + 2);
+                // Grass over the clearing, taller toward the front; none on
+                // the stones or at the lantern's foot. Drawn first, so the
+                // big pines stand in front of it.
                 const onStone = (x, y) => [[0.458, 0.844, 21, 4], [0.424, 0.9, 24, 5], [0.389, 0.962, 28, 5]]
                     .some(([sx, sy, sw, sh]) => x >= W * sx - 2 && x < W * sx + sw + 1 && y >= H * sy && y < H * sy + sh + 3);
-                for (let i = 0; i < W * 2.4; i++) {
+                for (let i = 0; i < W * 3.4; i++) {
                     const x = Math.round(root.rnd(i, 50) * W), y = root.horizon + 3 + Math.round(root.rnd(i, 51) * (H - root.horizon - 3));
-                    if ((Math.abs(x - root.lanternX - 15) < 18 && Math.abs(y - root.lanternBase) < 5) || inPuddle(x, y) || onStone(x, y))
+                    if ((Math.abs(x - root.lanternX - 15) < 18 && Math.abs(y - root.lanternBase) < 5) || onStone(x, y))
                         continue;
                     const depth = (y - root.horizon) / (H - root.horizon);
                     const tall = 1 + Math.round(depth * 3 + root.rnd(i, 52) * 1.5);
@@ -719,39 +681,14 @@ Item {
             }
         }
 
-        // Mushroom caps, glowing on and off out of step.
+        // ── Fog low over the grass, in front of it all ────────────────────
         Repeater {
-            model: root.mushrooms
+            model: [
+                [Math.round(root.ah * 0.85), 14, 0.45, 0.2, 19, 9, 0.25, 5],
+                [Math.round(root.ah * 0.93), 12, 0.4, -0.4, 27, 6, 0.4, 6]
+            ]
 
-            Rectangle {
-                required property var modelData
-                required property int index
-
-                x: Math.round(root.aw * modelData.x)
-                y: Math.round(root.ah * modelData.y)
-                width: 5
-                height: 3
-                color: modelData.cap
-                opacity: (slow.frame + index * 5) % 16 < 8 ? 1 : 0.65
-            }
-        }
-
-        // Fireflies drifting up and back, fading at the far end.
-        Repeater {
-            model: 12
-
-            Rectangle {
-                required property int index
-                readonly property int t: (slow.frame + index * 3) % 18
-                readonly property int leg: t < 9 ? t : 18 - t
-
-                x: Math.round(root.aw * 0.26 + root.rnd(index, 7) * root.aw * 0.49) + Math.floor(leg * 0.7)
-                y: Math.round(root.ah * 0.52 + root.rnd(index, 8) * root.ah * 0.29) - leg
-                width: 1
-                height: 1
-                color: root.c.flame
-                opacity: 0.9 - leg * 0.07
-            }
+            FogBand {}
         }
 
         Connections {
@@ -767,127 +704,49 @@ Item {
         }
     }
 
-    // ── The rain: two sheets of streaks sliding down ─────────────────────
-    // Each depth is one strip of streaks, painted once and repeated down the
-    // screen; falling only moves the sheet (a whole art pixel at a time, 24
-    // times a second), so nothing is redrawn while it rains.
+    // ── Fireflies, in their own layer (they move often; the forest needn't
+    // redraw for them) ────────────────────────────────────────────────────
+    // Each lives a cycle of its own length: lights up, wanders a meandering
+    // path, its light pulsing, dims down and goes out; a while later it
+    // lights up again somewhere else.
     Item {
         width: root.aw
         height: root.ah
         scale: root.px
         transformOrigin: Item.TopLeft
-        clip: true
 
         Repeater {
-            // [strip height, speed, streaks per strip, length, extra length,
-            //  colour, opacity, salt]: far, then near.
-            model: [
-                [97, 5, Math.ceil(root.aw / 4.6), 3, 3, root.c.rainFar, 0.35, 21],
-                [131, 9, Math.ceil(root.aw / 7.5), 7, 5, root.c.rainNear, 0.5, 41]
-            ]
+            model: 14
 
             Item {
-                id: sheet
+                id: fly
 
-                required property var modelData
-                readonly property int strip: modelData[0]
+                required property int index
+                readonly property real time: flyClock.frame / 12 + root.rnd(index, 80) * 40
+                readonly property real cycle: 9 + root.rnd(index, 81) * 7
+                readonly property int round: Math.floor(time / cycle)
+                readonly property real t: time / cycle - round
+                // In, lit, down, then out for the rest of the cycle.
+                readonly property real life: t < 0.12 ? t / 0.12 : t < 0.62 ? 1 : t < 0.78 ? 1 - (t - 0.62) / 0.16 : 0
+                readonly property real pulse: 0.55 + 0.45 * Math.sin(time * (2.2 + root.rnd(index, 82)) + index)
+                readonly property real bright: life * pulse
+                readonly property real baseX: root.aw * (0.12 + root.rnd(index * 31 + round, 83) * 0.76)
+                readonly property real baseY: root.ah * (0.56 + root.rnd(index * 17 + round, 84) * 0.34)
+                readonly property real s: t * cycle
 
-                width: root.aw
-                height: root.ah + strip
-                y: (rainClock.frame * modelData[1]) % strip - strip
+                visible: life > 0
+                x: Math.round(baseX + 10 * Math.sin(s * 0.7 + index) + 5 * Math.sin(s * 1.9 + index * 2))
+                y: Math.round(baseY + 5 * Math.sin(s * 0.9 + index * 3) - s * 0.9)
 
-                Repeater {
-                    model: Math.ceil(root.ah / sheet.strip) + 1
-
-                    Canvas {
-                        required property int index
-
-                        y: index * sheet.strip
-                        width: root.aw
-                        height: sheet.strip
-                        antialiasing: false
-                        smooth: false
-                        opacity: sheet.modelData[6]
-                        renderStrategy: Canvas.Immediate
-
-                        onPaint: {
-                            const ctx = getContext("2d"), m = sheet.modelData;
-                            ctx.clearRect(0, 0, width, height);
-                            ctx.fillStyle = m[5];
-                            for (let i = 0; i < m[2]; i++) {
-                                const x = Math.round(root.rnd(i, m[7]) * width);
-                                const y = Math.round(root.rnd(i, m[7] + 1) * height);
-                                const len = m[3] + Math.round(root.rnd(i, m[7] + 2) * m[4]);
-                                // Wrapping round the strip, so the sheets join.
-                                ctx.fillRect(x, y, 1, Math.min(len, height - y));
-                                if (y + len > height)
-                                    ctx.fillRect(x, 0, 1, y + len - height);
-                            }
-                        }
-                        onWidthChanged: requestPaint()
-                    }
+                // A soft glow round it while it's bright.
+                Rectangle { x: -1; width: 3; height: 1; color: root.c.fireflyGlow; opacity: 0.35 * fly.bright }
+                Rectangle { y: -1; width: 1; height: 3; color: root.c.fireflyGlow; opacity: 0.35 * fly.bright }
+                Rectangle {
+                    width: 1
+                    height: 1
+                    color: root.c.firefly
+                    opacity: 0.25 + 0.75 * fly.bright
                 }
-            }
-        }
-
-        // A drop's crown, two frames: on the ground here and there, and
-        // often on the lantern's roof and cap.
-        component Splash: Item {
-            property int t: 0
-
-            visible: t < 4
-
-            Rectangle { x: 1; width: 1; height: 1; color: root.c.splash; visible: parent.t < 2 }
-            Rectangle { x: 0; y: -1; width: 1; height: 1; color: root.c.splash; opacity: 0.7; visible: parent.t >= 2 }
-            Rectangle { x: 2; y: -1; width: 1; height: 1; color: root.c.splash; opacity: 0.7; visible: parent.t >= 2 }
-        }
-        Repeater {
-            model: Math.ceil(root.aw / 40)
-
-            Splash {
-                required property int index
-                readonly property int round: Math.floor((rainClock.frame + index * 7) / 24)
-
-                t: (rainClock.frame + index * 7) % 24
-                x: Math.round(root.rnd(index * 31 + round, 24) * (root.aw - 4))
-                y: root.horizon + 4 + Math.round(root.rnd(index * 17 + round, 25) * (root.ah - root.horizon - 8))
-            }
-        }
-        Repeater {
-            model: 6
-
-            Splash {
-                required property int index
-                readonly property int round: Math.floor((rainClock.frame + index * 5) / 12)
-                readonly property bool onCap: index % 3 === 0
-
-                t: (rainClock.frame + index * 5) % 12
-                x: root.lanternX + (onCap ? 7 + Math.round(root.rnd(index + round, 26) * 13) : 1 + Math.round(root.rnd(index + round, 27) * 25))
-                y: root.lanternBase + (onCap ? -55 : -51)
-            }
-        }
-
-        // Rings spreading in the puddles: a dot, then wider rings, fading.
-        Repeater {
-            model: root.puddles.length * 2
-
-            Item {
-                required property int index
-                readonly property var p: root.puddles[index % root.puddles.length]
-                readonly property int t: (rainClock.frame + index * 11) % 30
-                readonly property int round: Math.floor((rainClock.frame + index * 11) / 30)
-                readonly property int r: t < 3 ? 0 : t < 7 ? 1 : t < 12 ? 2 : 3
-
-                x: Math.round(root.aw * p.x + (root.rnd(index + round, 28) - 0.5) * p.rx * 1.2)
-                y: Math.round(root.ah * p.y + (root.rnd(index + round, 29) - 0.5) * p.ry)
-                visible: t < 16
-                opacity: t < 12 ? 0.7 : 0.35
-
-                Rectangle { visible: parent.r === 0; width: 1; height: 1; color: root.c.splash }
-                Rectangle { visible: parent.r > 0; x: -parent.r * 2; width: 1; height: 1; color: root.c.splash }
-                Rectangle { visible: parent.r > 0; x: parent.r * 2; width: 1; height: 1; color: root.c.splash }
-                Rectangle { visible: parent.r > 0; x: -parent.r * 2 + 1; y: -1; width: parent.r * 4 - 1; height: 1; color: root.c.splash }
-                Rectangle { visible: parent.r > 1; x: -parent.r * 2 + 1; y: 1; width: parent.r * 4 - 1; height: 1; color: root.c.splash; opacity: 0.6 }
             }
         }
     }
