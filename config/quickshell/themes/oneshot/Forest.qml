@@ -23,6 +23,11 @@ import qs.core
 Item {
     id: root
 
+    // Holds every loop still (the rain, the mist, the flame, fireflies):
+    // set while something covers the whole screen, so nothing's drawn for
+    // nobody.
+    property bool paused: false
+
     readonly property int px: Math.max(1, Theme.get("pixel.scale") ?? 3)
     readonly property int aw: Math.ceil(width / px)
     readonly property int ah: Math.ceil(height / px)
@@ -216,8 +221,17 @@ Item {
     // The scene's idle loops step slowly; the rain falls at 24 frames a
     // second, film's rate: smooth enough for streaks, and a fifth fewer
     // redraws than 30.
-    Ticker { id: slow }
-    Ticker { id: rainClock; fps: 24 }
+    Ticker {
+        id: slow
+
+        running: !root.paused && (Theme.get("pixel.animate") ?? true)
+    }
+    Ticker {
+        id: rainClock
+
+        fps: 24
+        running: !root.paused && (Theme.get("pixel.animate") ?? true)
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -673,7 +687,7 @@ Item {
                 const inPuddle = (x, y) => root.puddles.some(p => Math.abs(x - W * p.x) < p.rx + 1 && Math.abs(y - H * p.y) < p.ry + 2);
                 const onStone = (x, y) => [[0.458, 0.844, 21, 4], [0.424, 0.9, 24, 5], [0.389, 0.962, 28, 5]]
                     .some(([sx, sy, sw, sh]) => x >= W * sx - 2 && x < W * sx + sw + 1 && y >= H * sy && y < H * sy + sh + 3);
-                for (let i = 0; i < W * 1.4; i++) {
+                for (let i = 0; i < W * 2.4; i++) {
                     const x = Math.round(root.rnd(i, 50) * W), y = root.horizon + 3 + Math.round(root.rnd(i, 51) * (H - root.horizon - 3));
                     if ((Math.abs(x - root.lanternX - 15) < 18 && Math.abs(y - root.lanternBase) < 5) || inPuddle(x, y) || onStone(x, y))
                         continue;
@@ -768,8 +782,8 @@ Item {
             // [strip height, speed, streaks per strip, length, extra length,
             //  colour, opacity, salt]: far, then near.
             model: [
-                [97, 5, Math.ceil(root.aw / 3.2), 3, 3, root.c.rainFar, 0.35, 21],
-                [131, 9, Math.ceil(root.aw / 5), 7, 5, root.c.rainNear, 0.5, 41]
+                [97, 5, Math.ceil(root.aw / 4.6), 3, 3, root.c.rainFar, 0.35, 21],
+                [131, 9, Math.ceil(root.aw / 7.5), 7, 5, root.c.rainNear, 0.5, 41]
             ]
 
             Item {

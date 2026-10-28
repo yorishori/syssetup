@@ -88,12 +88,14 @@ Item {
     function snap(v: real): real {
         return Math.round(v / px) * px;
     }
-    // The nearest place it can stand to x: on the bar, not inside a tunnel.
+    // The nearest place it can stop at to x: on the bar, not in a tunnel,
+    // and not up against its ends either (it only passes through them).
     function settle(x: real): real {
         x = Math.max(minX, Math.min(maxX, x));
+        const clear = 16 * px;
         for (const p of portals)
-            if (x > p.a && x < p.b)
-                return x - p.a < p.b - x ? p.a : p.b;
+            if (x > p.a - clear && x < p.b + clear)
+                return x - p.a < p.b - x ? p.a - clear : p.b + clear;
         return x;
     }
     function wander(): void {
