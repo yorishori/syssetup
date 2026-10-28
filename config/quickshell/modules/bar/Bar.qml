@@ -152,6 +152,7 @@ PanelWindow {
         }
         height: Theme.barHeight
         openDrop: bar.openDrop
+        openDropItem: bar.activeDrop
         // The groups of keys, for themes that draw them apart.
         islands: [[leftGroup], [launcher, workspaces, centerRow], [rightGroup]]
 

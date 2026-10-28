@@ -102,6 +102,27 @@ Item {
         return out;
     }
 
+    // Where the cat's feet go at x: on a rope, its sag; on a sign or a
+    // bracket (or past the ends), the signs' top.
+    function groundAt(x: real): real {
+        for (const r of ropes) {
+            if (x >= r.from && x <= r.to) {
+                const t = (x - r.from) / (r.to - r.from);
+                const sag = Math.min(8 * px, (r.to - r.from) * 0.06);
+                return signTop + px + Math.round(4 * sag * t * (1 - t) / px) * px;
+            }
+        }
+        return signTop;
+    }
+    // How far along the bar the cat wanders: the first sign's start to the
+    // last one's end.
+    readonly property var walkable: {
+        const all = signs.concat(brackets);
+        if (!all.length)
+            return [0, 0];
+        return [Math.min(...all.map(b => b.x)) + 6 * px, Math.max(...all.map(b => b.x + b.w)) - 6 * px];
+    }
+
     Ticker { id: clock }
 
     // ── The beam ──────────────────────────────────────────────────────────
@@ -323,16 +344,14 @@ Item {
         }
     }
 
-    // ── The cat, out for a walk along the first rope ──────────────────────
-    PixelArt {
-        readonly property var rope: root.ropes[0] ?? null
-        readonly property real at: 0.4
-
-        visible: rope !== null
+    // ── The cat, living on the bar (see BarCat) ───────────────────────────
+    BarCat {
+        anchors.fill: parent
         px: root.px
-        x: rope ? root.snap(rope.from + (rope.to - rope.from) * at) - width / 2 : 0
-        y: rope ? root.signTop + root.px + root.snap(4 * Math.min(8 * root.px, (rope.to - rope.from) * 0.06) * at * (1 - at)) - height + root.px : 0
-        rows: Sprites.cat["walk" + (1 + clock.frame % 4)]
-        colors: ({ "O": "#4f4570", "B": "#17141f", "L": "#1f1b29", "P": "#3a2a40", "E": "#ff9a2e" })
+        groundAt: x => root.groundAt(x)
+        minX: root.walkable[0]
+        maxX: root.walkable[1]
+        drop: root.control.openDropItem
+        hidden: CatState.peeking
     }
 }

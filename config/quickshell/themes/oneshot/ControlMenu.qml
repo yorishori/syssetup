@@ -6,9 +6,9 @@ import qs.modules.control as M
 
 // A character status screen (the frame draws its title): the cat's
 // portrait beside the machine's name, how long it's been up and its kernel
-// (the cat leaves the bar for it; Spec cat.panels); then the system (CPU,
-// GPU, RAM as block meters; board, kernel), updates per repository,
-// storage, USB devices and your tools, in one scrolling column.
+// (the cat itself comes and sits on the window, see BarCat); then the
+// system (CPU, GPU, RAM as block meters; board, kernel), updates per
+// repository, storage, USB devices and your tools, in one scrolling column.
 Item {
     id: root
 
