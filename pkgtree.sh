@@ -2,8 +2,8 @@
 # Tree of every installed package, grouped by the categories in .pkgs:
 #   Category > listed package > its dependencies (recursive)
 # Packages not reached from any list go under "Others".
-#   bold = listed   red = listed but not installed   blue = shows up in more than one place
-#   "..." = its dependencies are already expanded elsewhere in the tree
+#   bold = listed   red = listed but not installed   (+N) = packages it brought in
+#   blue = already pulled in further up (deps get listed by name, not as a tree)
 # Usage: pkgtree.sh [-a] [-c]
 #   -a  plain ASCII tree lines
 #   -c  force colors (e.g. ./pkgtree.sh -c | less -R)
@@ -40,7 +40,8 @@ fi
 G_GAP='   '
 
 # --- Load package data ------------------------------------------------------
-declare -A VER REPO SYNC PROV DEPS SEEN ROOTED COUNT
+declare -A VER REPO SYNC PROV DEPS SEEN
+NSEEN=0
 
 while read -r n v; do VER[$n]=$v; done < <(pacman -Q)
 
@@ -90,104 +91,102 @@ while read -r p d; do
 done < <(printf '%s\n' "${pairs[@]}" | sort -u)
 
 # --- Build the tree ---------------------------------------------------------
-# Lines are collected first so the number of appearances is known when painting
-L_PRE=() L_PKG=() L_KIND=() L_MORE=()
+# First come, first served: a package is drawn (with its own deps) under the
+# first package that needs it. Later on it only shows up by name, in the blue
+# comma-separated line under whoever else depends on it.
+L_PRE=() L_PKG=() L_KIND=() L_INFO=()
 
-add() { # prefix pkg kind [more]
-    L_PRE+=("$1") L_PKG+=("$2") L_KIND+=("$3") L_MORE+=("${4:-}")
-    [[ $3 == cat ]] || COUNT[$2]=$(( ${COUNT[$2]:-0} + 1 ))
+add() { # prefix pkg kind [info]
+    L_PRE+=("$1") L_PKG+=("$2") L_KIND+=("$3") L_INFO+=("${4:-}")
 }
 
 walk() { # pkg prefix
-    local deps=(${DEPS[$1]:-}) i d con nxt
-    local n=${#deps[@]}
+    local d new=() rep=() i n con nxt
+    for d in ${DEPS[$1]:-}; do
+        if [[ -n ${SEEN[$d]:-} ]]; then rep+=("$d"); else SEEN[$d]=1; (( ++NSEEN )); new+=("$d"); fi
+    done
+    n=${#new[@]}
+    if (( ${#rep[@]} )); then
+        if (( n )); then con=$G_BAR; else con=$G_GAP; fi
+        printf -v d '%s, ' "${rep[@]}"
+        add "$2$con" "${d%, }" rep
+    fi
     for (( i = 0; i < n; i++ )); do
-        d=${deps[i]}
         if (( i == n - 1 )); then con=$G_END nxt=$G_GAP; else con=$G_TEE nxt=$G_BAR; fi
-        if [[ -n ${SEEN[$d]:-} ]]; then
-            add "$2$con" "$d" dep "${DEPS[$d]:+1}"
-        else
-            SEEN[$d]=1
-            add "$2$con" "$d" dep
-            walk "$d" "$2$nxt"
-        fi
+        add "$2$con" "${new[i]}" dep
+        walk "${new[i]}" "$2$nxt"
     done
 }
 
-root() { # pkg kind
-    add " " "$1" "$2"
-    [[ $2 == missing || -n ${ROOTED[$1]:-} ]] && return
-    ROOTED[$1]=1
+root() { # pkg
+    local kind=root at before
+    if [[ -n ${SEEN[$1]:-} ]]; then kind=seenroot; else SEEN[$1]=1; (( ++NSEEN )); fi
+    at=${#L_PKG[@]} before=$NSEEN
+    add " " "$1" "$kind"
     walk "$1" " "
+    L_INFO[at]=$(( $NSEEN - before ))
 }
 
 source "$PKGFILE"
 mapfile -t CATS < <(grep -o '^PKGS_[A-Za-z0-9_]*' "$PKGFILE")
 
-# Listed packages are only ever expanded at their own root
 for c in "${CATS[@]}"; do
-    for p in ${!c}; do
-        resolve "$p"
-        [[ -n $REPLY ]] && SEEN[$REPLY]=1
-    done
-done
-
-for c in "${CATS[@]}"; do
-    name=${c#PKGS_}
     list=(${!c})
-    missing=0
-    hdr=${#L_PKG[@]}
-    add "" "$name" cat
+    missing=0 before=$NSEEN hdr=${#L_PKG[@]}
+    add "" "${c#PKGS_}" cat
     for p in "${list[@]}"; do
         resolve "$p"
         if [[ -n $REPLY ]]; then
-            root "$REPLY" root
+            root "$REPLY"
         else
-            root "$p" missing
+            add " " "$p" missing
             (( missing++ ))
         fi
     done
-    L_MORE[hdr]="${#list[@]} listed"
-    (( missing )) && L_MORE[hdr]+=", $missing missing"
+    L_INFO[hdr]="${#list[@]} listed"
+    (( missing )) && L_INFO[hdr]+=", $missing missing"
+    L_INFO[hdr]+=", $(( $NSEEN - before )) pkgs"
 done
 
 # Others: explicitly installed first, then whatever is left (orphans and their deps)
-hdr=${#L_PKG[@]}
+hdr=${#L_PKG[@]} before=$NSEEN
 add "" "OTHERS" cat
-others=0
 for p in $(pacman -Qqe | sort) $(printf '%s\n' "${!VER[@]}" | sort); do
-    [[ -n ${SEEN[$p]:-} ]] && continue
-    SEEN[$p]=1
-    root "$p" root
-    (( others++ ))
+    [[ -n ${SEEN[$p]:-} ]] || root "$p"
 done
-L_MORE[hdr]="$others not from the lists"
+L_INFO[hdr]="$(( $NSEEN - before )) pkgs"
 
 # --- Paint ------------------------------------------------------------------
-(( COLOR )) && printf '%s listed%s  %s several places%s  %s missing%s  |  %score%s %sextra%s %smultilib%s %syay%s\n' \
+printf '%s%s packages installed%s\n' "$BOLD" "${#VER[@]}" "$RS"
+(( COLOR )) && printf '%slisted%s  %salready above%s  %smissing%s  |  %score%s %sextra%s %smultilib%s %syay%s\n' \
     "$BOLD" "$RS" "$BLUE" "$RS" "$RED" "$RS" \
     "${ORIGIN_C[core]:-}" "$RS" "${ORIGIN_C[extra]:-}" "$RS" \
     "${ORIGIN_C[multilib]:-}" "$RS" "${ORIGIN_C[yay]:-}" "$RS"
 
 for (( i = 0; i < ${#L_PKG[@]}; i++ )); do
-    p=${L_PKG[i]}
+    p=${L_PKG[i]} pre="$DIM${L_PRE[i]}$RS"
     case ${L_KIND[i]} in
         cat)
-            printf '\n%s %s %s %s(%s)%s\n' "$HEAD" "$p" "$RS" "$DIM" "${L_MORE[i]}" "$RS"
+            printf '\n%s %s %s %s(%s)%s\n' "$HEAD" "$p" "$RS" "$DIM" "${L_INFO[i]}" "$RS"
             ;;
         missing)
             o=${SYNC[$p]:-}
-            printf '%s%s%s%s  %snot installed%s%s\n' "$DIM" "${L_PRE[i]}" "$RS" \
-                "$RED$p$RS" "$DIM" "$RS" "${o:+ ${ORIGIN_C[$o]:-}[$o]$RS}"
+            printf '%s%s%s%s  %snot installed%s%s\n' "$pre" "$RED" "$p" "$RS" \
+                "$DIM" "$RS" "${o:+ ${ORIGIN_C[$o]:-}[$o]$RS}"
+            ;;
+        rep)
+            printf '%s%s%s%s\n' "$pre" "$BLUE" "$p" "$RS"
             ;;
         *)
             o=${REPO[$p]:-yay}
-            col=
-            [[ ${L_KIND[i]} == root ]] && col=$BOLD
-            (( COUNT[$p] > 1 )) && col=$BLUE
-            printf '%s%s%s%s%s%s %s%s%s %s[%s]%s%s\n' "$DIM" "${L_PRE[i]}" "$RS" \
-                "$col" "$p" "$RS" "$DIM" "${VER[$p]}" "$RS" \
-                "${ORIGIN_C[$o]:-}" "$o" "$RS" "${L_MORE[i]:+ $DIM...$RS}"
+            col= info=
+            case ${L_KIND[i]} in
+                root)     col=$BOLD ;;
+                seenroot) col=$BLUE ;;
+            esac
+            [[ ${L_KIND[i]} != dep ]] && (( L_INFO[i] )) && info=" $DIM(+${L_INFO[i]})$RS"
+            printf '%s%s%s%s %s%s%s %s[%s]%s%s\n' "$pre" "$col" "$p" "$RS" \
+                "$DIM" "${VER[$p]}" "$RS" "${ORIGIN_C[$o]:-}" "$o" "$RS" "$info"
             ;;
     esac
 done
