@@ -1,4 +1,4 @@
--- Pickers (fzf-lua): Ctrl+P files, Ctrl+F text in the project, <leader>? cheatsheet and more.
+-- Pickers (fzf-lua): Ctrl+P files, Ctrl+F text in the project, <leader>? cheatsheet.
 -- Inside a picker: type to filter, Enter opens, Esc cancels, Ctrl+Q sends every result to the quickfix list.
 
 vim.pack.add({ "https://github.com/ibhagwan/fzf-lua" })
@@ -37,9 +37,6 @@ fzf.setup({
 
 vim.keymap.set("n", "<C-p>", fzf.files, { desc = "Find file by name" })
 vim.keymap.set("n", "<C-f>", fzf.live_grep, { desc = "Search text in the project" })
-vim.keymap.set("n", "<leader><Tab>", fzf.tabs, { desc = "Open tabs" })
-vim.keymap.set("n", "<leader>r", fzf.oldfiles, { desc = "Recent files" })
-vim.keymap.set("n", "<leader>h", fzf.helptags, { desc = "Search nvim's help" })
 
 -- Cheatsheet: vanilla commands (lua/cheatsheet.lua) plus every keymap with a readable description
 -- (nvim's own keymaps described as ":help …", ":command" or "vim.lsp…" are skipped)
