@@ -27,12 +27,12 @@ As is inevitable, changes might be made and you wont want to reinstall the OS.
 ```bash
 # From the root of the project and with your user
 # Dry run
-rsync -aivn --exclude='home/' config/ ~/.config/
-rsync -aivn ./config/home/ ~/
+rsync -aicn --no-times --exclude='home/' config/ ~/.config/
+rsync -aicn --no-times ./config/home/ ~/
 
 # Real run
-rsync -aiv --exclude='home/' config/ ~/.config/
-rsync -aiv ./config/home/ ~/
+rsync -aic --no-times --exclude='home/' config/ ~/.config/
+rsync -aic --no-times ./config/home/ ~/
 ```
 
 You're welcome future me (or whoever's brave enough to do _this_ to their system).
