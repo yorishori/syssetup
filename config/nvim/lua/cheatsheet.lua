@@ -56,7 +56,7 @@ return {
     { "Edit", "New line below / above", "o   O" },
     { "Edit", "Replace one character", "r{char}" },
     { "Edit", "Join the next line onto this one", "J" },
-    { "Edit", "Indent / unindent (in a selection: > <)", ">>   <<" },
+    { "Edit", "Indent / unindent (a selection stays selected: > <)", ">>   <<" },
     { "Edit", "Re-indent the whole file", "gg=G" },
     { "Edit", "Toggle case / lowercase / uppercase (+ motion)", "~   gu   gU" },
     { "Edit", "Comment / uncomment line (in a selection: gc)", "gcc" },

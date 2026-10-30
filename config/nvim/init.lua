@@ -71,6 +71,10 @@ vim.keymap.set("n", "<A-k>", "<cmd>move .-2<CR>==", { desc = "Move line up" })
 vim.keymap.set("x", "<A-j>", ":move '>+1<CR>gv=gv", { silent = true, desc = "Move selection down" })
 vim.keymap.set("x", "<A-k>", ":move '<-2<CR>gv=gv", { silent = true, desc = "Move selection up" })
 
+-- Indenting a selection keeps it selected, so > or < can be pressed again
+vim.keymap.set("x", ">", ">gv", { desc = "Indent, keep selection" })
+vim.keymap.set("x", "<", "<gv", { desc = "Unindent, keep selection" })
+
 -- Briefly highlight what was yanked
 vim.api.nvim_create_autocmd("TextYankPost", {
     callback = function() vim.hl.on_yank() end,
