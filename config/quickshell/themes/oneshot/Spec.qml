@@ -15,7 +15,7 @@ QtObject {
     readonly property string label: "OneShot"
 
     // Loaded from this folder while the theme is active (core/Theme.qml).
-    readonly property var fonts: ["fonts/PixelifySans.ttf", "fonts/Silkscreen-Regular.ttf"]
+    readonly property var fonts: ["fonts/PixelifySans.ttf"]
 
     readonly property var defaults: ({
         // Night plum and cream, lit by a lantern.
@@ -39,7 +39,7 @@ QtObject {
             size: 14,
             caps: false,
             tracking: 0,
-            labels: "Silkscreen" // tiny capital labels (VOLUME, WI-FI, …)
+            labels: "Pixelify Sans" // tiny capital labels (VOLUME, WI-FI, …)
         },
         // Pixels don't bloom.
         glow: {
