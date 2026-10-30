@@ -43,7 +43,7 @@ Singleton {
                 name: "sway",
                 description: "Edit Sway",
                 icon: "nvim",
-                command: "cd $HOME/.config/sway && nvim .",
+                command: "cd $HOME/.config/sway && nvim config",
                 terminal: true,
                 keywords: ["sway", "config"]
             }
