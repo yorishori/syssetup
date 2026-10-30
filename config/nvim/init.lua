@@ -66,6 +66,11 @@ vim.keymap.set("n", "<leader>w", "<cmd>setlocal wrap!<CR>", { desc = "Toggle lin
 vim.keymap.set("n", "<C-n>", "<cmd>tabnew<CR>", { desc = "New file in a new tab" })
 -- Ctrl+P, Ctrl+F: see plugin/search.lua. Ctrl+B: see plugin/tree.lua.
 
+vim.keymap.set("n", "<A-j>", "<cmd>move .+1<CR>==", { desc = "Move line down" })
+vim.keymap.set("n", "<A-k>", "<cmd>move .-2<CR>==", { desc = "Move line up" })
+vim.keymap.set("x", "<A-j>", ":move '>+1<CR>gv=gv", { silent = true, desc = "Move selection down" })
+vim.keymap.set("x", "<A-k>", ":move '<-2<CR>gv=gv", { silent = true, desc = "Move selection up" })
+
 -- Briefly highlight what was yanked
 vim.api.nvim_create_autocmd("TextYankPost", {
     callback = function() vim.hl.on_yank() end,
