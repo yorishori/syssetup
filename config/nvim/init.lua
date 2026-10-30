@@ -74,6 +74,8 @@ vim.keymap.set("x", "<A-k>", ":move '<-2<CR>gv=gv", { silent = true, desc = "Mov
 -- Indenting a selection keeps it selected, so > or < can be pressed again
 vim.keymap.set("x", ">", ">gv", { desc = "Indent, keep selection" })
 vim.keymap.set("x", "<", "<gv", { desc = "Unindent, keep selection" })
+vim.keymap.set("x", "<Tab>", ">gv", { desc = "Indent, keep selection" })
+vim.keymap.set("x", "<S-Tab>", "<gv", { desc = "Unindent, keep selection" })
 
 -- Briefly highlight what was yanked
 vim.api.nvim_create_autocmd("TextYankPost", {
