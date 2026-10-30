@@ -9,10 +9,20 @@ vim.opt.cursorline = true       -- highlight the current line
 vim.opt.colorcolumn = "128"     -- ruler at column 128
 vim.opt.scrolloff = 8           -- keep 8 lines visible above/below the cursor
 vim.opt.signcolumn = "yes"      -- fixed gutter, so text doesn't jump sideways later
+vim.opt.list = true             -- show tab characters as » (spaces stay invisible)
+vim.opt.listchars = { tab = "» ", nbsp = "␣" }
 
 -- Mouse and clipboard
 vim.opt.mouse = "a"             -- mouse everywhere (click, drag-select, scroll)
-vim.opt.clipboard = "unnamedplus" -- y/p use the system clipboard
+vim.opt.clipboard = "unnamedplus" -- y/d/p use the system clipboard
+
+-- d is cut (system clipboard); x, s and c only delete, so they never clobber the clipboard.
+-- "_ is the black hole register: whatever goes in is discarded.
+for _, key in ipairs({ "x", "X", "s", "S", "c", "C" }) do
+    vim.keymap.set({ "n", "x" }, key, '"_' .. key, { desc = "Delete without copying" })
+end
+-- Pasting over a selection keeps the clipboard instead of replacing it with the selection
+vim.keymap.set("x", "p", "P", { desc = "Paste over selection, keep clipboard" })
 
 -- Indentation: 3 spaces
 vim.opt.tabstop = 3
