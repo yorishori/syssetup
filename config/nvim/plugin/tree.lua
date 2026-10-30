@@ -10,17 +10,9 @@ vim.pack.add({
 })
 
 local api = require("nvim-tree.api")
+local open_file = require("open")
 
-local function is_empty_buffer(buf)
-    return vim.api.nvim_buf_get_name(buf) == ""
-        and vim.bo[buf].buftype == ""
-        and not vim.bo[buf].modified
-        and vim.api.nvim_buf_line_count(buf) == 1
-        and vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] == ""
-end
-
--- Like VSCode: jump to the file's tab if it's already open, use this tab if it's empty, otherwise open a new tab.
--- Folders expand/collapse.
+-- Files open in their own tab (see lua/open.lua), folders expand/collapse
 local function open()
     local node = api.tree.get_node_under_cursor()
     if not node then return end
@@ -28,15 +20,7 @@ local function open()
         api.node.open.edit(node)
         return
     end
-    local others = vim.tbl_filter(function(win)
-        return not api.tree.is_tree_buf(vim.api.nvim_win_get_buf(win))
-    end, vim.api.nvim_tabpage_list_wins(0))
-    local already_open = vim.fn.bufwinid(node.absolute_path) ~= -1
-    if not already_open and #others == 1 and is_empty_buffer(vim.api.nvim_win_get_buf(others[1])) then
-        api.node.open.edit(node)
-    else
-        api.node.open.tab_drop(node)
-    end
+    open_file.file(node.absolute_path)
 end
 
 -- l: open a file / expand a folder (or step into it if it's already expanded)
@@ -122,7 +106,7 @@ end, { desc = "File tree: show / focus / hide" })
 vim.api.nvim_create_autocmd("VimEnter", {
     callback = function()
         local arg = vim.fn.argv(0)
-        if vim.fn.argc() == 0 and is_empty_buffer(0) then
+        if vim.fn.argc() == 0 and open_file.is_empty_buffer(0) then
             api.tree.open()
         elseif vim.fn.argc() == 1 and vim.fn.isdirectory(arg) == 1 then
             local dir_buf = vim.api.nvim_get_current_buf()

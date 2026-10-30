@@ -64,10 +64,7 @@ vim.opt.tabline = "%!v:lua.tabline()"
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 vim.keymap.set("n", "<leader>w", "<cmd>setlocal wrap!<CR>", { desc = "Toggle line wrap" })
 vim.keymap.set("n", "<C-n>", "<cmd>tabnew<CR>", { desc = "New file in a new tab" })
-
--- Reserved: their defaults (up, page down) are redundant, so they do nothing until the search step
-vim.keymap.set("n", "<C-p>", "<Nop>", { desc = "TODO: find file by name (like VSCode)" })
-vim.keymap.set("n", "<C-f>", "<Nop>", { desc = "TODO: search text across the project" })
+-- Ctrl+P, Ctrl+F: see plugin/search.lua. Ctrl+B: see plugin/tree.lua.
 
 -- Briefly highlight what was yanked
 vim.api.nvim_create_autocmd("TextYankPost", {
