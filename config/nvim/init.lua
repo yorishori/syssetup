@@ -1,4 +1,4 @@
--- Step 1: plain nvim, no plugins. Only options and a few keymaps.
+-- Options and keymaps. Plugins live in plugin/, one file each, and are loaded automatically after this file.
 -- Help for any option: :help 'optionname'   (e.g. :help 'scrolloff')
 
 vim.g.mapleader = " "
@@ -37,6 +37,28 @@ vim.opt.smartcase = true
 -- Splits open to the right / below
 vim.opt.splitright = true
 vim.opt.splitbelow = true
+
+-- Tab bar: tabs are named after their file (sidebars like the file tree are skipped), ● when unsaved,
+-- click a tab to switch to it, ✕ to close it
+function _G.tabline()
+    local line = ""
+    for tab = 1, vim.fn.tabpagenr("$") do
+        local buffers = vim.fn.tabpagebuflist(tab)
+        local buf = buffers[vim.fn.tabpagewinnr(tab)]
+        if vim.bo[buf].buftype ~= "" then
+            for _, b in ipairs(buffers) do
+                if vim.bo[b].buftype == "" then buf = b break end
+            end
+        end
+        local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ":t")
+        if name == "" then name = "[No Name]" end
+        if vim.bo[buf].modified then name = name .. " ●" end
+        local hl = tab == vim.fn.tabpagenr() and "%#TabLineSel#" or "%#TabLine#"
+        line = line .. hl .. "%" .. tab .. "T " .. name .. " %" .. tab .. "X✕%X "
+    end
+    return line .. "%#TabLineFill#%T"
+end
+vim.opt.tabline = "%!v:lua.tabline()"
 
 -- Keymaps
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
